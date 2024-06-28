@@ -8,8 +8,8 @@ from scipy.optimize import curve_fit
 
 opt_save = 1
 
-d_scale = 50000
-h = 1
+d_scale = 100000
+h = 0
 hloc = ["112", "122", "132" , "142"]
 hloc_val = ["L", "PC", "PW" , "PE"]
 
@@ -38,8 +38,14 @@ df.load()
 subglacialRunoffFlux = np.squeeze(df.subglacialRunoffFlux.data)
 sgr_iii = subglacialRunoffFlux > 0
 sgr_pt = np.where(sgr_iii)[0]
+print(sgr_pt)
+for j in range(len(sgr_pt)):
+    dist2point_now = numpy.absolute(numpy.sqrt((x - x[sgr_pt[j]]) ** 2 + (y - y[sgr_pt[j]]) ** 2 + (z - z[sgr_pt[j]]) ** 2))
+    if j == 0:
+        dist2point = dist2point_now
+    else:
+        dist2point = np.minimum(dist2point, dist2point_now)
 
-dist2point = numpy.absolute(numpy.sqrt((x - x[sgr_pt]) ** 2 + (y - y[sgr_pt]) ** 2 + (z - z[sgr_pt]) ** 2))
 #ii = numpy.where(dist2point == dist2point.min())
 i_ave = dist2point < d_scale
 print(hloc_val[h])

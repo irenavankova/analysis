@@ -6,12 +6,12 @@ import numpy # for arrays!
 import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
 
-opt_save = 0
+opt_save = 1
 
 rho_fw = 1000.
 secPerYear = 365 * 24 * 60 * 60
 
-d_scale = 3000
+d_scale = 100000
 
 p_base = '/Users/irenavankova/Work/data_sim/SGR/idealized/sg_pull_w_fraz_yesC'
 
@@ -111,14 +111,15 @@ for t in range(len(temp)):
 
 plt.xlabel('$F_{s}$ (m$^3$/s)')
 plt.ylabel('$\Delta \dot{m}$ (m/a)')
-plt.title(f'$F_s$ location: Point')
+plt.title(f'$F_s$ location: Point, r = {d_scale/1000}km')
+
 plt.legend(loc=2, prop={'size': 6})
 plt.grid()
 plt.rcParams.update({'font.size': 8})
 
 dir_fig_save = '/Users/irenavankova/Work/data_sim/SGR/idealized/plots/bulk'
 if opt_save == 1:
-    plt.savefig(f'{dir_fig_save}/plot_bulk_near_fvsnf_PTave.png', bbox_inches='tight', dpi=300)
+    plt.savefig(f'{dir_fig_save}/plot_bulk_near_fvsnf_PTave_{d_scale}.png', bbox_inches='tight', dpi=300)
 else:
     plt.show()
 
