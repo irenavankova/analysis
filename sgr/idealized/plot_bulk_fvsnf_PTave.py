@@ -87,7 +87,8 @@ plt.xlabel('$F_{s}$ (m$^3$/s)')
 plt.ylabel('$\Delta \dot{m}$ (m/a)')
 plt.title(f'Channelized, all')
 plt.legend(loc=2, prop={'size': 8})
-plt.grid()
+if lglg == 0:
+    plt.grid()
 plt.rcParams.update({'font.size': 8})
 
 dir_fig_save = '/Users/irenavankova/Work/data_sim/SGR/idealized/plots/bulk/fvsnf'

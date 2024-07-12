@@ -897,7 +897,7 @@ class MoviePlotter(object):
         plt.close()
 
     def _plot_vert_field(self, inX, inZ, field, title, outFileName,
-                         vmin=None, vmax=None, figsize=(9, 5), cmap=None,
+                         vmin=None, vmax=None, figsize=(7, 4), cmap=None,
                          show_boundaries=True):
         try:
             os.makedirs(os.path.dirname(outFileName))
@@ -928,10 +928,18 @@ class MoviePlotter(object):
                        zorder=3)
         plt.colorbar()
         ax.autoscale(tight=True)
-        plt.ylim([numpy.amin(inZ), 20])
-        plt.xlim([400, 800])
+        plt.xlabel('x (km)')
+        plt.ylabel('z (m)')
+        ax.set_xticks(numpy.linspace(450, 650, 5))
+        ax.set_yticks(numpy.linspace(-800, 0, 5))
+        #plt.ylim([numpy.amin(inZ), 20])
+        plt.ylim([-750, 20])
+        #plt.xlim([400, 800])
+        plt.xlim([450, 650])
         plt.title('')
         plt.tight_layout(pad=0.5)
+        plt.rcParams['font.size'] = 14
+        #plt.rcParams.update({'font.size': 26})
         plt.savefig(outFileName, dpi='figure')
         plt.close()
 

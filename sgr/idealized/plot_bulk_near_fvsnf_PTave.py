@@ -12,7 +12,7 @@ opt_save = 1
 rho_fw = 1000.
 secPerYear = 365 * 24 * 60 * 60
 
-d_scale = 2000
+d_scale = 10000
 
 p_base = '/Users/irenavankova/Work/data_sim/SGR/idealized/sg_pull_w_fraz_yesC'
 
@@ -127,7 +127,8 @@ plt.ylabel('$\Delta \dot{m}$ (m/a)')
 plt.title(f'Channelized, $d \leq ${d_scale/1000} km')
 
 plt.legend(loc=2, prop={'size': 8})
-plt.grid()
+if lglg == 0:
+    plt.grid()
 plt.rcParams.update({'font.size': 8})
 
 dir_fig_save = '/Users/irenavankova/Work/data_sim/SGR/idealized/plots/bulk/fvsnf'
