@@ -10,8 +10,8 @@ p_base = '/Users/irenavankova/Work/data_sim/SGR/idealized/sg_pull_w_fraz_yesC'
 sgr_base = '/Users/irenavankova/Work/data_sim/Compass_files/mesh_2k/sgr'
 
 temp = 'rd'
-sgr = ["R", "A", "A", "A", "A"]
-#sgr = ["R", "B", "B", "B", "B"]
+sgr = ["N", "A", "A", "A", "A"]
+#sgr = ["N", "B", "B", "B", "B"]
 hloc = ["112", "112", "132", "122", "142"]
 
 for c in range(len(sgr)):

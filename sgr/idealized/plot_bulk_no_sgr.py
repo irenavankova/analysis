@@ -37,15 +37,20 @@ coef = numpy.polyfit(temp_val, melt_total, 2)
 tfit = np.linspace(-2, 4, 50)
 qfit = np.polyval(coef, tfit)
 plt.figure(figsize=(4, 4))
-plt.plot(temp_val, melt_total, 'ro', fillstyle = 'none' , label = 'sim')
-plt.plot(tfit, qfit, 'k--' , linewidth=1, label = 'fit')
+plt.plot(temp_val, melt_total, 'ro', fillstyle = 'none' , label = 'simulation')
+plt.plot(tfit, qfit, 'k--' , linewidth=1, label = 'quadratic fit')
 plt.xlabel('$T_b$ ($^\circ$C)')
 plt.ylabel('Mean melt rate (m/a)')
 plt.legend(loc = 2)
 plt.grid()
 plt.rcParams.update({'font.size': 8})
-#plt.savefig(f'{dir_fig_save}{site_names[k]}_compare.png', bbox_inches='tight', dpi=300)
-plt.show()
+
+opt_save = 1
+dir_fig_save = '/Users/irenavankova/Work/data_sim/SGR/idealized/plots/bulk'
+if opt_save == 1:
+    plt.savefig(f'{dir_fig_save}/plot_bulk_no_sgr.png', bbox_inches='tight', dpi=300)
+else:
+    plt.show()
 
 
 

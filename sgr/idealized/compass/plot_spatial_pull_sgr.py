@@ -16,20 +16,15 @@ current_working_directory = os.getcwd()
 print(current_working_directory)
 work_dir = current_working_directory
 
-p_base = '/Users/irenavankova/Work/data_sim/SGR/idealized/sg_pull_w_fraz_yesC'
+#ftype = 'sg_pull_w_fraz_V2'
+ftype = 'rebased_V2'
 
-temp = 'rd'
-sgr = ["N", "A", "A", "A", "A", "B", "B"]
-hloc = ["112", "112", "132", "122", "142", "132", "142"]
+p_base = '/Users/irenavankova/Work/data_sim/SGR/pull_sgr'
 
-c = 0
-out_name = f'{temp}_{hloc[c]}{sgr[c]}'
-plot_folder = f'/Users/irenavankova/Work/data_sim/SGR/idealized/plots/spatial/{out_name}'
+plot_folder = f'{p_base}/plots/{ftype}'
 
-fdir = f'{p_base}/{temp}/{temp}_{hloc[c]}{sgr[c]}'
-
-dsMesh = xarray.open_dataset(f'{fdir}/restart.0003-01-01_00.00.00.nc')
-ds = xarray.open_dataset(f'{fdir}/timeSeriesStatsMonthly.0002-12-01.nc')
+dsMesh = xarray.open_dataset(f'{p_base}/outputs/{ftype}/init.nc')
+ds = xarray.open_dataset(f'{p_base}/outputs/{ftype}/timeSeriesStatsMonthly.0001-02-01.nc')
 
 section_y = float(40000)
 
