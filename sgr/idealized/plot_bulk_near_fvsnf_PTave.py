@@ -6,12 +6,13 @@ import numpy # for arrays!
 import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
 
+lglg = 1
 opt_save = 1
 
 rho_fw = 1000.
 secPerYear = 365 * 24 * 60 * 60
 
-d_scale = 100000
+d_scale = 2000
 
 p_base = '/Users/irenavankova/Work/data_sim/SGR/idealized/sg_pull_w_fraz_yesC'
 
@@ -90,36 +91,51 @@ def f_n_pow_1_3(x, a):
 def f_n_pow_2_3(x, a):
     return a * np.power(x, 2/3)
 
-xfit = np.linspace(0,sgr_val[-1],100)
+if lglg == 1:
+    xfit = np.linspace(sgr_val[1], sgr_val[-1], 100)
+else:
+    xfit = np.linspace(0,sgr_val[-1],100)
 
 plt.figure(figsize=(4, 4))
 clr = 'rb'
 smb = 's^p'
-rot = ["f", "f0"]
+rot = ["rotating", "non-rotating"]
 
 for t in range(len(temp)):
     #for h in range(len(hloc)):
         #plt.plot(sgr_val, np.squeeze(melt_total[t,:,h]), f'{clr[t]}{smb[h]}', fillstyle='none', label = f'{rot[t]} {hloc_val[h]}')
-    plt.plot(sgr_val, melt_ave[t, :], f'{clr[t]}o', fillstyle='full', label=f'{rot[t]} ave')
+    if lglg == 1:
+        plt.loglog(sgr_val, melt_ave[t, :], f'{clr[t]}o', fillstyle='full', markersize=4, label=f'{rot[t]}')
+    else:
+        plt.plot(sgr_val, melt_ave[t, :], f'{clr[t]}o', fillstyle='full', markersize=4, label=f'{rot[t]}')
 
     #fit
     popt, pcov = curve_fit(f_n_pow_1_3, sgr_val, melt_ave[t, :])
-    plt.plot(xfit, f_n_pow_1_3(xfit, *popt), f'{clr[t]}--', linewidth=1, label = '$a \cdot n^{1/3}$')
+    if lglg == 1:
+        plt.loglog(xfit, f_n_pow_1_3(xfit, *popt), f'{clr[t]}--', linewidth=1)
+    else:
+        plt.plot(xfit, f_n_pow_1_3(xfit, *popt), f'{clr[t]}--', linewidth=1)
     popt, pcov = curve_fit(f_n_pow_2_3, sgr_val, melt_ave[t, :])
-    plt.plot(xfit, f_n_pow_2_3(xfit, *popt), f'{clr[t]}-', linewidth=1, label = '$a \cdot n^{2/3}$')
+    if lglg == 1:
+        plt.loglog(xfit, f_n_pow_2_3(xfit, *popt), f'{clr[t]}-', linewidth=1)
+    else:
+        plt.plot(xfit, f_n_pow_2_3(xfit, *popt), f'{clr[t]}-', linewidth=1)
 
 
 plt.xlabel('$F_{s}$ (m$^3$/s)')
 plt.ylabel('$\Delta \dot{m}$ (m/a)')
-plt.title(f'$F_s$ location: Point, r = {d_scale/1000}km')
+plt.title(f'Channelized, $d \leq ${d_scale/1000} km')
 
-plt.legend(loc=2, prop={'size': 6})
+plt.legend(loc=2, prop={'size': 8})
 plt.grid()
 plt.rcParams.update({'font.size': 8})
 
-dir_fig_save = '/Users/irenavankova/Work/data_sim/SGR/idealized/plots/bulk'
+dir_fig_save = '/Users/irenavankova/Work/data_sim/SGR/idealized/plots/bulk/fvsnf'
 if opt_save == 1:
-    plt.savefig(f'{dir_fig_save}/plot_bulk_near_fvsnf_PTave_{d_scale}.png', bbox_inches='tight', dpi=300)
+    if lglg == 1:
+        plt.savefig(f'{dir_fig_save}/plot_bulk_near_fvsnf_PTave_{d_scale}_loglog.png', bbox_inches='tight', dpi=300)
+    else:
+        plt.savefig(f'{dir_fig_save}/plot_bulk_near_fvsnf_PTave_{d_scale}.png', bbox_inches='tight', dpi=300)
 else:
     plt.show()
 
