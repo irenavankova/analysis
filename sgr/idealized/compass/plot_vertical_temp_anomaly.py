@@ -20,22 +20,29 @@ p_base = '/Users/irenavankova/Work/data_sim/SGR/idealized/sg_pull_w_fraz_yesC'
 
 #cmap_rho = 'gist_ncar'
 #cmap_rho = 'cmo.dense'
-cmap_rho = 'cmo.thermal'
-vmin = -1.9
-vmax = 1
+cmap_rho = 'cmo.balance'
+vmin = -0.2
+vmax = -vmin
 
 temp = 'rdn'
-sgr = ["N", "A", "A"]
-hloc = ["112", "132", "142"]
+sgr = ["A", "A", "A", "A"]
+hloc = ["112", "132", "122", "142"]
 
 c = 0
 out_name = f'{temp}_{hloc[c]}{sgr[c]}'
-plot_folder = f'/Users/irenavankova/Work/data_sim/SGR/idealized/plots/vertical/temp/{cmap_rho}/{out_name}'
+plot_folder = f'/Users/irenavankova/Work/data_sim/SGR/idealized/plots/vertical/temp_anom/{cmap_rho}/{out_name}'
 
+fdir_ref = f'{p_base}/{temp}/{temp}_112N'
 fdir = f'{p_base}/{temp}/{temp}_{hloc[c]}{sgr[c]}'
 
 dsMesh = xarray.open_dataset(f'{fdir}/restart.0003-01-01_00.00.00.nc')
+ds_ref = xarray.open_dataset(f'{fdir_ref}/timeSeriesStatsMonthly.0002-12-01.nc')
 ds = xarray.open_dataset(f'{fdir}/timeSeriesStatsMonthly.0002-12-01.nc')
+
+tref = ds_ref.timeMonthly_avg_activeTracers_temperature.data
+ds.timeMonthly_avg_activeTracers_temperature.data = ds.timeMonthly_avg_activeTracers_temperature.data-tref
+
+#ds_anom = ds-ds_ref
 
 section_y = float(57000)
 experiment = 'Ocean0'
