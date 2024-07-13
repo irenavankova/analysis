@@ -472,7 +472,7 @@ class MoviePlotter(object):
                           units=None, vmin=None, vmax=None, cmap=None,
                           cmap_set_under=None, cmap_set_over=None,
                           cmap_scale='linear', time_indices=None,
-                          figsize=(7, 3)):
+                          figsize=(8, 3)):
         """
         Plot a series of image of a given variable
 
@@ -883,16 +883,21 @@ class MoviePlotter(object):
         ax.autoscale(tight=True)
         #plt.title('{} {}'.format(title, self.date))
         plt.xlim([450, 650])
-        plt.xlabel('x (km)')
-        plt.ylabel('y (km)')
+        fnt = 16
+        plt.xlabel('x (km)', fontsize=fnt)
+        plt.ylabel('y (km)', fontsize=fnt)
+        plt.xticks(fontsize=fnt)
+        plt.yticks(fontsize=fnt)
         ax.set_xticks(numpy.linspace(450, 650, 5))
         ax.set_yticks(numpy.linspace(0, 80, 5))
         divider = make_axes_locatable(ax)
         cax = divider.append_axes("right", size="2%", pad=0.25)
-        plt.colorbar(localPatches, cax=cax)
+        cbar = plt.colorbar(localPatches, cax=cax)
+        cbar.ax.tick_params(labelsize=fnt)
         #plt.colorbar(localPatches, cax=cax, ticks=numpy.linspace(vmin,vmax,5))
         plt.tight_layout(pad=0.5)
-        plt.rcParams.update({'font.size': 8})
+        #plt.rcParams.update({'font.size': 8})
+        #plt.rcParams['font.size'] = 20
         plt.savefig(outFileName)
         plt.close()
 
