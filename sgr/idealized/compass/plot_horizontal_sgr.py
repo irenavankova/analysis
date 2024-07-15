@@ -19,18 +19,19 @@ work_dir = current_working_directory
 p_base = '/Users/irenavankova/Work/data_sim/SGR/idealized/sg_pull_w_fraz_yesC'
 
 #cmap_rho = 'gist_ncar'
-#cmap_rho = 'cmo.balance'
-cmap_rho = 'cmo.thermal'
+#cmap_rho = 'cmo.curl'
+#cmap_rho = 'cmo.thermal'
+cmap_rho = 'cmo.deep'
+vmax = 72
 vmin = 0
-vmax = 2
 
 temp = 'rdn'
-sgr = ["N", "A", "A"]
-hloc = ["112", "132", "142"]
+sgr = ["A", "A", "A", "A"]
+hloc = ["112", "132", "122", "142"]
 
-c = 0
+c = 3
 out_name = f'{temp}_{hloc[c]}{sgr[c]}'
-plot_folder = f'/Users/irenavankova/Work/data_sim/SGR/idealized/plots/horizontal/temp/{cmap_rho}/{out_name}'
+plot_folder = f'/Users/irenavankova/Work/data_sim/SGR/idealized/plots/horizontal/sgr/{cmap_rho}/{out_name}'
 
 fdir = f'{p_base}/{temp}/{temp}_{hloc[c]}{sgr[c]}'
 
@@ -39,7 +40,7 @@ ds = xarray.open_dataset(f'{fdir}/timeSeriesStatsMonthly.0002-12-01.nc')
 
 section_y = float(57000)
 experiment = 'Ocean0'
-var_plot = 'temp'
+var_plot = 'sgr'
 plotter = MoviePlotter(inFolder=work_dir,
                        streamfunctionFolder=work_dir,
                        outFolder=plot_folder, sectionY=section_y,
@@ -49,12 +50,10 @@ plotter = MoviePlotter(inFolder=work_dir,
 is_mask = dsMesh.landIceFloatingMask.data
 is_mask = np.where(is_mask==0, np.nan, is_mask)
 
-ds.timeMonthly_avg_landIceFreshwaterFlux.data = ds.timeMonthly_avg_landIceFreshwaterFlux.data * is_mask
+ds.timeMonthly_avg_subglacialRunoffFlux.data = ds.timeMonthly_avg_subglacialRunoffFlux.data * is_mask
 
-tref = ds.timeMonthly_avg_landIceBoundaryLayerTracers_landIceBoundaryLayerTemperature.data-ds.timeMonthly_avg_landIceInterfaceTracers_landIceInterfaceTemperature.data
-ds.timeMonthly_avg_landIceBoundaryLayerTracers_landIceBoundaryLayerTemperature.data = tref * is_mask
-plotter.plot_horiz_series(
-    ds.timeMonthly_avg_landIceBoundaryLayerTracers_landIceBoundaryLayerTemperature,
+plotter.plot_horiz_series_GL(
+    ds.timeMonthly_avg_subglacialRunoffFlux,
     nameInTitle=f'{var_plot}', prefix=f'{var_plot}', oceanDomain='True',
     vmin=vmin, vmax=vmax, cmap=cmap_rho,
     cmap_set_under='k', cmap_scale='linear')

@@ -19,27 +19,29 @@ work_dir = current_working_directory
 p_base = '/Users/irenavankova/Work/data_sim/SGR/idealized/sg_pull_w_fraz_yesC'
 
 #cmap_rho = 'gist_ncar'
-#cmap_rho = 'cmo.balance'
-cmap_rho = 'cmo.thermal'
-vmin = 0
-vmax = 2
+cmap_rho = 'cmo.balance'
+#cmap_rho = 'cmo.thermal'
+vmax = 80
+vmin = -vmax
 
-temp = 'rdn'
-sgr = ["N", "A", "A"]
-hloc = ["112", "132", "142"]
+temp = 'rd'
+sgr = ["A", "A","A", "A"]
+hloc = ["112", "132", "122", "142"]
 
 c = 0
 out_name = f'{temp}_{hloc[c]}{sgr[c]}'
-plot_folder = f'/Users/irenavankova/Work/data_sim/SGR/idealized/plots/horizontal/temp/{cmap_rho}/{out_name}'
+plot_folder = f'/Users/irenavankova/Work/data_sim/SGR/idealized/plots/horizontal/melt_anom/{out_name}'
 
 fdir = f'{p_base}/{temp}/{temp}_{hloc[c]}{sgr[c]}'
+fdir_ref = f'{p_base}/{temp}/{temp}_112N'
 
 dsMesh = xarray.open_dataset(f'{fdir}/restart.0003-01-01_00.00.00.nc')
+ds_ref = xarray.open_dataset(f'{fdir_ref}/timeSeriesStatsMonthly.0002-12-01.nc')
 ds = xarray.open_dataset(f'{fdir}/timeSeriesStatsMonthly.0002-12-01.nc')
 
 section_y = float(57000)
 experiment = 'Ocean0'
-var_plot = 'temp'
+var_plot = 'melt_anom'
 plotter = MoviePlotter(inFolder=work_dir,
                        streamfunctionFolder=work_dir,
                        outFolder=plot_folder, sectionY=section_y,
@@ -49,10 +51,18 @@ plotter = MoviePlotter(inFolder=work_dir,
 is_mask = dsMesh.landIceFloatingMask.data
 is_mask = np.where(is_mask==0, np.nan, is_mask)
 
+rho_fw = 1000
+sec_per_year = 86400. * 365.
+ds.timeMonthly_avg_landIceFreshwaterFlux.data = ds.timeMonthly_avg_landIceFreshwaterFlux.data / rho_fw * sec_per_year
 ds.timeMonthly_avg_landIceFreshwaterFlux.data = ds.timeMonthly_avg_landIceFreshwaterFlux.data * is_mask
 
-tref = ds.timeMonthly_avg_landIceBoundaryLayerTracers_landIceBoundaryLayerTemperature.data-ds.timeMonthly_avg_landIceInterfaceTracers_landIceInterfaceTemperature.data
-ds.timeMonthly_avg_landIceBoundaryLayerTracers_landIceBoundaryLayerTemperature.data = tref * is_mask
+ds_ref.timeMonthly_avg_landIceFreshwaterFlux.data = ds_ref.timeMonthly_avg_landIceFreshwaterFlux.data / rho_fw * sec_per_year
+ds_ref.timeMonthly_avg_landIceFreshwaterFlux.data = ds_ref.timeMonthly_avg_landIceFreshwaterFlux.data * is_mask
+
+ts = ds.timeMonthly_avg_landIceFreshwaterFlux.data-ds_ref.timeMonthly_avg_landIceFreshwaterFlux.data
+
+ds.timeMonthly_avg_landIceBoundaryLayerTracers_landIceBoundaryLayerTemperature.data = ts
+
 plotter.plot_horiz_series(
     ds.timeMonthly_avg_landIceBoundaryLayerTracers_landIceBoundaryLayerTemperature,
     nameInTitle=f'{var_plot}', prefix=f'{var_plot}', oceanDomain='True',

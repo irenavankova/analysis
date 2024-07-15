@@ -542,6 +542,80 @@ class MoviePlotter(object):
         if self.showProgress:
             bar.finish()
 
+    def plot_horiz_series_GL(self, da, nameInTitle, prefix, oceanDomain,
+                          units=None, vmin=None, vmax=None, cmap=None,
+                          cmap_set_under=None, cmap_set_over=None,
+                          cmap_scale='linear', time_indices=None,
+                          figsize=(3, 3)):
+        """
+        Plot a series of image of a given variable
+
+        Parameters
+        ----------
+        da : ``xarray.DataArray``
+            The data array of time series to plot
+
+        nameInTitle : str
+            The name of the variable to use in the title and the progress bar
+
+        prefix : str
+            The nae of the variable to use in the subfolder and file prefix
+
+        oceanDomain : bool
+            True if the variable is for the full ocean, False if only for the
+            cavity
+
+        units : str, optional
+            The units of the variable to be included in the title
+
+        vmin, vmax : float, optional
+            The minimum and maximum values for the colorbar
+
+        cmap : Colormap or str, optional
+            A color map to plot
+
+        cmap_set_under : str or None, optional
+            A color for low out-of-range values
+
+        cmap_scale : {'log', 'linear'}, optional
+            Whether the colormap is logarithmic or linear
+
+        time_indices : list of int, optional
+            The time indices at which to plot. If not provided, set to all.
+        """
+
+        nTime = self.ds.sizes['Time']
+        if self.showProgress:
+            widgets = ['plotting {}: '.format(nameInTitle),
+                       progressbar.Percentage(), ' ',
+                       progressbar.Bar(), ' ', progressbar.ETA()]
+            bar = progressbar.ProgressBar(widgets=widgets,
+                                          maxval=nTime).start()
+        else:
+            bar = None
+
+        if time_indices is None:
+            time_indices = range(nTime)
+        for tIndex in time_indices:
+            self.update_date(tIndex)
+            field = da.isel(Time=tIndex).values
+            outFileName = '{}/{}.png'.format(
+                self.outFolder, prefix)
+            if units is None:
+                title = nameInTitle
+            else:
+                title = '{} ({})'.format(nameInTitle, units)
+            self._plot_horiz_field_GL(field, title=title, outFileName=outFileName,
+                                   oceanDomain=oceanDomain, vmin=vmin,
+                                   vmax=vmax, cmap=cmap,
+                                   cmap_set_under=cmap_set_under,
+                                   cmap_set_over=cmap_set_over,
+                                   cmap_scale=cmap_scale, figsize=figsize)
+            if self.showProgress:
+                bar.update(tIndex + 1)
+        if self.showProgress:
+            bar.finish()
+
     def plot_3d_field_top_bot_section(self, da, nameInTitle, prefix,
                                       units=None, vmin=None, vmax=None,
                                       cmap=None, cmap_set_under=None,
@@ -892,8 +966,73 @@ class MoviePlotter(object):
         ax.set_yticks(numpy.linspace(0, 80, 5))
         divider = make_axes_locatable(ax)
         cax = divider.append_axes("right", size="2%", pad=0.25)
-        cbar = plt.colorbar(localPatches, cax=cax)
+        cbar = plt.colorbar(localPatches, cax=cax, ticks=numpy.linspace(vmin,vmax,5))
         cbar.ax.tick_params(labelsize=fnt)
+        #cbar.ax.locator_params(nbins=5)
+        #plt.colorbar(localPatches, cax=cax, ticks=numpy.linspace(vmin,vmax,5))
+        plt.tight_layout(pad=0.5)
+        #plt.rcParams.update({'font.size': 8})
+        #plt.rcParams['font.size'] = 20
+        plt.savefig(outFileName)
+        plt.close()
+
+    def _plot_horiz_field_GL(self, field, title, outFileName, oceanDomain=True,
+                          vmin=None, vmax=None, figsize=(9, 3), cmap=None,
+                          cmap_set_under=None, cmap_set_over=None,
+                          cmap_scale='linear'):
+
+        try:
+            os.makedirs(os.path.dirname(outFileName))
+        except OSError:
+            pass
+
+        if os.path.exists(outFileName):
+            return
+
+        if oceanDomain:
+            localPatches = copy.copy(self.oceanPatches)
+            localPatches.set_array(field[self.oceanMask])
+        else:
+            localPatches = copy.copy(self.cavityPatches)
+            localPatches.set_array(field[self.cavityMask])
+
+        if cmap is not None:
+            localPatches.set_cmap(cmap)
+        if cmap_set_under is not None:
+            current_cmap = localPatches.get_cmap()
+            current_cmap.set_under(cmap_set_under)
+        if cmap_set_over is not None:
+            current_cmap = localPatches.get_cmap()
+            current_cmap.set_over(cmap_set_over)
+        localPatches.set_edgecolor('face')
+        localPatches.set_clim(vmin=vmin, vmax=vmax)
+
+        if cmap_scale == 'log':
+            localPatches.set_norm(LogNorm(vmin=max(1e-10, vmin),
+                                  vmax=vmax, clip=False))
+
+        plt.figure(figsize=figsize)
+        ax = plt.subplot(111)
+        ax.add_collection(localPatches)
+        #plt.colorbar(localPatches, extend='both')
+
+        plt.axis([0, 500, 0, 1000])
+        ax.set_aspect('equal')
+        ax.autoscale(tight=True)
+        #plt.title('{} {}'.format(title, self.date))
+        plt.xlim([455, 475])
+        fnt = 16
+        plt.xlabel('x (km)', fontsize=fnt)
+        plt.ylabel('y (km)', fontsize=fnt)
+        plt.xticks(fontsize=fnt)
+        plt.yticks(fontsize=fnt)
+        ax.set_xticks(numpy.linspace(455, 475, 2))
+        ax.set_yticks(numpy.linspace(0, 80, 5))
+        divider = make_axes_locatable(ax)
+        cax = divider.append_axes("right", size="20%", pad=0.25)
+        cbar = plt.colorbar(localPatches, cax=cax, ticks=numpy.linspace(vmin,vmax,5))
+        cbar.ax.tick_params(labelsize=fnt)
+        #cbar.ax.locator_params(nbins=5)
         #plt.colorbar(localPatches, cax=cax, ticks=numpy.linspace(vmin,vmax,5))
         plt.tight_layout(pad=0.5)
         #plt.rcParams.update({'font.size': 8})
