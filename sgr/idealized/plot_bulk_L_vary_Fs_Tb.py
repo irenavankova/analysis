@@ -24,13 +24,15 @@ sgr_val_sd = sgr_val/sgr_factor*sgr_factor_sd
 #sgr_val = np.array([0, 1, 10, 25 , 50 , 100])*sgr_factor
 
 melt_total = np.zeros((len(temp),len(sgr)))
+meltTot_total = np.zeros((len(temp),len(sgr)))
 for t in range(len(temp)):
     for s in range(len(sgr)):
         fdir = f'{p_base}/{temp[t]}/{temp[t]}_112{sgr[s]}'
 
         ds = xarray.open_dataset(f'{fdir}/timeSeriesStatsMonthly.0002-12-01.nc')
         ds.load()
-        #melt = np.squeeze(ds.timeMonthly_avg_landIceFreshwaterFluxTotal.data)
+        meltTot = np.squeeze(ds.timeMonthly_avg_landIceFreshwaterFluxTotal.data)
+        meltTot = meltTot / rho_fw * secPerYear
         melt = np.squeeze(ds.timeMonthly_avg_landIceFreshwaterFlux.data)
         melt = melt / rho_fw * secPerYear
 
@@ -40,7 +42,9 @@ for t in range(len(temp)):
         FloatingMask = np.squeeze(dsMesh.landIceFloatingMask.data)
         iii = FloatingMask == 1
         melt_total[t, s] = np.sum(FloatingMask[iii] * melt[iii] * areaCell[iii]) / np.sum(areaCell[iii])
+        meltTot_total[t, s] = np.sum(FloatingMask[iii] * meltTot[iii] * areaCell[iii]) / np.sum(areaCell[iii])
     melt_total[t, :] = melt_total[t, :] - melt_total[t, 0]
+    meltTot_total[t, :] = meltTot_total[t, :] - meltTot_total[t, 0]
 
 #coef = numpy.polyfit(temp_val, melt_total, 2)
 #tfit = np.linspace(-2, 4, 50)
@@ -58,7 +62,10 @@ plt.figure(figsize=(4, 4))
 clr = 'kbrcgy'
 smb = 'o^spdh'
 for t in range(len(temp)):
-    plt.plot(sgr_val, melt_total[t,:], f'{clr[t]}--', linewidth=1, marker=f'{smb[t]}', fillstyle='none', markersize=4, label = f'$T_b$ = {temp_val[t]}$^\circ$C')
+    plt.plot(sgr_val, melt_total[t,:], f'{clr[t]}:', linewidth=1, marker='o', fillstyle='none', markersize=4)
+    plt.plot(sgr_val, meltTot_total[t,:], f'{clr[t]}', linewidth=1, linestyle='none', marker='x', fillstyle='none', markersize=4)
+    plt.plot(sgr_val, meltTot_total[t,:], f'{clr[t]}--', linewidth=1, label = f'$T_b$ = {temp_val[t]}$^\circ$C')
+
     #fit
     #popt, pcov = curve_fit(f_n_pow_1_3, sgr_val, melt_total[t, :])
     #plt.plot(xfit, f_n_pow_1_3(xfit, *popt), f'{clr[t]}--', linewidth=1, label = '$a \cdot n^{1/3}$')
@@ -83,7 +90,10 @@ plt.figure(figsize=(4, 4))
 clr = 'kbrcgy'
 smb = 'o^spdh'
 for s in range(1, len(sgr)):
-    plt.plot(temp_val, melt_total[:,s], f'{clr[s]}--', linewidth=1, marker=f'{smb[s]}', fillstyle='none', markersize=4, label = f'$F_s$ = {sgr_val_sd[s]}m$^3$/s')
+    plt.plot(temp_val, melt_total[:,s], f'{clr[s]}:', linewidth=1, marker='o', fillstyle='none', markersize=4)
+    plt.plot(temp_val, meltTot_total[:,s], f'{clr[s]}', linewidth=1, linestyle='none', marker='x', fillstyle='none', markersize=4)
+    plt.plot(temp_val, meltTot_total[:,s], f'{clr[s]}--', linewidth=1, label = f'$F_s$ = {sgr_val_sd[s]}m$^3$/s')
+
     #fit
     #popt, pcov = curve_fit(f_n_pow_1_3, sgr_val, melt_total[t, :])
     #plt.plot(xfit, f_n_pow_1_3(xfit, *popt), f'{clr[t]}--', linewidth=1, label = '$a \cdot n^{1/3}$')
