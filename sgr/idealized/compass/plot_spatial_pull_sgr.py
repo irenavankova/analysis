@@ -17,7 +17,10 @@ print(current_working_directory)
 work_dir = current_working_directory
 
 #ftype = 'sg_pull_w_fraz_V2'
-ftype = 'rebased_V2'
+#ftype = 'rebased_V2'
+#ftype = 'rebase_prepkg_R2'
+ftype = 'rebase_prepkg_R3'
+
 
 p_base = '/Users/irenavankova/Work/data_sim/SGR/pull_sgr'
 
