@@ -6,7 +6,7 @@ import numpy # for arrays!
 import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
 
-opt_save = 1
+opt_save = 0
 
 hloc = ["112", "132", "122", "142"]
 hloc_val = ["L", "PW", "PC", "PE"]
@@ -40,7 +40,8 @@ for h in range(len(hloc)):
         areaCell = np.squeeze(dsMesh.areaCell.data)
         FloatingMask = np.squeeze(dsMesh.landIceFloatingMask.data)
         iii = FloatingMask == 1
-        melt_total[h, s] = np.sum(FloatingMask[iii] * melt[iii] * areaCell[iii]) / np.sum(areaCell[iii])
+        melt_total[h, s] = np.sum(melt[iii] * areaCell[iii]) / np.sum(areaCell[iii])
+        #melt_total[h, s] = np.sum(melt[iii] * areaCell[iii])
     melt_total[h, :] = melt_total[h, :] - melt_total[h, 0]
 
 xfit = np.linspace(0,sgr_val[-1],100)
