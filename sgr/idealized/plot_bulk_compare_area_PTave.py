@@ -7,14 +7,15 @@ import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
 
 opt_save = 0
+plot_opt_ave = 1
 
-h = 0
-#hloc = ["122"]
-#hloc_val = ["PC"]
+#h = 0
+hloc = ["142", "122", "132"]
+hloc_val = ["PE", "PC", "PW"]
 #hloc = ["132"]
 #hloc_val = ["PW"]
-hloc = ["142"]
-hloc_val = ["PE"]
+#hloc = ["142"]
+#hloc_val = ["PE"]
 
 t = 0
 temp = ["rd", "rdn"]
@@ -45,18 +46,19 @@ else:
     else:
         v = 0
 
-fdirf = f'{p_base}/rd/rd_{hloc[h]}R'
-df = xarray.open_dataset(f'{fdirf}/sgr_data.nc')
-df.load()
-subglacialRunoffFlux = np.squeeze(df.subglacialRunoffFlux.data)
-sgr_iii = subglacialRunoffFlux > 0
-sgr_pt = np.where(sgr_iii)[0]
-print(sgr_pt)
-
 #--Get melt rate anomaly
 melt_total = np.zeros((len(hloc),len(sgr)))
 area_vel_anom = np.zeros((len(hloc),len(sgr)))
 for h in range(len(hloc)):
+
+    fdirf = f'{p_base}/rd/rd_{hloc[h]}R'
+    df = xarray.open_dataset(f'{fdirf}/sgr_data.nc')
+    df.load()
+    subglacialRunoffFlux = np.squeeze(df.subglacialRunoffFlux.data)
+    sgr_iii = subglacialRunoffFlux > 0
+    sgr_pt = np.where(sgr_iii)[0]
+    print(sgr_pt)
+
     for s in range(len(sgr)):
         fdir = f'{p_base}/{temp[t]}/{temp[t]}_{hloc[h]}{sgr[s]}'
         if do_lat == 1:
@@ -94,14 +96,24 @@ for h in range(len(hloc)):
             melt_scat[s - 1,:] = np.copy(melt[iii]-melt_ref)
             vel_scat[s - 1, :] = np.copy(vel[iii] - vel_ref)
 
-        #vel = vel * is_mask * 100 * i_ave_mask
-        #melt = melt * is_mask * i_ave_mask
-        #area = areaCell * is_mask * i_ave_mask
-        melt = melt[iii]
-        #print(np.shape(melt))
-        #print(np.shape(area))
-        melt_total[h, s] = np.nansum(melt * area) / np.sum(area)
+        melt_total[h, s] = np.nansum(melt[iii] * area) / np.sum(area)
     melt_total[h, :] = melt_total[h, :] - melt_total[h, 0]
+
+    if hloc_val[h] == "PC":
+        area_PC = np.copy(area)
+        melt_scat_PC = np.copy(melt_scat)
+        vel_scat_PC = np.copy(vel_scat)
+        iii_PC = np.copy(iii)
+    elif hloc_val[h] == "PE":
+        area_PE = np.copy(area)
+        melt_scat_PE = np.copy(melt_scat)
+        vel_scat_PE = np.copy(vel_scat)
+        iii_PE = np.copy(iii)
+    elif hloc_val[h] == "PW":
+        area_PW = np.copy(area)
+        melt_scat_PW = np.copy(melt_scat)
+        vel_scat_PW = np.copy(vel_scat)
+        iii_PW = np.copy(iii)
 
 #--Define curve fitting functions
 
@@ -126,46 +138,79 @@ def f_n_pow_2_3_nori(x, a, b):
 xfit = np.linspace(0,sgr_val[-1],100)
 
 # PLOT and CALCULATE AREA WHERE MELT INCREASED BY MORE THAN A THRESHOLD
-melt_anom_plume = np.zeros(len(sgr)-1)
-melt_anom_out = np.zeros(len(sgr)-1)
-area_anom_plume = np.zeros(len(sgr)-1)
-area_anom_out = np.zeros(len(sgr)-1)
-meltarea_anom_plume = np.zeros(len(sgr)-1)
-meltarea_anom_out = np.zeros(len(sgr)-1)
-area_anom = np.copy(area)
-plt.figure(figsize=(4, 4))
-for s in range(len(sgr)-1):
-    melt_anom = np.copy(melt_scat[s, :])
-    melt_thresh = np.max(melt_anom)/10
-    #melt_thresh = np.max(melt_anom)
-    #melt_thresh = 1.0
-    #b_anom = np.absolute(melt_anom) >= melt_thresh
-    b_anom_plume = melt_anom >= melt_thresh
-    b_anom_out = np.copy(b_anom_plume)
-    b_anom_out = np.invert(b_anom_out)
-    #!!!!!
-    #b_anom = melt_anom <= melt_thresh
-    plt.scatter(x_scat[b_anom_plume], y_scat[b_anom_plume], s=melt_anom[b_anom_plume] / np.max(np.max(melt_scat))*100, marker='o')
-    plt.scatter(x_scat[b_anom_out], y_scat[b_anom_out], s=melt_anom[b_anom_out] / np.max(np.max(melt_scat))*100, marker='o')
+melt_anom_plume_mat = np.zeros((len(hloc), len(sgr) - 1))
+melt_anom_out_mat = np.zeros((len(hloc), len(sgr) - 1))
+area_anom_plume_mat = np.zeros((len(hloc), len(sgr) - 1))
+area_anom_out_mat = np.zeros((len(hloc), len(sgr) - 1))
+meltarea_anom_plume_mat = np.zeros((len(hloc), len(sgr) - 1))
+meltarea_anom_out_mat = np.zeros((len(hloc), len(sgr) - 1))
+area_tot_all = np.zeros(len(hloc))
 
-    melt_anom_plume[s] = np.nansum(melt_anom[b_anom_plume] * area_anom[b_anom_plume]) / np.sum(area_anom[b_anom_plume])
-    melt_anom_out[s] = np.nansum(melt_anom[b_anom_out] * area_anom[b_anom_out]) / np.sum(area_anom[b_anom_out])
-    area_anom_plume[s] = np.sum(area_anom[b_anom_plume])
-    area_anom_out[s] = np.sum(area_anom[b_anom_out])
-    meltarea_anom_plume[s] = np.nansum(melt_anom[b_anom_plume] * area_anom[b_anom_plume])
-    meltarea_anom_out[s] = np.nansum(melt_anom[b_anom_out] * area_anom[b_anom_out])
+for h in range(len(hloc)):
+    if hloc_val[h] == "PC":
+        area = np.copy(area_PC)
+        melt_scat = np.copy(melt_scat_PC)
+    elif hloc_val[h] == "PE":
+        area = np.copy(area_PE)
+        melt_scat = np.copy(melt_scat_PE)
+    elif hloc_val[h] == "PW":
+        area = np.copy(area_PW)
+        melt_scat = np.copy(melt_scat_PW)
 
-    plt.title(f'F = {sgr_val[s]}', fontsize = 8)
-    #plt.show()
-    plt.show(block=False)
+    area_anom = np.copy(area)
+    area_tot_all[h] = np.sum(area)
+    #plt.figure(figsize=(4, 4))
+    for s in range(len(sgr)-1):
+        melt_anom = np.copy(melt_scat[s, :])
+        melt_thresh = np.max(melt_anom)/10
+        #melt_thresh = np.max(melt_anom)
+        #melt_thresh = 1.0
+        #b_anom = np.absolute(melt_anom) >= melt_thresh
+        b_anom_plume = melt_anom >= melt_thresh
+        b_anom_out = np.copy(b_anom_plume)
+        b_anom_out = np.invert(b_anom_out)
+        #!!!!!
+        #b_anom = melt_anom <= melt_thresh
+        #plt.scatter(x_scat[b_anom_plume], y_scat[b_anom_plume], s=melt_anom[b_anom_plume] / np.max(np.max(melt_scat))*100, marker='o')
+        #plt.scatter(x_scat[b_anom_out], y_scat[b_anom_out], s=melt_anom[b_anom_out] / np.max(np.max(melt_scat))*100, marker='o')
 
+        melt_anom_plume_mat[h,s] = np.nansum(melt_anom[b_anom_plume] * area_anom[b_anom_plume]) / np.sum(area_anom[b_anom_plume])
+        melt_anom_out_mat[h,s] = np.nansum(melt_anom[b_anom_out] * area_anom[b_anom_out]) / np.sum(area_anom[b_anom_out])
+        area_anom_plume_mat[h,s] = np.sum(area_anom[b_anom_plume])
+        area_anom_out_mat[h,s] = np.sum(area_anom[b_anom_out])
+        meltarea_anom_plume_mat[h,s] = np.nansum(melt_anom[b_anom_plume] * area_anom[b_anom_plume])
+        meltarea_anom_out_mat[h,s] = np.nansum(melt_anom[b_anom_out] * area_anom[b_anom_out])
+
+        #plt.title(f'F = {sgr_val[s]}', fontsize = 8)
+        #plt.show()
+        #plt.show(block=False)
+
+if plot_opt_ave == 0:
+    h = 0
+    melt_anom_plume = np.copy(melt_anom_plume_mat[h,:])
+    melt_anom_out = np.copy(melt_anom_out_mat[h,:])
+    area_anom_plume = np.copy(area_anom_plume_mat[h,:])
+    area_anom_out = np.copy(area_anom_out_mat[h,:])
+    meltarea_anom_plume = np.copy(meltarea_anom_plume_mat[h,:])
+    meltarea_anom_out = np.copy(meltarea_anom_out_mat[h,:])
+    melt_tot = melt_total[h, :]
+    area_tot = area_tot_all[h]
+else:
+    melt_anom_plume = np.mean(melt_anom_plume_mat, axis=0)
+    melt_anom_out = np.mean(melt_anom_out_mat, axis=0)
+    area_anom_plume = np.mean(area_anom_plume_mat, axis=0)
+    area_anom_out = np.mean(area_anom_out_mat, axis=0)
+    meltarea_anom_plume = np.mean(meltarea_anom_plume_mat, axis=0)
+    meltarea_anom_out = np.mean(meltarea_anom_out_mat, axis=0)
+    melt_tot = np.mean(melt_total, axis=0)
+    area_tot = np.mean(area_tot_all)
 
 #--PLOT Total melt rate flux and partition to "plume" and "ambient" (or high and low)
 plt.figure(figsize=(4, 4))
 clr = 'kbrkbc'
 smb = 'o^o^^^'
-h = 0
-ynow = melt_total[h,:]*np.sum(area)
+
+ynow = melt_tot*area_tot
 plt.plot(sgr_val, ynow, 'ko', linewidth=1, fillstyle='full', markersize=4, label = 'All')
 popt, pcov = curve_fit(f_n_pow_1_3, sgr_val, ynow, p0=10**8)
 plt.plot(xfit, f_n_pow_1_3(xfit, *popt), 'k--', linewidth=1)
@@ -210,7 +255,7 @@ plt.show(block=False)
 
 plt.figure(figsize=(4, 4))
 
-ynow = melt_total[h,:]
+ynow = melt_tot
 plt.plot(sgr_val, ynow, 'ko', linewidth=1, fillstyle='full', markersize=4, label = 'All')
 popt, pcov = curve_fit(f_n_pow_1_3, sgr_val, ynow, p0=10**8)
 plt.plot(xfit, f_n_pow_1_3(xfit, *popt), 'k--', linewidth=1)
@@ -253,7 +298,7 @@ ynow = area_anom_plume/np.sum(area) + area_anom_out/np.sum(area)
 plt.plot(xnow, ynow, 'ko', linewidth=1, fillstyle='none', markersize=4)
 '''
 
-ynow = area_anom_plume/np.sum(area)
+ynow = area_anom_plume/area_tot
 plt.plot(xnow, ynow, 'ro', linewidth=1, fillstyle='full', markersize=4, label = 'High')
 popt, pcov = curve_fit(f_n_pow_1_3_nori, xnow, ynow)
 plt.plot(xfit, f_n_pow_1_3_nori(xfit, *popt), 'r--', linewidth=1)
@@ -261,6 +306,15 @@ popt, pcov = curve_fit(f_n_pow_2_3_nori, xnow, ynow)
 plt.plot(xfit, f_n_pow_2_3_nori(xfit, *popt), 'r-', linewidth=1)
 popt, pcov = curve_fit(f_n_lin_nori, xnow, ynow)
 plt.plot(xfit, f_n_lin_nori(xfit, *popt), 'r:', linewidth=1)
+
+'''
+popt, pcov = curve_fit(f_n_pow_1_3, xnow, ynow)
+plt.plot(xfit, f_n_pow_1_3(xfit, *popt), 'c--', linewidth=1)
+popt, pcov = curve_fit(f_n_pow_2_3, xnow, ynow)
+plt.plot(xfit, f_n_pow_2_3(xfit, *popt), 'c-', linewidth=1)
+popt, pcov = curve_fit(f_n_lin, xnow, ynow)
+plt.plot(xfit, f_n_lin(xfit, *popt), 'c:', linewidth=1)
+'''
 
 '''
 ynow = area_anom_out/np.sum(area)
@@ -275,10 +329,11 @@ plt.plot(xfit, f_n_lin_nori(xfit, *popt), 'b:', linewidth=1)
 
 plt.xlabel('$F_{s}$ (m$^3$/s)')
 plt.ylabel('Area (m$^2$)')
-plt.title(f'{hloc_val[h]}, Lat = {lat[v]}S', fontsize = 8)
+plt.title(f'{hloc_val[h]}, Lat = ${lat[v]}^\circ$S', fontsize = 8)
 plt.legend(loc=2, prop={'size': 8})
 plt.grid()
 plt.rcParams.update({'font.size': 8})
+plt.ylim([0, 0.2])
 plt.show()
 
 '''
