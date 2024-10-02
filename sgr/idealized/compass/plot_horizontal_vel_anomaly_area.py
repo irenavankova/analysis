@@ -26,15 +26,18 @@ vmin = -vmax
 
 d_scale = 30000
 
-temp = 'rdn'
+temp = 'rd'
 #sgr = ["A", "A","A", "A"]
 #hloc = ["112", "132", "122", "142"]
-sgr = ["A", "A", "B", "B", "D", "D", "C", "C", "R", "R"]
-hloc = ["122", "142", "122", "142", "122", "142", "122", "142", "122", "142"]
+#sgr = ["A", "A", "B", "B", "D", "D", "C", "C", "R", "R"]
+#hloc = ["122", "142", "122", "142", "122", "142", "122", "142", "122", "142"]
+sgr = ["A", "B", "D", "C", "R"]
+hloc = ["122", "122", "122", "122", "122"]
 
 c = 0
+
 out_name = f'{temp}_{hloc[c]}{sgr[c]}'
-plot_folder = f'/Users/irenavankova/Work/data_sim/SGR/idealized/plots/horizontal/fvel_anom_area/{out_name}'
+plot_folder = f'/Users/irenavankova/Work/data_sim/SGR/idealized/plots/horizontal/area/D{d_scale/1000}km/{out_name}'
 
 fdir = f'{p_base}/{temp}/{temp}_{hloc[c]}{sgr[c]}'
 fdir_ref = f'{p_base}/{temp}/{temp}_112N'
@@ -56,7 +59,6 @@ sgr_pt = np.where(sgr_iii)[0]
 
 section_y = float(57000)
 experiment = 'Ocean0'
-var_plot = 'fvel_anom'
 plotter = MoviePlotter(inFolder=work_dir,
                        streamfunctionFolder=work_dir,
                        outFolder=plot_folder, sectionY=section_y,
@@ -65,20 +67,55 @@ plotter = MoviePlotter(inFolder=work_dir,
 
 is_mask = dsMesh.landIceFloatingMask.data
 is_mask = np.where(is_mask==0, np.nan, is_mask)
-
 dist2point = np.absolute(np.sqrt((x - x[sgr_pt]) ** 2 + (y - y[sgr_pt]) ** 2 + (z - z[sgr_pt]) ** 2))
-# ii = numpy.where(dist2point == dist2point.min())
 i_ave = dist2point < d_scale
-i_ave_mask = np.where(dist2point > d_scale, np.nan, is_mask)
+i_ave = np.squeeze(i_ave)
+i_ave_mask = np.where(dist2point >= d_scale, np.nan, is_mask)
 
 ts = ds.timeMonthly_avg_landIceFrictionVelocity.data-ds_ref.timeMonthly_avg_landIceFrictionVelocity.data
+ds.timeMonthly_avg_landIceFrictionVelocity.data = ts * 100 * i_ave_mask
+print(ts)
 
-ds.timeMonthly_avg_landIceFrictionVelocity.data = ts * is_mask * 100 * i_ave_mask
-
-plotter.plot_horiz_series(
+vmax = 1.5
+vmin = -vmax
+var_plot = f'vel_anom'
+plotter.plot_horiz_series_plume_mask(
     ds.timeMonthly_avg_landIceFrictionVelocity,
     nameInTitle=f'{var_plot}', prefix=f'{var_plot}', oceanDomain='True',
     vmin=vmin, vmax=vmax, cmap=cmap_rho,
     cmap_set_under='k', cmap_scale='linear')
 
+rho_fw = 1000
+sec_per_year = 86400. * 365.
+ts = ds.timeMonthly_avg_landIceFreshwaterFlux.data-ds_ref.timeMonthly_avg_landIceFreshwaterFlux.data
+ts = ts * i_ave_mask / rho_fw * sec_per_year
+ds.timeMonthly_avg_landIceFreshwaterFlux.data = ts
 
+cmap_rho = 'cmo.balance'
+vmax = 100
+vmin = -vmax
+var_plot = f'melt_anom'
+plotter.plot_horiz_series_plume_mask(
+    ds.timeMonthly_avg_landIceFreshwaterFlux,
+    nameInTitle=f'{var_plot}', prefix=f'{var_plot}', oceanDomain='True',
+    vmin=vmin, vmax=vmax, cmap=cmap_rho,
+    cmap_set_under='k', cmap_scale='linear')
+
+melt_anom = np.squeeze(ts)
+melt_anom[np.invert(i_ave)] = 0
+melt_thresh = np.max(melt_anom)/10
+b_anom_plume = melt_anom >= melt_thresh
+melt_anom_area = np.squeeze(ts)*0
+melt_anom_area[b_anom_plume] = 1
+melt_anom_area = np.expand_dims(melt_anom_area, axis=0)
+ds.timeMonthly_avg_landIceFreshwaterFlux.data = melt_anom_area
+
+cmap_rho = 'YlOrRd'
+vmax = 1
+vmin = 0
+var_plot = f'area_anom'
+plotter.plot_horiz_series_plume_mask(
+    ds.timeMonthly_avg_landIceFreshwaterFlux,
+    nameInTitle=f'{var_plot}', prefix=f'{var_plot}', oceanDomain='True',
+    vmin=vmin, vmax=vmax, cmap=cmap_rho,
+    cmap_set_under='k', cmap_scale='linear')
