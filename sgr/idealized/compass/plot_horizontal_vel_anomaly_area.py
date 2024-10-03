@@ -25,19 +25,24 @@ vmax = 1
 vmin = -vmax
 
 d_scale = 30000
+opt_thr = 3
 
-temp = 'rd'
+temp = 'rdn'
 #sgr = ["A", "A","A", "A"]
 #hloc = ["112", "132", "122", "142"]
 #sgr = ["A", "A", "B", "B", "D", "D", "C", "C", "R", "R"]
 #hloc = ["122", "142", "122", "142", "122", "142", "122", "142", "122", "142"]
+
+#sgr = ["A", "B", "D", "C", "R"]
+#hloc = ["122", "122", "122", "122", "122"]
+
 sgr = ["A", "B", "D", "C", "R"]
-hloc = ["122", "122", "122", "122", "122"]
+hloc = ["112", "112", "112", "112", "112"]
 
 c = 0
 
 out_name = f'{temp}_{hloc[c]}{sgr[c]}'
-plot_folder = f'/Users/irenavankova/Work/data_sim/SGR/idealized/plots/horizontal/area/D{d_scale/1000}km/{out_name}'
+plot_folder = f'/Users/irenavankova/Work/data_sim/SGR/idealized/plots/horizontal/area/D{d_scale/1000}km_THR{opt_thr}/{out_name}'
 
 fdir = f'{p_base}/{temp}/{temp}_{hloc[c]}{sgr[c]}'
 fdir_ref = f'{p_base}/{temp}/{temp}_112N'
@@ -67,8 +72,21 @@ plotter = MoviePlotter(inFolder=work_dir,
 
 is_mask = dsMesh.landIceFloatingMask.data
 is_mask = np.where(is_mask==0, np.nan, is_mask)
-dist2point = np.absolute(np.sqrt((x - x[sgr_pt]) ** 2 + (y - y[sgr_pt]) ** 2 + (z - z[sgr_pt]) ** 2))
+
+if hloc[c] == '112':
+    for j in range(len(sgr_pt)):
+        dist2point_now = np.absolute(np.sqrt((x - x[sgr_pt[j]]) ** 2 + (y - y[sgr_pt[j]]) ** 2 + (z - z[sgr_pt[j]]) ** 2))
+        if j == 0:
+            dist2point = dist2point_now
+        else:
+            dist2point = np.minimum(dist2point, dist2point_now)
+
+else:
+    dist2point = np.absolute(np.sqrt((x - x[sgr_pt]) ** 2 + (y - y[sgr_pt]) ** 2 + (z - z[sgr_pt]) ** 2))
+    i_ave = dist2point < d_scale
+
 i_ave = dist2point < d_scale
+
 i_ave = np.squeeze(i_ave)
 i_ave_mask = np.where(dist2point >= d_scale, np.nan, is_mask)
 
@@ -103,7 +121,17 @@ plotter.plot_horiz_series_plume_mask(
 
 melt_anom = np.squeeze(ts)
 melt_anom[np.invert(i_ave)] = 0
-melt_thresh = np.max(melt_anom)/10
+if opt_thr == 0:
+    melt_thresh = np.max(melt_anom)/10
+elif opt_thr == 1:
+    melt_thresh = np.max(melt_anom)/20
+elif opt_thr == 2:
+    melt_thresh = 1
+elif opt_thr == 3:
+    melt_thresh = 2
+
+
+
 b_anom_plume = melt_anom >= melt_thresh
 melt_anom_area = np.squeeze(ts)*0
 melt_anom_area[b_anom_plume] = 1

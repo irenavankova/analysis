@@ -5,9 +5,22 @@ import numpy # for arrays!
 #import scipy.io  # load matfiles
 import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
+import os
 
-opt_save = 0
-plot_opt_ave = 1
+opt_save = 1
+opt_Line = 1
+plot_opt_ave = 0
+hplot = 0
+
+opt_thr = 3
+t = 0
+temp = ["rd", "rdn"]
+
+d_scale = 30000
+
+dir_fig_save = f'/Users/irenavankova/Work/data_sim/SGR/idealized/plots/bulk/area/D{d_scale/1000}km_{temp[t]}_THR{opt_thr}'
+if not os.path.exists(dir_fig_save):
+    os.mkdir(dir_fig_save)
 
 #h = 0
 hloc = ["142", "122", "132"]
@@ -17,13 +30,18 @@ hloc_val = ["PE", "PC", "PW"]
 #hloc = ["142"]
 #hloc_val = ["PE"]
 
-t = 0
-temp = ["rd", "rdn"]
+ymaxA = np.array([0.2, 0.4, 0.8, 0.7])
+
+if opt_Line == 1:
+    hloc = ["112"]
+    hloc_val = ["L"]
+    plot_opt_ave = 0
+    hplot = 0
+    ymaxA[opt_thr] = 0.5
+    ymaxA = np.array([0.5, 0.7, 0.8, 1])
 
 do_lat = 0
 v = 2
-
-d_scale = 30000
 
 #------------------------------------------------------------------------------------------------
 rho_fw = 1000.
@@ -79,7 +97,20 @@ for h in range(len(hloc)):
             x = np.squeeze(dsMesh.xCell.data)
             y = np.squeeze(dsMesh.yCell.data)
             z = np.squeeze(dsMesh.zCell.data)
-            dist2point = np.absolute(np.sqrt((x - x[sgr_pt]) ** 2 + (y - y[sgr_pt]) ** 2 + (z - z[sgr_pt]) ** 2))
+
+            if hloc[h] == '112':
+                for j in range(len(sgr_pt)):
+                    dist2point_now = np.absolute(
+                        np.sqrt((x - x[sgr_pt[j]]) ** 2 + (y - y[sgr_pt[j]]) ** 2 + (z - z[sgr_pt[j]]) ** 2))
+                    if j == 0:
+                        dist2point = dist2point_now
+                    else:
+                        dist2point = np.minimum(dist2point, dist2point_now)
+
+            else:
+                dist2point = np.absolute(np.sqrt((x - x[sgr_pt]) ** 2 + (y - y[sgr_pt]) ** 2 + (z - z[sgr_pt]) ** 2))
+
+            #dist2point = np.absolute(np.sqrt((x - x[sgr_pt]) ** 2 + (y - y[sgr_pt]) ** 2 + (z - z[sgr_pt]) ** 2))
             iii = (FloatingMask == 1) & (dist2point < d_scale)
             x_scat = x[iii]
             y_scat = y[iii]
@@ -114,6 +145,11 @@ for h in range(len(hloc)):
         melt_scat_PW = np.copy(melt_scat)
         vel_scat_PW = np.copy(vel_scat)
         iii_PW = np.copy(iii)
+    elif hloc_val[h] == "L":
+        area_L = np.copy(area)
+        melt_scat_L = np.copy(melt_scat)
+        vel_scat_L = np.copy(vel_scat)
+        iii_L = np.copy(iii)
 
 #--Define curve fitting functions
 
@@ -156,15 +192,24 @@ for h in range(len(hloc)):
     elif hloc_val[h] == "PW":
         area = np.copy(area_PW)
         melt_scat = np.copy(melt_scat_PW)
+    elif hloc_val[h] == "L":
+        area = np.copy(area_L)
+        melt_scat = np.copy(melt_scat_L)
 
     area_anom = np.copy(area)
     area_tot_all[h] = np.sum(area)
     #plt.figure(figsize=(4, 4))
     for s in range(len(sgr)-1):
         melt_anom = np.copy(melt_scat[s, :])
-        melt_thresh = np.max(melt_anom)/10
+        if opt_thr == 0:
+            melt_thresh = np.max(melt_anom) / 10
+        elif opt_thr == 1:
+            melt_thresh = np.max(melt_anom) / 20
+        elif opt_thr == 2:
+            melt_thresh = 1
+        elif opt_thr == 3:
+            melt_thresh = 2
         #melt_thresh = np.max(melt_anom)
-        #melt_thresh = 1.0
         #b_anom = np.absolute(melt_anom) >= melt_thresh
         b_anom_plume = melt_anom >= melt_thresh
         b_anom_out = np.copy(b_anom_plume)
@@ -186,7 +231,7 @@ for h in range(len(hloc)):
         #plt.show(block=False)
 
 if plot_opt_ave == 0:
-    h = 0
+    h = hplot
     melt_anom_plume = np.copy(melt_anom_plume_mat[h,:])
     melt_anom_out = np.copy(melt_anom_out_mat[h,:])
     area_anom_plume = np.copy(area_anom_plume_mat[h,:])
@@ -195,6 +240,8 @@ if plot_opt_ave == 0:
     meltarea_anom_out = np.copy(meltarea_anom_out_mat[h,:])
     melt_tot = melt_total[h, :]
     area_tot = area_tot_all[h]
+    ttl = hloc_val[h]
+    ttl_save = hloc_val[h]
 else:
     melt_anom_plume = np.mean(melt_anom_plume_mat, axis=0)
     melt_anom_out = np.mean(melt_anom_out_mat, axis=0)
@@ -204,6 +251,8 @@ else:
     meltarea_anom_out = np.mean(meltarea_anom_out_mat, axis=0)
     melt_tot = np.mean(melt_total, axis=0)
     area_tot = np.mean(area_tot_all)
+    ttl = 'Channelized average'
+    ttl_save = 'PTave'
 
 #--PLOT Total melt rate flux and partition to "plume" and "ambient" (or high and low)
 plt.figure(figsize=(4, 4))
@@ -236,20 +285,17 @@ plt.plot(xfit, f_n_lin(xfit, *popt), 'b:', linewidth=1)
 
 #plt.plot(tfit, qfit, 'k--', linewidth=1, label='fit')
 plt.xlabel('$F_{s}$ (m$^3$/s)')
-plt.ylabel('Integrated melt rate anomaly (m$^3$/a)')
-plt.title(f'{hloc_val[h]}, Lat = {lat[v]}S', fontsize = 8)
+plt.ylabel('Area-integrated melt rate anomaly (m$^3$/a)')
+plt.title(f'{ttl}, Lat = {lat[v]}S', fontsize = 8)
 plt.legend(loc=2, prop={'size': 8})
 plt.grid()
 plt.rcParams.update({'font.size': 8})
-plt.show(block=False)
-
 #plt.ylim([-0.1, 3.1])
 
-#dir_fig_save = '/Users/irenavankova/Work/data_sim/SGR/idealized/plots/bulk'
-#if opt_save == 1:
-#    plt.savefig(f'{dir_fig_save}/plot_bulk_compare_horizontal_sgr_{temp[t]}.png', bbox_inches='tight', dpi=300)
-#else:
-#    plt.show()
+if opt_save == 1:
+    plt.savefig(f'{dir_fig_save}/plot_bulk_compare_area_meltflux_{ttl_save}.png', bbox_inches='tight', dpi=300)
+else:
+    plt.show(block=False)
 
 #--PLOT mean melt rate over an area that pertains to "plume" vs "ambient" (or high and low)
 
@@ -279,12 +325,16 @@ popt, pcov = curve_fit(f_n_lin, sgr_val, ynow)
 plt.plot(xfit, f_n_lin(xfit, *popt), 'b:', linewidth=1)
 
 plt.xlabel('$F_{s}$ (m$^3$/s)')
-plt.ylabel('Mean melt rate anomaly (m/a)')
-plt.title(f'{hloc_val[h]}, Lat = {lat[v]}S', fontsize = 8)
+plt.ylabel('Area-averaged melt rate anomaly (m/a)')
+plt.title(f'{ttl}, Lat = {lat[v]}S', fontsize = 8)
 plt.legend(loc=2, prop={'size': 8})
 plt.grid()
 plt.rcParams.update({'font.size': 8})
-plt.show(block=False)
+
+if opt_save == 1:
+    plt.savefig(f'{dir_fig_save}/plot_bulk_compare_area_meltave_{ttl_save}.png', bbox_inches='tight', dpi=300)
+else:
+    plt.show(block=False)
 
 
 #--PLOT area fraction that pertains to "plume" vs "ambient" (or high and low)
@@ -328,13 +378,17 @@ plt.plot(xfit, f_n_lin_nori(xfit, *popt), 'b:', linewidth=1)
 '''
 
 plt.xlabel('$F_{s}$ (m$^3$/s)')
-plt.ylabel('Area (m$^2$)')
-plt.title(f'{hloc_val[h]}, Lat = ${lat[v]}^\circ$S', fontsize = 8)
+plt.ylabel('Area fraction')
+plt.title(f'{ttl}, Lat = ${lat[v]}^\circ$S', fontsize = 8)
 plt.legend(loc=2, prop={'size': 8})
 plt.grid()
 plt.rcParams.update({'font.size': 8})
-plt.ylim([0, 0.2])
-plt.show()
+plt.ylim([0, ymaxA[opt_thr]])
+
+if opt_save == 1:
+    plt.savefig(f'{dir_fig_save}/plot_bulk_compare_area_areafrac_{ttl_save}.png', bbox_inches='tight', dpi=300)
+else:
+    plt.show()
 
 '''
 def fit_vel(x, a):
