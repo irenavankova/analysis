@@ -6,7 +6,7 @@ import numpy # for arrays!
 import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
 
-opt_save = 0
+opt_save = 1
 
 hloc = ["112", "132", "122", "142"]
 hloc_val = ["L", "PW", "PC", "PE"]
@@ -56,9 +56,10 @@ for h in range(len(hloc)):
 plt.xlabel('$F_{s}$ (m$^3$/s)')
 plt.ylabel('$\Delta \dot{m}$ (m/a)')
 if temp[t] == "rd":
-    plt.title('$T_b=1^\circ$C, $f=-1.409 \cdot 10^{-4}$ s$^{-1}$', fontsize = 8)
+    #plt.title('$T_b=1^\circ$C, $f=-1.409 \cdot 10^{-4}$ s$^{-1}$', fontsize = 8)
+    plt.title('Rotating', fontsize=8)
 else:
-    plt.title('$T_b=1^\circ$C, $f=0$ s$^{-1}$', fontsize=8)
+    plt.title('Non-rotating', fontsize=8)
 plt.legend(loc=2, prop={'size': 8})
 plt.grid()
 plt.rcParams.update({'font.size': 8})

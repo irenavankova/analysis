@@ -9,16 +9,16 @@ import os
 
 opt_save = 1
 opt_Line = 1
-plot_opt_ave = 0
+plot_opt_ave = 1
 hplot = 0
 
-opt_thr = 3
+opt_thr = 0
 t = 0
 temp = ["rd", "rdn"]
 
 d_scale = 30000
 
-dir_fig_save = f'/Users/irenavankova/Work/data_sim/SGR/idealized/plots/bulk/area/D{d_scale/1000}km_{temp[t]}_THR{opt_thr}'
+dir_fig_save = f'/Users/irenavankova/Work/data_sim/SGR/idealized/plots/bulk/area/paper/D{d_scale/1000}km_{temp[t]}_THR{opt_thr}'
 if not os.path.exists(dir_fig_save):
     os.mkdir(dir_fig_save)
 
@@ -31,14 +31,17 @@ hloc_val = ["PE", "PC", "PW"]
 #hloc_val = ["PE"]
 
 ymaxA = np.array([0.2, 0.4, 0.8, 0.7])
-
+yminA = ymaxA * 0
+Astep = 0.05
 if opt_Line == 1:
     hloc = ["112"]
     hloc_val = ["L"]
     plot_opt_ave = 0
     hplot = 0
     ymaxA[opt_thr] = 0.5
-    ymaxA = np.array([0.5, 0.7, 0.8, 1])
+    ymaxA = np.array([0.6, 0.8, 1, 1])
+    Astep = 0.2
+    yminA = np.array([0.2, 0.0, 0.0, 0.0])
 
 do_lat = 0
 v = 2
@@ -240,8 +243,15 @@ if plot_opt_ave == 0:
     meltarea_anom_out = np.copy(meltarea_anom_out_mat[h,:])
     melt_tot = melt_total[h, :]
     area_tot = area_tot_all[h]
-    ttl = hloc_val[h]
+    ttl = f'{hloc_val[h]}, Lat = ${lat[v]}^\circ$S'
     ttl_save = hloc_val[h]
+    clr = 'k'
+    if temp[t] == "rd":
+        ttl = 'Rotating'
+        clr = 'r'
+    else:
+        ttl = 'Non-rotating'
+        clr = 'k'
 else:
     melt_anom_plume = np.mean(melt_anom_plume_mat, axis=0)
     melt_anom_out = np.mean(melt_anom_out_mat, axis=0)
@@ -251,46 +261,63 @@ else:
     meltarea_anom_out = np.mean(meltarea_anom_out_mat, axis=0)
     melt_tot = np.mean(melt_total, axis=0)
     area_tot = np.mean(area_tot_all)
-    ttl = 'Channelized average'
+    if temp[t] == "rd":
+        ttl = 'Rotating'
+        clr = 'r'
+    else:
+        ttl = 'Non-rotating'
+        clr = 'k'
     ttl_save = 'PTave'
 
+clrhigh = 'mediumpurple'
+clrlow = 'orange'
+
 #--PLOT Total melt rate flux and partition to "plume" and "ambient" (or high and low)
-plt.figure(figsize=(4, 4))
-clr = 'kbrkbc'
-smb = 'o^o^^^'
+fHeight = 3.5
+fWidth = fHeight
+plt.figure(figsize=(fWidth, fHeight))
 
 ynow = melt_tot*area_tot
-plt.plot(sgr_val, ynow, 'ko', linewidth=1, fillstyle='full', markersize=4, label = 'All')
+plt.plot(sgr_val, ynow, f'{clr}o', linewidth=1, fillstyle='full', markersize=4, label = 'Total')
 popt, pcov = curve_fit(f_n_pow_1_3, sgr_val, ynow, p0=10**8)
-plt.plot(xfit, f_n_pow_1_3(xfit, *popt), 'k--', linewidth=1)
+plt.plot(xfit, f_n_pow_1_3(xfit, *popt), f'{clr}--', linewidth=1)
 popt, pcov = curve_fit(f_n_pow_2_3, sgr_val, ynow, p0=10**8)
-plt.plot(xfit, f_n_pow_2_3(xfit, *popt), 'k-', linewidth=1)
+plt.plot(xfit, f_n_pow_2_3(xfit, *popt), f'{clr}-', linewidth=1)
 print(popt)
 
 ynow = np.insert(meltarea_anom_plume, 0, 0, axis=0)
-plt.plot(sgr_val, ynow, 'ro', linewidth=1, fillstyle='full', markersize=4, label = 'High')
+plt.plot(sgr_val, ynow, clrhigh, linestyle='none', marker='o', linewidth=1, fillstyle='full', markersize=4, label = 'High-melt anomaly')
 popt, pcov = curve_fit(f_n_pow_1_3, sgr_val, ynow, p0=10**8)
-plt.plot(xfit, f_n_pow_1_3(xfit, *popt), 'r--', linewidth=1)
+plt.plot(xfit, f_n_pow_1_3(xfit, *popt), clrhigh, linestyle='--', linewidth=1)
 popt, pcov = curve_fit(f_n_pow_2_3, sgr_val, ynow)
-plt.plot(xfit, f_n_pow_2_3(xfit, *popt), 'r-', linewidth=1)
+plt.plot(xfit, f_n_pow_2_3(xfit, *popt), clrhigh, linestyle='-', linewidth=1)
 
 ynow = np.insert(meltarea_anom_out, 0, 0, axis=0)
-plt.plot(sgr_val, ynow, 'bo', linewidth=1, fillstyle='full', markersize=4, label = 'Low')
+plt.plot(sgr_val, ynow, clrlow, linestyle='none', marker='o', linewidth=1, fillstyle='full', markersize=4, label = 'Low-melt anomaly')
 popt, pcov = curve_fit(f_n_pow_1_3, sgr_val, ynow)
-plt.plot(xfit, f_n_pow_1_3(xfit, *popt), 'b--', linewidth=1)
+plt.plot(xfit, f_n_pow_1_3(xfit, *popt), clrlow, linestyle='--', linewidth=1)
 popt, pcov = curve_fit(f_n_pow_2_3, sgr_val, ynow)
-plt.plot(xfit, f_n_pow_2_3(xfit, *popt), 'b-', linewidth=1)
+plt.plot(xfit, f_n_pow_2_3(xfit, *popt), clrlow, linestyle='-', linewidth=1)
 popt, pcov = curve_fit(f_n_lin, sgr_val, ynow)
-plt.plot(xfit, f_n_lin(xfit, *popt), 'b:', linewidth=1)
+plt.plot(xfit, f_n_lin(xfit, *popt), clrlow, linestyle=':', linewidth=1)
 
 #plt.plot(tfit, qfit, 'k--', linewidth=1, label='fit')
 plt.xlabel('$F_{s}$ (m$^3$/s)')
-plt.ylabel('Area-integrated melt rate anomaly (m$^3$/a)')
-plt.title(f'{ttl}, Lat = {lat[v]}S', fontsize = 8)
+#plt.ylabel('Area-integrated melt rate anomaly (m$^3$/a)')
+plt.ylabel('Melt volume flux anomaly (m$^3$/a)')
+#plt.title(f'{ttl}, Lat = ${lat[v]}^\circ$S', fontsize = 8)
+plt.title(f'{ttl}', fontsize = 8)
 plt.legend(loc=2, prop={'size': 8})
 plt.grid()
 plt.rcParams.update({'font.size': 8})
 #plt.ylim([-0.1, 3.1])
+plt.subplots_adjust(top=8/9,
+                    bottom=2/9,
+                    left=(5/18),
+                    right=(17/18),
+                    hspace=0.0,
+                    wspace=0.0)
+plt.gcf().set_size_inches(fWidth, fHeight)
 
 if opt_save == 1:
     plt.savefig(f'{dir_fig_save}/plot_bulk_compare_area_meltflux_{ttl_save}.png', bbox_inches='tight', dpi=300)
@@ -299,37 +326,49 @@ else:
 
 #--PLOT mean melt rate over an area that pertains to "plume" vs "ambient" (or high and low)
 
-plt.figure(figsize=(4, 4))
+plt.figure(figsize=(fWidth, fHeight))
 
+'''
 ynow = melt_tot
-plt.plot(sgr_val, ynow, 'ko', linewidth=1, fillstyle='full', markersize=4, label = 'All')
+plt.plot(sgr_val, ynow, 'ko', linewidth=1, fillstyle='full', markersize=4, label = 'Total area')
 popt, pcov = curve_fit(f_n_pow_1_3, sgr_val, ynow, p0=10**8)
 plt.plot(xfit, f_n_pow_1_3(xfit, *popt), 'k--', linewidth=1)
 popt, pcov = curve_fit(f_n_pow_2_3, sgr_val, ynow, p0=10**8)
 plt.plot(xfit, f_n_pow_2_3(xfit, *popt), 'k-', linewidth=1)
+'''
 
 ynow = np.insert(melt_anom_plume, 0, 0, axis=0)
-plt.plot(sgr_val, ynow, 'ro', linewidth=1, fillstyle='full', markersize=4, label = 'High')
+plt.plot(sgr_val, ynow, clrhigh, linestyle='none', marker='o', linewidth=1, fillstyle='full', markersize=4, label = 'High-melt anomaly')
 popt, pcov = curve_fit(f_n_pow_1_3, sgr_val, ynow)
-plt.plot(xfit, f_n_pow_1_3(xfit, *popt), 'r--', linewidth=1)
+plt.plot(xfit, f_n_pow_1_3(xfit, *popt), clrhigh, linestyle='--', linewidth=1)
 popt, pcov = curve_fit(f_n_pow_2_3, sgr_val, ynow)
-plt.plot(xfit, f_n_pow_2_3(xfit, *popt), 'r-', linewidth=1)
+plt.plot(xfit, f_n_pow_2_3(xfit, *popt), clrhigh, linestyle='-', linewidth=1)
 
 ynow = np.insert(melt_anom_out, 0, 0, axis=0)
-plt.plot(sgr_val, ynow, 'bo', linewidth=1, fillstyle='full', markersize=4, label = 'Low')
+plt.plot(sgr_val, ynow, clrlow, linestyle='none', marker='o', linewidth=1, fillstyle='full', markersize=4, label = 'Low-melt anomaly')
 popt, pcov = curve_fit(f_n_pow_1_3, sgr_val, ynow)
-plt.plot(xfit, f_n_pow_1_3(xfit, *popt), 'b--', linewidth=1)
+plt.plot(xfit, f_n_pow_1_3(xfit, *popt), clrlow, linestyle='--', linewidth=1)
 popt, pcov = curve_fit(f_n_pow_2_3, sgr_val, ynow)
-plt.plot(xfit, f_n_pow_2_3(xfit, *popt), 'b-', linewidth=1)
+plt.plot(xfit, f_n_pow_2_3(xfit, *popt), clrlow, linestyle='-', linewidth=1)
 popt, pcov = curve_fit(f_n_lin, sgr_val, ynow)
-plt.plot(xfit, f_n_lin(xfit, *popt), 'b:', linewidth=1)
+plt.plot(xfit, f_n_lin(xfit, *popt), clrlow, linestyle=':', linewidth=1)
+
 
 plt.xlabel('$F_{s}$ (m$^3$/s)')
-plt.ylabel('Area-averaged melt rate anomaly (m/a)')
-plt.title(f'{ttl}, Lat = {lat[v]}S', fontsize = 8)
+#plt.ylabel('Area-averaged melt rate anomaly (m/a)')
+plt.ylabel('$\Delta \dot{m}$ (m/a)')
+#plt.title(f'{ttl}, Lat = ${lat[v]}^\circ$S', fontsize = 8)
+plt.title(f'{ttl}', fontsize = 8)
 plt.legend(loc=2, prop={'size': 8})
 plt.grid()
 plt.rcParams.update({'font.size': 8})
+plt.subplots_adjust(top=8/9,
+                    bottom=2/9,
+                    left=(5/18),
+                    right=(17/18),
+                    hspace=0.0,
+                    wspace=0.0)
+plt.gcf().set_size_inches(fWidth, fHeight)
 
 if opt_save == 1:
     plt.savefig(f'{dir_fig_save}/plot_bulk_compare_area_meltave_{ttl_save}.png', bbox_inches='tight', dpi=300)
@@ -339,7 +378,7 @@ else:
 
 #--PLOT area fraction that pertains to "plume" vs "ambient" (or high and low)
 
-plt.figure(figsize=(4, 4))
+plt.figure(figsize=(fWidth, fHeight))
 
 xnow = sgr_val[1:len(sgr_val)]
 
@@ -349,13 +388,13 @@ plt.plot(xnow, ynow, 'ko', linewidth=1, fillstyle='none', markersize=4)
 '''
 
 ynow = area_anom_plume/area_tot
-plt.plot(xnow, ynow, 'ro', linewidth=1, fillstyle='full', markersize=4, label = 'High')
+plt.plot(xnow, ynow, clrhigh, linestyle='none', marker='o', linewidth=1, fillstyle='full', markersize=4, label = 'High-melt anomaly')
 popt, pcov = curve_fit(f_n_pow_1_3_nori, xnow, ynow)
-plt.plot(xfit, f_n_pow_1_3_nori(xfit, *popt), 'r--', linewidth=1)
+plt.plot(xfit, f_n_pow_1_3_nori(xfit, *popt), clrhigh, linestyle='--', linewidth=1)
 popt, pcov = curve_fit(f_n_pow_2_3_nori, xnow, ynow)
-plt.plot(xfit, f_n_pow_2_3_nori(xfit, *popt), 'r-', linewidth=1)
+plt.plot(xfit, f_n_pow_2_3_nori(xfit, *popt), clrhigh, linestyle='-', linewidth=1)
 popt, pcov = curve_fit(f_n_lin_nori, xnow, ynow)
-plt.plot(xfit, f_n_lin_nori(xfit, *popt), 'r:', linewidth=1)
+plt.plot(xfit, f_n_lin_nori(xfit, *popt), clrhigh, linestyle=':', linewidth=1)
 
 '''
 popt, pcov = curve_fit(f_n_pow_1_3, xnow, ynow)
@@ -379,11 +418,20 @@ plt.plot(xfit, f_n_lin_nori(xfit, *popt), 'b:', linewidth=1)
 
 plt.xlabel('$F_{s}$ (m$^3$/s)')
 plt.ylabel('Area fraction')
-plt.title(f'{ttl}, Lat = ${lat[v]}^\circ$S', fontsize = 8)
+plt.yticks(np.arange(0, 1, step=Astep))
+#plt.title(f'{ttl}, Lat = ${lat[v]}^\circ$S', fontsize = 8)
+plt.title(f'{ttl}', fontsize = 8)
 plt.legend(loc=2, prop={'size': 8})
 plt.grid()
 plt.rcParams.update({'font.size': 8})
-plt.ylim([0, ymaxA[opt_thr]])
+plt.ylim([yminA[opt_thr], ymaxA[opt_thr]])
+plt.subplots_adjust(top=8/9,
+                    bottom=2/9,
+                    left=(5/18),
+                    right=(17/18),
+                    hspace=0.0,
+                    wspace=0.0)
+plt.gcf().set_size_inches(fWidth, fHeight)
 
 if opt_save == 1:
     plt.savefig(f'{dir_fig_save}/plot_bulk_compare_area_areafrac_{ttl_save}.png', bbox_inches='tight', dpi=300)

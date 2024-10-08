@@ -6,7 +6,7 @@ import numpy # for arrays!
 import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
 
-lglg = 1
+lglg = 0
 opt_save = 1
 
 h = 0
@@ -58,10 +58,13 @@ if lglg == 1:
 else:
     xfit = np.linspace(0,sgr_val[-1],100)
 
-plt.figure(figsize=(4, 4))
-clr = 'rb'
-smb = '^^'
+fHeight = 4
+fWidth = fHeight
+plt.figure(figsize=(fWidth, fHeight))
+clr = 'rk'
+smb = 'o'
 rot = ["rotating", "non-rotating"]
+
 for t in range(len(temp)):
     #for h in range(len(hloc)):
         #plt.plot(sgr_val, np.squeeze(melt_total[t,:,h]), f'{clr[t]}{smb[h]}', fillstyle='none', label = f'{rot[t]} {hloc_val[h]}')
@@ -90,6 +93,12 @@ plt.legend(loc=2, prop={'size': 8})
 if lglg == 0:
     plt.grid()
 plt.rcParams.update({'font.size': 8})
+plt.subplots_adjust(top=8/9,
+                    bottom=3/9,
+                    left=(7/18),
+                    right=(17/18),
+                    hspace=0.0,
+                    wspace=0.0)
 #plt.ylim([-0.1, 3.1])
 
 dir_fig_save = '/Users/irenavankova/Work/data_sim/SGR/idealized/plots/bulk/fvsnf'
