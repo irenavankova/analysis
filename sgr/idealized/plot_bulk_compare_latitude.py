@@ -50,7 +50,7 @@ for v in range(len(lat)):
         FloatingMask = np.squeeze(dsMesh.landIceFloatingMask.data)
         iii = FloatingMask == 1
         #melt_total[v, s] = np.sum(FloatingMask[iii] * melt[iii] * areaCell[iii]) / np.sum(areaCell[iii])
-        melt_total[v, s] = np.sum(FloatingMask[iii] * melt[iii] * areaCell[iii]) / np.sum(areaCell[iii])
+        melt_total[v, s] = np.sum(melt[iii] * areaCell[iii])
     melt_total[v, :] = melt_total[v, :] - melt_total[v, 0]
 
 def f_n_pow_1_3(x, a):
@@ -71,11 +71,12 @@ for v in range(len(lat)):
     plt.plot(sgr_val, melt_total[v,:], f'{clr[v]}:', linewidth=1, marker=f'{smb[v]}', fillstyle='full', markersize=4, label = f'Lat = {lat[v]}$^\circ$')
     popt, pcov = curve_fit(f_n_pow_2_3, sgr_val, melt_total[v, :])
     plt.plot(xfit, f_n_pow_2_3(xfit, *popt), f'{clr[v]}-', linewidth=1)
-    popt, pcov = curve_fit(f_n_pow_1_3, sgr_val, melt_total[v, :])
+    popt, pcov = curve_fit(f_n_pow_1_3, sgr_val, melt_total[v, :], p0=10**10)
     plt.plot(xfit, f_n_pow_1_3(xfit, *popt), f'{clr[v]}--', linewidth=1)
 #plt.plot(tfit, qfit, 'k--', linewidth=1, label='fit')
 plt.xlabel('$F_{s}$ (m$^3$/s)')
-plt.ylabel('$\Delta \dot{m}$ (m/a)')
+#plt.ylabel('$\Delta \dot{m}$ (m/a)')
+plt.ylabel('Melt-flux anomaly (m$^3$/a)')
 #if temp[t] == "rd":
 #    plt.title('$T_b=1^\circ$C, $f=-1.409 \cdot 10^{-4}$ s$^{-1}$', fontsize = 8)
 #else:
@@ -97,11 +98,12 @@ for v in range(len(lat)):
     plt.loglog(sgr_val, melt_total[v,:], f'{clr[v]}:', linewidth=1, marker=f'{smb[v]}', fillstyle='full', markersize=4, label = f'Lat = {lat[v]}$^\circ$')
     popt, pcov = curve_fit(f_n_pow_2_3, sgr_val, melt_total[v, :])
     plt.loglog(xfit_lg, f_n_pow_2_3(xfit_lg, *popt), f'{clr[v]}-', linewidth=1)
-    popt, pcov = curve_fit(f_n_pow_1_3, sgr_val, melt_total[v, :])
+    popt, pcov = curve_fit(f_n_pow_1_3, sgr_val, melt_total[v, :], p0=10**10)
     plt.loglog(xfit_lg, f_n_pow_1_3(xfit_lg, *popt), f'{clr[v]}--', linewidth=1)
 
 plt.xlabel('$F_{s}$ (m$^3$/s)')
-plt.ylabel('$\Delta \dot{m}$ (m/a)')
+#plt.ylabel('$\Delta \dot{m}$ (m/a)')
+plt.ylabel('Melt-flux anomaly (m$^3$/a)')
 plt.legend(loc=2, prop={'size': 8})
 plt.grid()
 plt.rcParams.update({'font.size': 8})

@@ -30,8 +30,8 @@ for t in range(len(temp)):
     areaCell = np.squeeze(dsMesh.areaCell.data)
     FloatingMask = np.squeeze(dsMesh.landIceFloatingMask.data)
     iii = FloatingMask == 1
-    melt_total[t] = np.sum(FloatingMask[iii]*melt[iii]*areaCell[iii])/np.sum(areaCell[iii])
-
+    #melt_total[t] = np.sum(FloatingMask[iii]*melt[iii]*areaCell[iii])/np.sum(areaCell[iii])
+    melt_total[t] = np.sum(melt[iii] * areaCell[iii])
 
 coef = numpy.polyfit(temp_val, melt_total, 2)
 tfit = np.linspace(-2, 4, 50)
@@ -40,7 +40,8 @@ plt.figure(figsize=(4, 4))
 plt.plot(temp_val, melt_total, 'ro', fillstyle = 'none' , label = 'simulation')
 plt.plot(tfit, qfit, 'k--' , linewidth=1, label = 'quadratic fit')
 plt.xlabel('$T_b$ ($^\circ$C)')
-plt.ylabel('Mean melt rate (m/a)')
+#plt.ylabel('Mean melt rate (m/a)')
+plt.ylabel('Melt flux (m$^3$/a)')
 plt.legend(loc = 2)
 plt.grid()
 plt.rcParams.update({'font.size': 8})

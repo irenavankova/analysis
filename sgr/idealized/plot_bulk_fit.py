@@ -6,7 +6,7 @@ import numpy # for arrays!
 import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
 
-opt_save = 0
+opt_save = 1
 
 rho_fw = 1000.
 secPerYear = 365 * 24 * 60 * 60
@@ -41,8 +41,10 @@ for t in range(len(temp)):
         areaCell = np.squeeze(dsMesh.areaCell.data)
         FloatingMask = np.squeeze(dsMesh.landIceFloatingMask.data)
         iii = FloatingMask == 1
-        melt_total[t, s] = np.sum(FloatingMask[iii] * melt[iii] * areaCell[iii]) / np.sum(areaCell[iii])
-        meltTot_total[t, s] = np.sum(FloatingMask[iii] * meltTot[iii] * areaCell[iii]) / np.sum(areaCell[iii])
+        melt_total[t, s] = np.sum(melt[iii] * areaCell[iii])
+        meltTot_total[t, s] = np.sum(meltTot[iii] * areaCell[iii])
+        #melt_total[t, s] = np.sum(FloatingMask[iii] * melt[iii] * areaCell[iii]) / np.sum(areaCell[iii])
+        #meltTot_total[t, s] = np.sum(FloatingMask[iii] * meltTot[iii] * areaCell[iii]) / np.sum(areaCell[iii])
     melt_total[t, :] = melt_total[t, :] - melt_total[t, 0]
     meltTot_total[t, :] = meltTot_total[t, :] - meltTot_total[t, 0]
 
@@ -106,10 +108,12 @@ for t in range(len(temp)):
     plt.plot(s_range, z, f'{clr[t]}-', linewidth=1, label = f'$T_b$ = {temp_val[t]}$^\circ$C')
 
 plt.xlabel('$F_{s}$ (m$^3$/s)')
-plt.ylabel('$\Delta \dot{m}$ (m/a)')
+#plt.ylabel('$\Delta \dot{m}$ (m/a)')
+plt.ylabel('Melt-flux anomaly (m$^3$/a)')
 plt.legend(loc=2, prop={'size': 8})
 plt.grid()
 plt.rcParams.update({'font.size': 8})
+plt.tick_params(axis='both', labelsize=10)
 #plt.ylim([-0.1, 3.1])
 
 dir_fig_save = '/Users/irenavankova/Work/data_sim/SGR/idealized/plots/bulk'
@@ -127,11 +131,13 @@ for s in range(1, len(sgr)):
     z = k_fit*(t_range - To_fit) * sgr_val[s]**(2/3)
     plt.plot(t_range, z, f'{clr[s]}-', linewidth=1, label = f'$F_s$ = {sgr_val_sd[s]}m$^3$/s')
 
-plt.xlabel('$T_b$ ($^\circ$C)')
-plt.ylabel('$\Delta \dot{m}$ (m/a)')
+plt.xlabel('$T_b$ ($^\circ$C)', fontsize=10)
+#plt.ylabel('$\Delta \dot{m}$ (m/a)')
+plt.ylabel('Melt-flux anomaly (m$^3$/a)', fontsize=10)
 plt.legend(loc=2, prop={'size': 8})
 plt.grid()
-plt.rcParams['font.size'] = 8
+plt.rcParams['font.size'] = 10
+plt.tick_params(axis='both', labelsize=10)
 #plt.rcParams.update({'font.size': 8})
 #plt.ylim([-0.1, 3.1])
 

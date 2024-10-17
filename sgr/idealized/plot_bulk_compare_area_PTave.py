@@ -45,6 +45,7 @@ if opt_Line == 1:
 
 do_lat = 0
 v = 2
+fsize = 8
 
 #------------------------------------------------------------------------------------------------
 rho_fw = 1000.
@@ -286,14 +287,14 @@ plt.plot(xfit, f_n_pow_2_3(xfit, *popt), f'{clr}-', linewidth=1)
 print(popt)
 
 ynow = np.insert(meltarea_anom_plume, 0, 0, axis=0)
-plt.plot(sgr_val, ynow, clrhigh, linestyle='none', marker='o', linewidth=1, fillstyle='full', markersize=4, label = 'High-melt anomaly')
+plt.plot(sgr_val, ynow, clrhigh, linestyle='none', marker='o', linewidth=1, fillstyle='full', markersize=4, label = 'High-melt partition')
 popt, pcov = curve_fit(f_n_pow_1_3, sgr_val, ynow, p0=10**8)
 plt.plot(xfit, f_n_pow_1_3(xfit, *popt), clrhigh, linestyle='--', linewidth=1)
 popt, pcov = curve_fit(f_n_pow_2_3, sgr_val, ynow)
 plt.plot(xfit, f_n_pow_2_3(xfit, *popt), clrhigh, linestyle='-', linewidth=1)
 
 ynow = np.insert(meltarea_anom_out, 0, 0, axis=0)
-plt.plot(sgr_val, ynow, clrlow, linestyle='none', marker='o', linewidth=1, fillstyle='full', markersize=4, label = 'Low-melt anomaly')
+plt.plot(sgr_val, ynow, clrlow, linestyle='none', marker='o', linewidth=1, fillstyle='full', markersize=4, label = 'Low-melt partition')
 popt, pcov = curve_fit(f_n_pow_1_3, sgr_val, ynow)
 plt.plot(xfit, f_n_pow_1_3(xfit, *popt), clrlow, linestyle='--', linewidth=1)
 popt, pcov = curve_fit(f_n_pow_2_3, sgr_val, ynow)
@@ -302,9 +303,9 @@ popt, pcov = curve_fit(f_n_lin, sgr_val, ynow)
 plt.plot(xfit, f_n_lin(xfit, *popt), clrlow, linestyle=':', linewidth=1)
 
 #plt.plot(tfit, qfit, 'k--', linewidth=1, label='fit')
-plt.xlabel('$F_{s}$ (m$^3$/s)')
+plt.xlabel('$F_{s}$ (m$^3$/s)', fontsize=fsize)
 #plt.ylabel('Area-integrated melt rate anomaly (m$^3$/a)')
-plt.ylabel('Melt volume flux anomaly (m$^3$/a)')
+plt.ylabel('Melt-flux anomaly (m$^3$/a)', fontsize=fsize)
 #plt.title(f'{ttl}, Lat = ${lat[v]}^\circ$S', fontsize = 8)
 plt.title(f'{ttl}', fontsize = 8)
 plt.legend(loc=2, prop={'size': 8})
@@ -318,9 +319,11 @@ plt.subplots_adjust(top=8/9,
                     hspace=0.0,
                     wspace=0.0)
 plt.gcf().set_size_inches(fWidth, fHeight)
+plt.tick_params(axis='both', labelsize=fsize)
+
 
 if opt_save == 1:
-    plt.savefig(f'{dir_fig_save}/plot_bulk_compare_area_meltflux_{ttl_save}.png', bbox_inches='tight', dpi=300)
+    plt.savefig(f'{dir_fig_save}/plot_bulk_compare_area_meltflux_{ttl_save}.png', bbox_inches='tight', dpi=600)
 else:
     plt.show(block=False)
 
@@ -338,25 +341,26 @@ plt.plot(xfit, f_n_pow_2_3(xfit, *popt), 'k-', linewidth=1)
 '''
 
 ynow = np.insert(melt_anom_plume, 0, 0, axis=0)
-plt.plot(sgr_val, ynow, clrhigh, linestyle='none', marker='o', linewidth=1, fillstyle='full', markersize=4, label = 'High-melt anomaly')
+plt.plot(sgr_val, ynow, clrhigh, linestyle='none', marker='o', linewidth=1, fillstyle='full', markersize=4, label = 'High-melt partition')
 popt, pcov = curve_fit(f_n_pow_1_3, sgr_val, ynow)
 plt.plot(xfit, f_n_pow_1_3(xfit, *popt), clrhigh, linestyle='--', linewidth=1)
 popt, pcov = curve_fit(f_n_pow_2_3, sgr_val, ynow)
 plt.plot(xfit, f_n_pow_2_3(xfit, *popt), clrhigh, linestyle='-', linewidth=1)
 
+'''
 ynow = np.insert(melt_anom_out, 0, 0, axis=0)
-plt.plot(sgr_val, ynow, clrlow, linestyle='none', marker='o', linewidth=1, fillstyle='full', markersize=4, label = 'Low-melt anomaly')
+plt.plot(sgr_val, ynow, clrlow, linestyle='none', marker='o', linewidth=1, fillstyle='full', markersize=4, label = 'Low-melt partition')
 popt, pcov = curve_fit(f_n_pow_1_3, sgr_val, ynow)
 plt.plot(xfit, f_n_pow_1_3(xfit, *popt), clrlow, linestyle='--', linewidth=1)
 popt, pcov = curve_fit(f_n_pow_2_3, sgr_val, ynow)
 plt.plot(xfit, f_n_pow_2_3(xfit, *popt), clrlow, linestyle='-', linewidth=1)
 popt, pcov = curve_fit(f_n_lin, sgr_val, ynow)
 plt.plot(xfit, f_n_lin(xfit, *popt), clrlow, linestyle=':', linewidth=1)
+'''
 
-
-plt.xlabel('$F_{s}$ (m$^3$/s)')
+plt.xlabel('$F_{s}$ (m$^3$/s)', fontsize=fsize)
 #plt.ylabel('Area-averaged melt rate anomaly (m/a)')
-plt.ylabel('$\Delta \dot{m}$ (m/a)')
+plt.ylabel('Melt-rate anomaly (m/a)', fontsize=fsize)
 #plt.title(f'{ttl}, Lat = ${lat[v]}^\circ$S', fontsize = 8)
 plt.title(f'{ttl}', fontsize = 8)
 plt.legend(loc=2, prop={'size': 8})
@@ -369,9 +373,11 @@ plt.subplots_adjust(top=8/9,
                     hspace=0.0,
                     wspace=0.0)
 plt.gcf().set_size_inches(fWidth, fHeight)
+plt.tick_params(axis='both', labelsize=fsize)
+
 
 if opt_save == 1:
-    plt.savefig(f'{dir_fig_save}/plot_bulk_compare_area_meltave_{ttl_save}.png', bbox_inches='tight', dpi=300)
+    plt.savefig(f'{dir_fig_save}/plot_bulk_compare_area_meltave_{ttl_save}.png', bbox_inches='tight', dpi=600)
 else:
     plt.show(block=False)
 
@@ -388,7 +394,7 @@ plt.plot(xnow, ynow, 'ko', linewidth=1, fillstyle='none', markersize=4)
 '''
 
 ynow = area_anom_plume/area_tot
-plt.plot(xnow, ynow, clrhigh, linestyle='none', marker='o', linewidth=1, fillstyle='full', markersize=4, label = 'High-melt anomaly')
+plt.plot(xnow, ynow, clrhigh, linestyle='none', marker='o', linewidth=1, fillstyle='full', markersize=4, label = 'High-melt partition')
 popt, pcov = curve_fit(f_n_pow_1_3_nori, xnow, ynow)
 plt.plot(xfit, f_n_pow_1_3_nori(xfit, *popt), clrhigh, linestyle='--', linewidth=1)
 popt, pcov = curve_fit(f_n_pow_2_3_nori, xnow, ynow)
@@ -415,9 +421,8 @@ plt.plot(xfit, f_n_pow_2_3_nori(xfit, *popt), 'b-', linewidth=1)
 popt, pcov = curve_fit(f_n_lin_nori, xnow, ynow)
 plt.plot(xfit, f_n_lin_nori(xfit, *popt), 'b:', linewidth=1)
 '''
-
-plt.xlabel('$F_{s}$ (m$^3$/s)')
-plt.ylabel('Area fraction')
+plt.xlabel('$F_{s}$ (m$^3$/s)', fontsize=fsize)
+plt.ylabel('Area fraction', fontsize=fsize)
 plt.yticks(np.arange(0, 1, step=Astep))
 #plt.title(f'{ttl}, Lat = ${lat[v]}^\circ$S', fontsize = 8)
 plt.title(f'{ttl}', fontsize = 8)
@@ -432,9 +437,10 @@ plt.subplots_adjust(top=8/9,
                     hspace=0.0,
                     wspace=0.0)
 plt.gcf().set_size_inches(fWidth, fHeight)
+plt.tick_params(axis='both', labelsize=fsize)
 
 if opt_save == 1:
-    plt.savefig(f'{dir_fig_save}/plot_bulk_compare_area_areafrac_{ttl_save}.png', bbox_inches='tight', dpi=300)
+    plt.savefig(f'{dir_fig_save}/plot_bulk_compare_area_areafrac_{ttl_save}.png', bbox_inches='tight', dpi=600)
 else:
     plt.show()
 

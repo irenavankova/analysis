@@ -9,7 +9,7 @@ from scipy.optimize import curve_fit
 lglg = 0
 opt_save = 1
 
-d_scale = 2000
+d_scale = 200000
 h = 0
 hloc = ["112", "122", "132" , "142"]
 hloc_val = ["L", "PC", "PW" , "PE"]
@@ -68,7 +68,8 @@ for t in range(len(temp)):
         FloatingMask = np.squeeze(dsMesh.landIceFloatingMask.data)
         i_float = FloatingMask == 1
         iii = np.logical_and(i_ave, i_float)
-        melt_total[t, s] = np.sum(FloatingMask[iii] * melt[iii] * areaCell[iii]) / np.sum(areaCell[iii])
+        #melt_total[t, s] = np.sum(FloatingMask[iii] * melt[iii] * areaCell[iii]) / np.sum(areaCell[iii])
+        melt_total[t, s] = np.sum(melt[iii] * areaCell[iii])
     melt_total[t, :] = melt_total[t, :] - melt_total[t, 0]
 
 #coef = numpy.polyfit(temp_val, melt_total, 2)
@@ -101,7 +102,7 @@ for t in range(len(temp)):
         plt.plot(sgr_val, melt_total[t, :], f'{clr[t]}{smb}', fillstyle='full', markersize=4, label=f'{rot[t]}')
 
     #fit
-    popt, pcov = curve_fit(f_n_pow_1_3, sgr_val, melt_total[t, :])
+    popt, pcov = curve_fit(f_n_pow_1_3, sgr_val, melt_total[t, :], p0=10**10)
     if lglg == 1:
         plt.loglog(xfit, f_n_pow_1_3(xfit, *popt), f'{clr[t]}--', linewidth=1)
     else:
@@ -113,8 +114,10 @@ for t in range(len(temp)):
         plt.plot(xfit, f_n_pow_2_3(xfit, *popt), f'{clr[t]}-', linewidth=1)
 
 #plt.plot(tfit, qfit, 'k--', linewidth=1, label='fit')
-plt.xlabel('$F_{s}$ (m$^3$/s)')
-plt.ylabel('$\Delta \dot{m}$ (m/a)')
+fsize = 8
+plt.xlabel('$F_{s}$ (m$^3$/s)', fontsize=fsize)
+#plt.ylabel('$\Delta \dot{m}$ (m/a)', fontsize=fsize)
+plt.ylabel('Melt-flux anomaly (m$^3$/a)', fontsize=fsize)
 plt.title(f'Distributed, $d \leq ${d_scale/1000} km')
 fsize = 8
 plt.title(f'$d \leq ${d_scale/1000} km', fontsize = fsize)
@@ -129,6 +132,7 @@ plt.subplots_adjust(top=8/9,
                     right=(17/18),
                     hspace=0.0,
                     wspace=0.0)
+plt.tick_params(axis='both', labelsize=fsize)
 
 dir_fig_save = '/Users/irenavankova/Work/data_sim/SGR/idealized/plots/bulk/fvsnf'
 if opt_save == 1:

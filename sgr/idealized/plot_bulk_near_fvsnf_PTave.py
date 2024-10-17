@@ -81,7 +81,8 @@ for t in range(len(temp)):
                 #print(hloc_val[h])
                 #print(np.where(iii)[0])
 
-            melt_total[t, s, h] = np.sum(melt[iii] * areaCell[iii]) / np.sum(areaCell[iii])
+            #melt_total[t, s, h] = np.sum(melt[iii] * areaCell[iii]) / np.sum(areaCell[iii])
+            melt_total[t, s, h] = np.sum(melt[iii] * areaCell[iii])
         melt_total[t, :, h] = melt_total[t, :, h] - melt_total[t, 0, h]
     #print(np.shape(np.squeeze(np.sum(melt_total, axis=2))))
     #print(np.shape(melt_ave[t, :]))
@@ -115,7 +116,7 @@ for t in range(len(temp)):
         plt.plot(sgr_val, melt_ave[t, :], f'{clr[t]}{smb}', fillstyle='full', markersize=4, label=f'{rot[t]}')
 
     #fit
-    popt, pcov = curve_fit(f_n_pow_1_3, sgr_val, melt_ave[t, :])
+    popt, pcov = curve_fit(f_n_pow_1_3, sgr_val, melt_ave[t, :], p0=10**10)
     if lglg == 1:
         plt.loglog(xfit, f_n_pow_1_3(xfit, *popt), f'{clr[t]}--', linewidth=1)
     else:
@@ -127,10 +128,13 @@ for t in range(len(temp)):
         plt.plot(xfit, f_n_pow_2_3(xfit, *popt), f'{clr[t]}-', linewidth=1)
 
 
-plt.xlabel('$F_{s}$ (m$^3$/s)')
-plt.ylabel('$\Delta \dot{m}$ (m/a)')
-#plt.title(f'Channelized, $d \leq ${d_scale/1000} km')
 fsize = 8
+plt.xlabel('$F_{s}$ (m$^3$/s)', fontsize=fsize)
+#plt.ylabel('$\Delta \dot{m}$ (m/a)', fontsize=fsize)
+plt.ylabel('Melt-flux anomaly (m$^3$/a)', fontsize=fsize)
+
+#plt.title(f'Channelized, $d \leq ${d_scale/1000} km')
+
 plt.title(f'$d \leq ${d_scale/1000} km', fontsize = fsize)
 
 plt.legend(loc=2, prop={'size': fsize})
@@ -143,6 +147,8 @@ plt.subplots_adjust(top=8/9,
                     right=(17/18),
                     hspace=0.0,
                     wspace=0.0)
+plt.tick_params(axis='both', labelsize=fsize)
+
 
 dir_fig_save = '/Users/irenavankova/Work/data_sim/SGR/idealized/plots/bulk/fvsnf'
 if not os.path.exists(dir_fig_save):

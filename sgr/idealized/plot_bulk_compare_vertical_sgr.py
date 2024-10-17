@@ -40,7 +40,8 @@ for t in range(len(temp)):
             areaCell = np.squeeze(dsMesh.areaCell.data)
             FloatingMask = np.squeeze(dsMesh.landIceFloatingMask.data)
             iii = FloatingMask == 1
-            melt_total[t, h, s] = np.sum(FloatingMask[iii] * melt[iii] * areaCell[iii]) / np.sum(areaCell[iii])
+            #melt_total[t, h, s] = np.sum(FloatingMask[iii] * melt[iii] * areaCell[iii]) / np.sum(areaCell[iii])
+            melt_total[t, h, s] = np.sum(melt[iii] * areaCell[iii])
         melt_total[t, h, :] = melt_total[t, h, :] - melt_total[t, h, 0]
 
 plt.figure(figsize=(4, 4))
@@ -53,7 +54,8 @@ for t in range(len(temp)):
 
 #plt.plot(tfit, qfit, 'k--', linewidth=1, label='fit')
 plt.xlabel('$F_{s}$ (m$^3$/s)')
-plt.ylabel('$\Delta \dot{m}$ (m/a)')
+#plt.ylabel('$\Delta \dot{m}$ (m/a)')
+plt.ylabel('Melt-flux anomaly (m$^3$/a)')
 #plt.title('$f=-1.409 \cdot 10^{-4}$ s$^{-1}$', fontsize = 8)
 plt.legend(loc=2, prop={'size': 8})
 plt.grid()

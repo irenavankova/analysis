@@ -40,8 +40,8 @@ for h in range(len(hloc)):
         areaCell = np.squeeze(dsMesh.areaCell.data)
         FloatingMask = np.squeeze(dsMesh.landIceFloatingMask.data)
         iii = FloatingMask == 1
-        melt_total[h, s] = np.sum(melt[iii] * areaCell[iii]) / np.sum(areaCell[iii])
-        #melt_total[h, s] = np.sum(melt[iii] * areaCell[iii])
+        #melt_total[h, s] = np.sum(melt[iii] * areaCell[iii]) / np.sum(areaCell[iii])
+        melt_total[h, s] = np.sum(melt[iii] * areaCell[iii])
     melt_total[h, :] = melt_total[h, :] - melt_total[h, 0]
 
 xfit = np.linspace(0,sgr_val[-1],100)
@@ -54,16 +54,18 @@ for h in range(len(hloc)):
 
 #plt.plot(tfit, qfit, 'k--', linewidth=1, label='fit')
 plt.xlabel('$F_{s}$ (m$^3$/s)')
-plt.ylabel('$\Delta \dot{m}$ (m/a)')
+#plt.ylabel('$\Delta \dot{M}$ (m$^3$/a)')
+plt.ylabel('Melt-flux anomaly (m$^3$/a)')
+
 if temp[t] == "rd":
     #plt.title('$T_b=1^\circ$C, $f=-1.409 \cdot 10^{-4}$ s$^{-1}$', fontsize = 8)
-    plt.title('Rotating', fontsize=8)
+    plt.title('Rotating', fontsize=10)
 else:
-    plt.title('Non-rotating', fontsize=8)
+    plt.title('Non-rotating', fontsize=10)
 plt.legend(loc=2, prop={'size': 8})
 plt.grid()
 plt.rcParams.update({'font.size': 8})
-plt.ylim([-0.1, 3.1])
+plt.ylim([-0.1*pow(10,10), 3.5*pow(10,10)])
 
 dir_fig_save = '/Users/irenavankova/Work/data_sim/SGR/idealized/plots/bulk'
 if opt_save == 1:
