@@ -8,12 +8,12 @@ from scipy.optimize import curve_fit
 import os
 
 opt_save = 1
-opt_Line = 1
+opt_Line = 0
 plot_opt_ave = 1
 hplot = 0
 
 opt_thr = 0
-t = 0
+t = 1
 temp = ["rd", "rdn"]
 
 d_scale = 30000
@@ -287,14 +287,14 @@ plt.plot(xfit, f_n_pow_2_3(xfit, *popt), f'{clr}-', linewidth=1)
 print(popt)
 
 ynow = np.insert(meltarea_anom_plume, 0, 0, axis=0)
-plt.plot(sgr_val, ynow, clrhigh, linestyle='none', marker='o', linewidth=1, fillstyle='full', markersize=4, label = 'High-melt partition')
+plt.plot(sgr_val, ynow, clrhigh, linestyle='none', marker='o', linewidth=1, fillstyle='full', markersize=4, label = 'Plume-dominated')
 popt, pcov = curve_fit(f_n_pow_1_3, sgr_val, ynow, p0=10**8)
 plt.plot(xfit, f_n_pow_1_3(xfit, *popt), clrhigh, linestyle='--', linewidth=1)
 popt, pcov = curve_fit(f_n_pow_2_3, sgr_val, ynow)
 plt.plot(xfit, f_n_pow_2_3(xfit, *popt), clrhigh, linestyle='-', linewidth=1)
 
 ynow = np.insert(meltarea_anom_out, 0, 0, axis=0)
-plt.plot(sgr_val, ynow, clrlow, linestyle='none', marker='o', linewidth=1, fillstyle='full', markersize=4, label = 'Low-melt partition')
+plt.plot(sgr_val, ynow, clrlow, linestyle='none', marker='o', linewidth=1, fillstyle='full', markersize=4, label = 'Ambient-dominated')
 popt, pcov = curve_fit(f_n_pow_1_3, sgr_val, ynow)
 plt.plot(xfit, f_n_pow_1_3(xfit, *popt), clrlow, linestyle='--', linewidth=1)
 popt, pcov = curve_fit(f_n_pow_2_3, sgr_val, ynow)
@@ -341,7 +341,7 @@ plt.plot(xfit, f_n_pow_2_3(xfit, *popt), 'k-', linewidth=1)
 '''
 
 ynow = np.insert(melt_anom_plume, 0, 0, axis=0)
-plt.plot(sgr_val, ynow, clrhigh, linestyle='none', marker='o', linewidth=1, fillstyle='full', markersize=4, label = 'High-melt partition')
+plt.plot(sgr_val, ynow, clrhigh, linestyle='none', marker='o', linewidth=1, fillstyle='full', markersize=4, label = 'Plume-dominated')
 popt, pcov = curve_fit(f_n_pow_1_3, sgr_val, ynow)
 plt.plot(xfit, f_n_pow_1_3(xfit, *popt), clrhigh, linestyle='--', linewidth=1)
 popt, pcov = curve_fit(f_n_pow_2_3, sgr_val, ynow)
@@ -394,7 +394,7 @@ plt.plot(xnow, ynow, 'ko', linewidth=1, fillstyle='none', markersize=4)
 '''
 
 ynow = area_anom_plume/area_tot
-plt.plot(xnow, ynow, clrhigh, linestyle='none', marker='o', linewidth=1, fillstyle='full', markersize=4, label = 'High-melt partition')
+plt.plot(xnow, ynow, clrhigh, linestyle='none', marker='o', linewidth=1, fillstyle='full', markersize=4, label = 'Plume-dominated')
 popt, pcov = curve_fit(f_n_pow_1_3_nori, xnow, ynow)
 plt.plot(xfit, f_n_pow_1_3_nori(xfit, *popt), clrhigh, linestyle='--', linewidth=1)
 popt, pcov = curve_fit(f_n_pow_2_3_nori, xnow, ynow)

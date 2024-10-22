@@ -7,7 +7,7 @@ declare -a R=("f102" "f101" "f100")
 
 for r in "${R[@]}"
 do
-	export DIR=${r}/${r}_10
+	export DIR=${r}/${r}_010000B
 
 	mkdir -p ${OUT}/${DIR}
 
