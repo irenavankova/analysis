@@ -11,22 +11,28 @@ opt_save = 1
 rho_fw = 1000.
 secPerYear = 365 * 24 * 60 * 60
 
+opt_23 = 1
+
 t1 = 71
 t1 = 61
 t2 = t1+9
-#trun = 'control'
-#ttle = f'{trun} {t1}-{t2}'
-#reg = 'Ross'
-#reg = 'Amery'
-#reg = 'PIG'
-#reg = 'Thwaites'
-reg = 'Totten'
+ts2 = t2
+
+if opt_23 == 1:
+    t1 = 23
+    t2 = 26
+    ts2 = 32
+
+r = 6
+
+reglist = ["PIG", "Thwaites" , "Totten" , "Amery" , "Ross", "FRIS", "Getz"]
+reg = reglist[r]
 ttle = f'{reg}_decade_{t1}_{t2}'
 #p_file = f'/Users/irenavankova/Work/data_sim/E3SM_files/E3SM_initial_condition/ECwISC30to60E2r1/ocean.ECwISC30to60E2r1.230220.nc'
 p_file = f'/Users/irenavankova/Work/data_sim/E3SM_files/E3SM_initial_condition/SOwISC12to60E2r4/ocean.SOwISC12to60E2r4.230220.nc'
 #o_file = '/Users/irenavankova/Work/data_sim/E3SM_outputs/SGR/ncfiles/S12_mali/clim_61-70_ts_1-70/mpaso_ANN_006101_007012_climo.nc'
-o_file_c = f'/Users/irenavankova/Work/data_sim/E3SM_outputs/SGR/ncfiles/S12_control/clim_{t1}-{t2}_ts_1-{t2}/mpaso_ANN_00{t1}01_00{t2}12_climo.nc'
-o_file_m = f'/Users/irenavankova/Work/data_sim/E3SM_outputs/SGR/ncfiles/S12_mali/clim_{t1}-{t2}_ts_1-{t2}/mpaso_ANN_00{t1}01_00{t2}12_climo.nc'
+o_file_c = f'/Users/irenavankova/Work/data_sim/E3SM_outputs/SGR/ncfiles/S12_control/clim_{t1}-{t2}_ts_1-{ts2}/mpaso_ANN_00{t1}01_00{t2}12_climo.nc'
+o_file_m = f'/Users/irenavankova/Work/data_sim/E3SM_outputs/SGR/ncfiles/S12_mali/clim_{t1}-{t2}_ts_1-{ts2}/mpaso_ANN_00{t1}01_00{t2}12_climo.nc'
 
 #o_file = '/Users/irenavankova/Work/data_sim/E3SM_outputs/SGR/ncfiles/S12_control/clim_61-70_ts_1-70/mpaso_ANN_006101_007012_climo.nc'
 
@@ -81,6 +87,8 @@ elif reg == 'FRIS':
     iam = (FloatingMask == 1) & (lat > -84) & (lat < -74.4) & (lon > 275) & (lon < 330)
 elif reg == 'Totten':
     iam = (FloatingMask == 1) & (lat > -68) & (lat < -66) & (lon > 113.5) & (lon < 117.5)
+elif reg == 'Getz':
+    iam = (FloatingMask == 1) & (lat > -75) & (lat < -73.5) & (lon > 225) & (lon < 245.5)
 
 PTc = PTc[iam]
 PSc = PSc[iam]
@@ -174,7 +182,7 @@ plt.plot([PSSGR, PSgade], [PTSGR, PTgade], linestyle='--', linewidth=1., color='
 
 if reg == 'Amery':
     plt.ylim([-2.5, -0.8])
-    plt.xlim([33.8, 34.5])
+    plt.xlim([33.8, 34.8])
 elif reg == 'PIG':
     plt.ylim([-2, 1.2])
     plt.xlim([33.8, 34.8])
@@ -187,8 +195,11 @@ elif reg == 'Ross':
 elif reg == 'FRIS':
     plt.ylim([-2.8, -1.5])
     plt.xlim([33.8, 35])
+elif reg == 'Getz':
+    plt.ylim([-2.5, 2])
+    plt.xlim([33.8, 34.8])
 else:
-    plt.ylim([-2.5, 0])
+    plt.ylim([-2.5, 2])
     plt.xlim([33.8, 34.8])
 
 
