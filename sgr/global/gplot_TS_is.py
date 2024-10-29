@@ -11,10 +11,10 @@ opt_save = 1
 rho_fw = 1000.
 secPerYear = 365 * 24 * 60 * 60
 
-opt_23 = 1
+opt_23 = 0
 
 t1 = 71
-t1 = 61
+#t1 = 61
 t2 = t1+9
 ts2 = t2
 
@@ -23,9 +23,9 @@ if opt_23 == 1:
     t2 = 26
     ts2 = 32
 
-r = 6
+r = 7
 
-reglist = ["PIG", "Thwaites" , "Totten" , "Amery" , "Ross", "FRIS", "Getz"]
+reglist = ["PIG", "Thwaites" , "Totten" , "Amery" , "Ross", "FRIS", "Getz","Fimbul"]
 reg = reglist[r]
 ttle = f'{reg}_decade_{t1}_{t2}'
 #p_file = f'/Users/irenavankova/Work/data_sim/E3SM_files/E3SM_initial_condition/ECwISC30to60E2r1/ocean.ECwISC30to60E2r1.230220.nc'
@@ -82,13 +82,19 @@ elif reg == 'PIG':
 elif reg == 'Thwaites':
     iam = (FloatingMask == 1) & (lat > -75.6894) & (lat < -74.6915) & (lon > -107.9729+360) & (lon < -104.0573+360)
 elif reg == 'Ross':
-    iam = (FloatingMask == 1) & (lat > -85.6) & (lat < -77.4) & (lon > 158.64) & (lon < 212)
+    #iam = (FloatingMask == 1) & (lat > -85.6) & (lat < -77.4) & (lon > 158.64) & (lon < 212)
+    iam1 = (FloatingMask == 1) & (lat > -85.6) & (lat < -77.4) & (lon > 158.64) & (lon < 212.5)
+    iam2 = (lat < -77.8) | (lon < 200)
+    iam = np.logical_and(iam1, iam2)
 elif reg == 'FRIS':
     iam = (FloatingMask == 1) & (lat > -84) & (lat < -74.4) & (lon > 275) & (lon < 330)
 elif reg == 'Totten':
     iam = (FloatingMask == 1) & (lat > -68) & (lat < -66) & (lon > 113.5) & (lon < 117.5)
 elif reg == 'Getz':
     iam = (FloatingMask == 1) & (lat > -75) & (lat < -73.5) & (lon > 225) & (lon < 245.5)
+elif reg == 'Fimbul':
+    iam = (FloatingMask == 1) & (lat > -72) & (lat < -69.5) & ((lon > 357.3) | (lon < 7.8))
+
 
 PTc = PTc[iam]
 PSc = PSc[iam]
@@ -190,7 +196,7 @@ elif reg == 'Thwaites':
     plt.ylim([-2, 2])
     plt.xlim([33.8, 34.8])
 elif reg == 'Ross':
-    plt.ylim([-2.8, 1])
+    plt.ylim([-2.8, -1])
     plt.xlim([33.8, 35])
 elif reg == 'FRIS':
     plt.ylim([-2.8, -1.5])

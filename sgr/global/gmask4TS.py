@@ -63,13 +63,22 @@ plt.plot(lon[iam],lat[iam],'k.')
 iam = (FloatingMask == 1) & (lat > -75) & (lat < -73.5) & (lon > 225) & (lon < 245.5)
 plt.plot(lon[iam],lat[iam],'y.')
 #Amundsen shelf (Getz upstream)
-iam = (FloatingMask == 0) & (lat > -75) & (lat < -71) & (lon > 235) & (lon < 246)  & (H < 1500)
+#iam = (FloatingMask == 0) & (lat > -75) & (lat < -71) & (lon > 235) & (lon < 246)  & (H < 1500)
+#Amundsen shelf (Getz all)
+iam = (FloatingMask == 0) & (lat > -75.5) & (lat < -71) & (lon > 225) & (lon < 252)  & (H < 1500)
 plt.plot(lon[iam],lat[iam],'g.')
 
 
 #Ross
-iam = (FloatingMask == 1) & (lat > -85.6) & (lat < -77.4) & (lon > 158.64) & (lon < 212)
+iam1 = (FloatingMask == 1) & (lat > -85.6) & (lat < -77.4) & (lon > 158.64) & (lon < 212.5)
+iam2 = (lat < -77.8) | (lon < 200)
+iam = np.logical_and(iam1, iam2)
+
+
 plt.plot(lon[iam],lat[iam],'m.')
+iam = (FloatingMask == 0) & (lat > -85.6) & (lat < -73) & (lon > 158.64) & (lon < 210) & (H < 2000)
+plt.plot(lon[iam],lat[iam],'k.')
+
 
 #FRIS
 iam = (FloatingMask == 1) & (lat > -84) & (lat < -74.4) & (lon > 275) & (lon < 330)
@@ -80,11 +89,22 @@ plt.plot(lon[iam],lat[iam],'y.')
 #Filchner Shelf
 iam = (FloatingMask == 0) & (lat > -80) & (lat < -72) & (lon > 316) & (lon < 332) & (H < 1500)
 plt.plot(lon[iam],lat[iam],'m.')
+#FRIS Shelf
+iam = (FloatingMask == 0) & (lat > -80) & (lat < -72) & (lon > 298) & (lon < 332) & (H < 1500)
+plt.plot(lon[iam],lat[iam],'m.')
 
 
 #Totten
 iam = (FloatingMask == 1) & (lat > -68) & (lat < -66) & (lon > 113.5) & (lon < 117.5)
 plt.plot(lon[iam],lat[iam],'k.')
+iam = (FloatingMask == 0) & (lat > -68) & (lat < -65) & (lon > 114) & (lon < 124) & (H < 2000)
+plt.plot(lon[iam],lat[iam],'m.')
+
+#FImbul
+iam = (FloatingMask == 1) & (lat > -72) & (lat < -69.5) & ((lon > 357.3) | (lon < 7.8))
+plt.plot(lon[iam],lat[iam],'k.')
+iam = (FloatingMask == 0) & (lat > -72) & (lat < -69.5) & ((lon > 357.3) | (lon < 7.8)) & (H < 2500)
+plt.plot(lon[iam],lat[iam],'m.')
 
 
 plt.show()
