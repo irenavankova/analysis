@@ -106,6 +106,23 @@ plt.plot(lon[iam],lat[iam],'k.')
 iam = (FloatingMask == 0) & (lat > -72) & (lat < -69.5) & ((lon > 357.3) | (lon < 7.8)) & (H < 2500)
 plt.plot(lon[iam],lat[iam],'m.')
 
+#Nivlisen
+iam = (FloatingMask == 1) & (lat > -71) & (lat < -69.8) & (lon > 9.5) & (lon < 12.9)
+plt.plot(lon[iam],lat[iam],'c.')
+
+#Roi Baudouin
+iam = (FloatingMask == 1) & (lat > -71.5) & (lat < -69) & (lon >24) & (lon < 33)
+plt.plot(lon[iam],lat[iam],'y.')
+
+#Muninisen
+iam = (FloatingMask == 1) & (lat > -71.5) & (lat < -69) & (lon >19) & (lon < 22)
+plt.plot(lon[iam],lat[iam],'m.')
+
+#Ekstrom
+iam = (FloatingMask == 1) & (lat > -72) & (lat < -70) & (lon >350) & (lon < 352.4)
+plt.plot(lon[iam],lat[iam],'m.')
+
+
 
 plt.show()
 
