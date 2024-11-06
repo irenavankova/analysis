@@ -93,12 +93,35 @@ plt.plot(lon[iam],lat[iam],'m.')
 iam = (FloatingMask == 0) & (lat > -80) & (lat < -72) & (lon > 298) & (lon < 332) & (H < 1500)
 plt.plot(lon[iam],lat[iam],'m.')
 
+##Larsen
+iam = (FloatingMask == 1) & (lat > -69.5) & (lat < -66.1) & (lon > 294) & (lon < 300)
+plt.plot(lon[iam],lat[iam],'k.')
+
+
+##GeorgeVI
+iam = (FloatingMask == 1) & ((lat > -74) & (lat < -70) & (lon > 287.3) & (lon < 293.4)) & ((lat < -72.5) | (lon > 290))
+plt.plot(lon[iam],lat[iam],'k.')
+
+##Stange
+iam = (FloatingMask == 1) & (lat > -73.5) & (lat < -72.5) & (lon > 271) & (lon < 274)
+plt.plot(lon[iam],lat[iam],'y.')
+
+##Abbot
+iam = (FloatingMask == 1) & ((lat > -73.34) & (lat < -2) & (lon > 256) & (lon < 271)) & ((lat < -72.28) | (lon < 260)) & ((lat > -73.2) | (lon > 260))
+plt.plot(lon[iam],lat[iam],'c.')
+
+
+
 
 #Totten
 iam = (FloatingMask == 1) & (lat > -68) & (lat < -66) & (lon > 113.5) & (lon < 117.5)
 plt.plot(lon[iam],lat[iam],'k.')
 iam = (FloatingMask == 0) & (lat > -68) & (lat < -65) & (lon > 114) & (lon < 124) & (H < 2000)
 plt.plot(lon[iam],lat[iam],'m.')
+
+#MoscowU
+iam = (FloatingMask == 1) & ((lat > -68) & (lat < -66) & (lon > 119.5) & (lon < 122.3)) & ((lat < -67) | (lon > 120.5))
+plt.plot(lon[iam],lat[iam],'k.')
 
 #FImbul
 iam = (FloatingMask == 1) & (lat > -72) & (lat < -69.5) & ((lon > 357.3) | (lon < 7.8))

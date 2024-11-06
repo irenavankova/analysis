@@ -49,13 +49,33 @@ def get_mask(is_list):
         elif is_list[n] == "Thwaites":
             # Thwaites
             iam[n,:] = (FloatingMask == 1) & (lat > -75.6894) & (lat < -74.6915) & (lon > -107.9729 + 360) & (lon < -104.0573 + 360)
-        elif is_list[n] == "Pine Island":
+        elif is_list[n] == "PineIsland":
             # Pine Island
             iam[n,:] = (FloatingMask == 1) & (lat > -75.7071) & (lat < -74.2684) & (lon > -103.4880 + 360) & (lon < -98.4832 + 360)
         elif is_list[n] == "Getz":
             # Getz
             iam[n, :] = (FloatingMask == 1) & (lat > -75) & (lat < -73.5) & (lon > 225) & (lon < 245.5)
-
+        elif is_list[n] == "Totten":
+            # Totten
+            iam[n, :] = (FloatingMask == 1) & (lat > -68) & (lat < -66) & (lon > 113.5) & (lon < 117.5)
+        elif is_list[n] == "MoscowU":
+            # Moscow University
+            iam[n, :] = (FloatingMask == 1) & ((lat > -68) & (lat < -66) & (lon > 119.5) & (lon < 122.3)) & ((lat < -67) | (lon > 120.5))
+        elif is_list[n] == "GeorgeVI":
+            # GeorgeVI
+            iam[n, :] = (FloatingMask == 1) & ((lat > -74) & (lat < -70) & (lon > 287.3) & (lon < 293.4)) & ((lat < -72.5) | (lon > 290))
+        elif is_list[n] == "Stange":
+            # Stange
+            iam[n, :] = (FloatingMask == 1) & (lat > -73.5) & (lat < -72.5) & (lon > 271) & (lon < 274)
+        elif is_list[n] == "Abbot":
+            # Abbot
+            iam[n, :] = (FloatingMask == 1) & ((lat > -73.34) & (lat < -2) & (lon > 256) & (lon < 271)) & ((lat < -72.28) | (lon < 260)) & ((lat > -73.2) | (lon > 260))
+        elif is_list[n] == "Larsen":
+            # Larsen
+            iam[n, :] = (FloatingMask == 1) & (lat > -69.5) & (lat < -66.1) & (lon > 294) & (lon < 300)
+        elif is_list[n] == "FRIS":
+            # FRIS
+            iam[n, :] = (FloatingMask == 1) & (lat > -84) & (lat < -74.4) & (lon > 275) & (lon < 330)
 
     #iam = iam.astype(int)
     iam = iam.astype(bool)
