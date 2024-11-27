@@ -137,7 +137,7 @@ plt.plot(lon[iam],lat[iam],'c.')
 iam = (FloatingMask == 1) & (lat > -71.5) & (lat < -69) & (lon >24) & (lon < 33)
 plt.plot(lon[iam],lat[iam],'y.')
 
-#Muninisen
+#Muninisen (Borchgrevnik)
 iam = (FloatingMask == 1) & (lat > -71.5) & (lat < -69) & (lon >19) & (lon < 22)
 plt.plot(lon[iam],lat[iam],'m.')
 
