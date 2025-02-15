@@ -9,6 +9,7 @@ import os
 
 def get_mask(is_list):
 
+    #MPAS-ocean file
     p_file = f'/Users/irenavankova/Work/data_sim/E3SM_files/E3SM_initial_condition/SOwISC12to60E2r4/ocean.SOwISC12to60E2r4.230220.nc'
 
     dsMesh = xarray.open_dataset(p_file)
@@ -22,15 +23,31 @@ def get_mask(is_list):
     FloatingMask = np.squeeze(dsMesh.landIceFloatingMask.data)
     areaCell = np.squeeze(dsMesh.areaCell.data)
 
-    #H = np.squeeze(dsMesh.restingThickness.data)
-    #H = np.nansum(H, axis=1); H = np.squeeze(H)
+    H = np.squeeze(dsMesh.restingThickness.data)
+    H = np.nansum(H, axis=1); H = np.squeeze(H)
 
     iam = np.zeros((len(is_list), len(FloatingMask)))
+
+    # Ship CTD data: Shenjie Zhou
+    sz_file = f'/Users/irenavankova/Desktop/Shenjie/Shenjie_CT.nc'
+    dsSZ = xarray.open_dataset(sz_file)
+    dsSZ = dsSZ[['lat', 'lon', 'bathy']]
+    dsSZ.load()
+    latsz = np.squeeze(dsSZ.lat.data)
+    lonsz = np.squeeze(dsSZ.lon.data)
+    lonsz[lonsz < 0] = lonsz[lonsz < 0] + 360
+    Hsz = np.squeeze(dsSZ.bathy.data)
+
+    isz = np.zeros((len(is_list), len(latsz)))
 
     for n in range(len(is_list)):
         if is_list[n] == "Amery":
             #AMERY
             iam[n,:] = (FloatingMask == 1) & (lat > -74.3608) & (lat < -67.7122) & (lon > 62.0419) & (lon < 78)
+        elif is_list[n] == "Amery_shelf":
+            #AMERY continental shelf
+            iam[n,:] = (FloatingMask == 0) & (lat > -70) & (lat < -65) & (lon > 67.5) & (lon < 80) & (H < 1500)
+            isz[n,:] = (latsz > -70) & (latsz < -65) & (lonsz > 67.5) & (lonsz < 80) & (-Hsz < 1500)
         elif is_list[n] == "RoiB":
             # Roi Baudouin
             iam[n,:] = (FloatingMask == 1) & (lat > -71.5) & (lat < -69) & (lon > 24) & (lon < 33)
@@ -76,12 +93,27 @@ def get_mask(is_list):
         elif is_list[n] == "Filchner-Ronne":
             # FRIS
             iam[n, :] = (FloatingMask == 1) & (lat > -84) & (lat < -74.4) & (lon > 275) & (lon < 330)
+        elif is_list[n] == "Filchner-Ronne_shelf":
+            # FRIS
+            iam[n, :] = (FloatingMask == 0) & (lat > -80) & (lat < -72) & (lon > 298) & (lon < 332) & (H < 1500)
+            isz[n, :] = (latsz > -80) & (latsz < -72) & (lonsz > 298) & (lonsz < 332) & (-Hsz < 1500)
         elif is_list[n] == "Ross":
             # Ross
             iam1 = (FloatingMask == 1) & (lat > -85.6) & (lat < -77.4) & (lon > 158.64) & (lon < 212.5)
             iam2 = (lat < -77.8) | (lon < 200)
             iam[n, :] = np.logical_and(iam1, iam2)
+        elif is_list[n] == "Ross_shelf":
+            # Ross shelf
+            iam[n, :] = (FloatingMask == 0) & (lat > -85.6) & (lat < -73) & (lon > 158.64) & (lon < 210) & (H < 1500)
+            isz[n, :] = (latsz > -85.6) & (latsz < -73) & (lonsz > 158.64) & (lonsz < 210) & (-Hsz < 1500)
+        elif is_list[n] == "Amundsen":
+            # Amundsen sea ice shelves all
+            iam[n, :] = (FloatingMask == 1) & (lat > -76) & (lat < -73.2) & (lon > 225) & (lon < 261)
+        elif is_list[n] == "Amundsen_shelf":
+            iam[n, :] = (FloatingMask == 0) & (lat > -76) & (lat < -71) & (lon > 225) & (lon < 260) & (H < 1500)
+            isz[n, :] = (latsz > -76) & (latsz < -71) & (lonsz > 225) & (lonsz < 260) & (-Hsz < 1500)
 
     #iam = iam.astype(int)
     iam = iam.astype(bool)
-    return iam, areaCell
+    isz = isz.astype(bool)
+    return iam, areaCell, isz

@@ -11,12 +11,9 @@ opt_save = 0
 rho_fw = 1000.
 secPerYear = 365 * 24 * 60 * 60
 
+# MPAS Ocean data
 p_file = f'/Users/irenavankova/Work/data_sim/E3SM_files/E3SM_initial_condition/SOwISC12to60E2r4/ocean.SOwISC12to60E2r4.230220.nc'
-
-#o_file = '/Users/irenavankova/Work/data_sim/E3SM_outputs/SGR/ncfiles/S12_control/clim_61-70_ts_1-70/mpaso_ANN_006101_007012_climo.nc'
-
 dsMesh = xarray.open_dataset(p_file)
-#dsMesh = dsMesh[['latCell', 'lonCell','landIceFloatingMask','temperature','salinity','nVertLevels']]
 dsMesh = dsMesh[['latCell', 'lonCell','landIceFloatingMask','nVertLevels','areaCell','maxLevelCell','restingThickness']]
 dsMesh.load()
 
@@ -42,7 +39,7 @@ iam = (FloatingMask == 1) & (lat > -74.3608) & (lat < -67.7122) & (lon > 62.0419
 plt.plot(lon[iam],lat[iam],'g.')
 
 #AMERY Shelf
-iam = (FloatingMask == 0) & (lat > -70) & (lat < -65) & (lon > 70) & (lon < 80) & (H < 1500)
+iam = (FloatingMask == 0) & (lat > -70) & (lat < -65) & (lon > 67.5) & (lon < 80) & (H < 1500)
 plt.plot(lon[iam],lat[iam],'y.')
 
 #PIG
@@ -68,15 +65,23 @@ plt.plot(lon[iam],lat[iam],'y.')
 iam = (FloatingMask == 0) & (lat > -75.5) & (lat < -71) & (lon > 225) & (lon < 252)  & (H < 1500)
 plt.plot(lon[iam],lat[iam],'g.')
 
+# Amundsen sea shelf all
+iam = (FloatingMask == 0) & (lat > -76) & (lat < -71) & (lon > 225) & (lon < 260)  & (H < 1500)
+plt.plot(lon[iam],lat[iam],'.',color='gray')
+# Amundsen sea ice shelves all
+iam = (FloatingMask == 1) & (lat > -76) & (lat < -73.2) & (lon > 225) & (lon < 261)
+plt.plot(lon[iam],lat[iam],'.',color='black')
+
+
+
 
 #Ross
 iam1 = (FloatingMask == 1) & (lat > -85.6) & (lat < -77.4) & (lon > 158.64) & (lon < 212.5)
 iam2 = (lat < -77.8) | (lon < 200)
 iam = np.logical_and(iam1, iam2)
-
-
 plt.plot(lon[iam],lat[iam],'m.')
-iam = (FloatingMask == 0) & (lat > -85.6) & (lat < -73) & (lon > 158.64) & (lon < 210) & (H < 2000)
+#Ross shelf
+iam = (FloatingMask == 0) & (lat > -85.6) & (lat < -73) & (lon > 158.64) & (lon < 210) & (H < 1500)
 plt.plot(lon[iam],lat[iam],'k.')
 
 
@@ -91,7 +96,7 @@ iam = (FloatingMask == 0) & (lat > -80) & (lat < -72) & (lon > 316) & (lon < 332
 plt.plot(lon[iam],lat[iam],'m.')
 #FRIS Shelf
 iam = (FloatingMask == 0) & (lat > -80) & (lat < -72) & (lon > 298) & (lon < 332) & (H < 1500)
-plt.plot(lon[iam],lat[iam],'m.')
+plt.plot(lon[iam],lat[iam],'g.')
 
 ##Larsen
 iam = (FloatingMask == 1) & (lat > -69.5) & (lat < -66.1) & (lon > 294) & (lon < 300)
