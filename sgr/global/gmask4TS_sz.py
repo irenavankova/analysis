@@ -63,6 +63,20 @@ plt.plot(lonsz[iam],latsz[iam],'g.')
 iam = (latsz > -76) & (latsz < -71) & (lonsz > 225) & (lonsz < 260)  & (-Hsz < 1500)
 plt.plot(lonsz[iam],latsz[iam],'.',color='gray')
 
+#Larsen Shelf
+iam = (latsz > -69.5) & (latsz < -66.1) & (lonsz > 298) & (lonsz < 310) & (-Hsz < 1500)
+plt.plot(lonsz[iam],latsz[iam],'.',color='m')
+
+#Totten MU shelf
+iam = (latsz > -68) & (latsz < -65) & (lonsz > 114) & (lonsz < 124) & (-Hsz < 1500)
+plt.plot(lonsz[iam],latsz[iam],'g.')
+
+#Fimbul MU shelf
+iam = (latsz > -72) & (latsz < -69.5) & ((lonsz > 357.3) | (lonsz < 7.8)) & (-Hsz < 1500)
+plt.plot(lonsz[iam],latsz[iam],'m.')
+
+
+
 
 
 plt.show()

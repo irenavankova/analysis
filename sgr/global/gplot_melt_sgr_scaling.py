@@ -11,8 +11,10 @@ from scipy.optimize import curve_fit
 
 
 # Get subglacial discharge per ice shelf
-rho_fw = 1000
 d2y = 365
+rho_fw = 1000.
+secPerYear = 365 * 24 * 60 * 60
+
 dir_fig_save = '/Users/irenavankova/Work/data_sim/SGR/global/Scaling'
 
 #iceshelves = ["Amery", "Thwaites", "Getz", "Totten"]
@@ -22,7 +24,7 @@ iceshelves = ["George_VI", "Pine_Island", "Thwaites", "Totten", "Fimbul", "Ross"
 #iceshelves = ["George_VI", "Pine_Island", "Thwaites", "Totten","Fimbul", "Ross"]
 
 nmnow = 'All'
-opt_save = 1
+opt_save = 0
 opt_fits = 0
 
 sgr_file = f'/Users/irenavankova/Work/data_sim/E3SM_files/sgr_files_IV/MALI_20240327/DSGR.massFlux.MALI.out2055.SOwISC12to60E2r4.20240328.nc'
@@ -30,7 +32,7 @@ ds = xarray.open_dataset(sgr_file)
 ds.load()
 sgr = np.squeeze(ds.subglacialRunoffFlux.data)
 
-iam, areaCell = gmask_is.get_mask(iceshelves)
+iam, areaCell, isz = gmask_is.get_mask(iceshelves)
 
 sgr_vol_flux = np.zeros((len(iceshelves)))
 for n in range(len(iceshelves)):
@@ -40,19 +42,36 @@ for n in range(len(iceshelves)):
     print(sgr_vol_flux[n])
 
 # Get melt rates
-tseries = ["0001-0110", "0001-0110", "0001-0050", "0001-0050"]
-tsegment = ["clim_101-110_ts_1-110", "clim_101-110_ts_1-110", "clim_41-50_ts_1-50", "clim_41-50_ts_1-50"]
 sims = ["S12_control", "S12_mali", "S12_mali_x4" , "S12_mali_x8"]
+#sims = ["S12_control", "S12_mali", "S12_mali_x4" , "S12_mali_x10"]
+
+c1 = np.array([41, 41, 41, 41])
+c2 = c1 + 9
+t2 = c1 + 9
+
+tseries = []
+tsegment = []
+tclim = []
+
+for n in range(len(c1)):
+    tseries.append(f"0001-{t2[n]:04}")
+    tsegment.append(f"clim_{c1[n]}-{c2[n]}_ts_1-{t2[n]}")
+    tclim.append(f"{c1[n]:04}01_{c2[n]:04}12")
+
+#tseries = ["0001-0110", "0001-0110", "0001-0050", "0001-0050"]
+#tsegment = [f'clim_{c1[0]}-110_ts_1-110', "clim_101-110_ts_1-110", "clim_41-50_ts_1-50", "clim_41-50_ts_1-50"]
 
 melt = np.zeros((len(iceshelves), len(sims)))
+mr_vol_flux = np.zeros((len(iceshelves), len(sims)))
 
 for n in range(len(iceshelves)):
     shelf_name = iceshelves[n]
     if shelf_name == "PineIsland":
         shelf_name = "Pine_Island"
 
-    print(shelf_name)
     for s in range(len(sims)):
+        #print(shelf_name)
+        iis = iam[n, :]
 
         p_file = f'/Users/irenavankova/Work/data_sim/E3SM_outputs/SGR/ncfiles/{sims[s]}/{tsegment[s]}/iceShelfFluxes_{tseries[s]}.nc'
 
@@ -66,8 +85,20 @@ for n in range(len(iceshelves)):
             ind_x = np.where((regionNames == shelf_name))
             print(regionNames[ind_x])
 
-        ind_t = np.where((Time >= 21) & (Time <= 26))
+        ind_t = np.where((Time >= 26) & (Time <= 30))
+        #ind_t = np.where((Time >= 21) & (Time <= 26))
         melt[n,s] = np.mean(MeltFluxNow[ind_t, ind_x])
+
+        c_file = f'/Users/irenavankova/Work/data_sim/E3SM_outputs/SGR/ncfiles/{sims[s]}/{tsegment[s]}/mpaso_ANN_{tclim[s]}_climo.nc'
+        dsOut = xarray.open_dataset(c_file)
+        dsOut = dsOut[['timeMonthly_avg_landIceFreshwaterFluxTotal']]
+        dsOut.load()
+        mr_clim = np.squeeze(dsOut.timeMonthly_avg_landIceFreshwaterFluxTotal.data)
+
+        mr_mass_flux = np.nansum(mr_clim[iis] * areaCell[iis], axis=0)
+        #mr_vol_flux[n,s] = mr_mass_flux / rho_fw * secPerYear
+        mr_vol_flux[n, s] = mr_mass_flux * secPerYear / 10.0**12
+
 
 def f_n_pow_1_3(x, a):
     return a * np.power(x, 1/3)
@@ -95,7 +126,7 @@ for n in range(len(iceshelves)):
         plt.plot(xfit, f_n_pow_2_3(xfit, *popt), f'{clr[n]}-', linewidth=1)
     else:
         plt.plot(sgr_xax, melt[n, :] - melt[n, 0], f'{clr[n]}{smb[n]}', linewidth=1, linestyle='-', label=iceshelves[n])
-
+        plt.plot(sgr_xax, mr_vol_flux[n, :] - mr_vol_flux[n, 0], f'{clr[n]}x', linewidth=1, linestyle=':')
 
 plt.xlabel('SGR (m^3/s)')
 plt.ylabel('Integrated melf flux (GT/a)')

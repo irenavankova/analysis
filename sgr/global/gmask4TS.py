@@ -102,6 +102,10 @@ plt.plot(lon[iam],lat[iam],'g.')
 iam = (FloatingMask == 1) & (lat > -69.5) & (lat < -66.1) & (lon > 294) & (lon < 300)
 plt.plot(lon[iam],lat[iam],'k.')
 
+##Larsen shelf
+iam = (FloatingMask == 0) & (lat > -69.5) & (lat < -66.1) & (lon > 298) & (lon < 310) & (H < 1500)
+plt.plot(lon[iam],lat[iam],'m.')
+
 
 ##GeorgeVI
 iam = (FloatingMask == 1) & ((lat > -74) & (lat < -70) & (lon > 287.3) & (lon < 293.4)) & ((lat < -72.5) | (lon > 290))
@@ -121,17 +125,24 @@ plt.plot(lon[iam],lat[iam],'c.')
 #Totten
 iam = (FloatingMask == 1) & (lat > -68) & (lat < -66) & (lon > 113.5) & (lon < 117.5)
 plt.plot(lon[iam],lat[iam],'k.')
-iam = (FloatingMask == 0) & (lat > -68) & (lat < -65) & (lon > 114) & (lon < 124) & (H < 2000)
-plt.plot(lon[iam],lat[iam],'m.')
 
 #MoscowU
 iam = (FloatingMask == 1) & ((lat > -68) & (lat < -66) & (lon > 119.5) & (lon < 122.3)) & ((lat < -67) | (lon > 120.5))
 plt.plot(lon[iam],lat[iam],'k.')
+#Totten + Moscow shelf
+iam = (FloatingMask == 0) & (lat > -68) & (lat < -65) & (lon > 114) & (lon < 124) & (H < 1500)
+plt.plot(lon[iam],lat[iam],'m.')
+#Totten + Moscow
+iam = (FloatingMask == 1) & (lat > -68) & (lat < -66) & (lon > 113.5) & (lon < 122.3)
+plt.plot(lon[iam],lat[iam],'g.')
+
+
 
 #FImbul
 iam = (FloatingMask == 1) & (lat > -72) & (lat < -69.5) & ((lon > 357.3) | (lon < 7.8))
 plt.plot(lon[iam],lat[iam],'k.')
-iam = (FloatingMask == 0) & (lat > -72) & (lat < -69.5) & ((lon > 357.3) | (lon < 7.8)) & (H < 2500)
+#FImbul shelf
+iam = (FloatingMask == 0) & (lat > -72) & (lat < -69.5) & ((lon > 357.3) | (lon < 7.8)) & (H < 1500)
 plt.plot(lon[iam],lat[iam],'m.')
 
 #Nivlisen

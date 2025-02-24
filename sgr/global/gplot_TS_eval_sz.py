@@ -16,28 +16,45 @@ nsize = 0.1
 nsize_sis = 0.5
 
 # MPAS Ocean outputs
-tclimo = ["006101_007012", "007101_008012"]
-tseries = ["0001-0110", "0071-0080"]
-tsegment = ["clim_61-70_ts_1-70", "clim_71-80_ts_1-80"]
-sims = ["S12_control", "S12_control"]
+
+c1 = np.array([21])
+#c1 = np.array([21, 41, 101])
+c2 = c1 + 9
+t2 = c1 + 9
+
+tseries = []
+tsegment = []
+tclimo = []
+for n in range(len(c1)):
+    tseries.append(f"0001-{t2[n]:04}")
+    tsegment.append(f"clim_{c1[n]}-{c2[n]}_ts_1-{t2[n]}")
+    tclimo.append(f"{c1[n]:04}01_{c2[n]:04}12")
+
+#tclimo = ["006101_007012", "007101_008012"]
+#tseries = ["0001-0110", "0071-0080"]
+#tsegment = ["clim_61-70_ts_1-70", "clim_71-80_ts_1-80"]
+sims = ["S12_control", "S12_control", "S12_control"]
 #sims = ["S12_control"]
 
 
 # Get region mask
 if region_name == "Amery":
+    ttl = "Amery"
     sis_ctd = ["Amery_AM06"]
     iceshelves = ["Amery_shelf","Amery"]
     nshelf = 0
     y_lim = np.array([-2.5, 1.0])
     x_lim = np.array([33.0, 35.0])
 elif region_name == "Ross":
+    ttl = "Ross"
     sis_ctd = []
     iceshelves = ["Ross_shelf","Ross"]
     nshelf = 0
     y_lim = np.array([-2.6, 1.6])
     x_lim = np.array([33.5, 35.2])
     nsize_sis = 0.1
-elif region_name == "Filchner-Ronne":
+elif region_name == "FRIS":
+    ttl = "Filchner-Ronne"
     sis_ctd = ["Filchner_FNE1","Filchner_FNE3","Filchner_FSE1","Filchner_FSW1","Filchner_FSW2","Ronne_F1","Ronne_F2","Ronne_F3","Ronne_F4","Ronne_Site1","Ronne_Site2","Ronne_Site3","Ronne_Site4","Ronne_Site5"]
     iceshelves = ["Filchner-Ronne_shelf","Filchner-Ronne"]
     nshelf = 0
@@ -45,12 +62,38 @@ elif region_name == "Filchner-Ronne":
     x_lim = np.array([33.5, 34.9])
     nsize_sis = 0.1
 elif region_name == "Amundsen":
+    ttl = "Amundsen Sea shelves"
     sis_ctd = ["Thwaites_T1"]
     iceshelves = ["Amundsen_shelf","Amundsen"]
     nshelf = 0
     y_lim = np.array([-2.3, 2.0])
     x_lim = np.array([33.0, 35.2])
     nsize_sis = 0.5
+elif region_name == "Larsen":
+    ttl = "Larsen C"
+    sis_ctd = ["LarsenC_F111","LarsenC_F211"]
+    iceshelves = ["Larsen_C_shelf","Larsen_C"]
+    nshelf = 0
+    y_lim = np.array([-2.2, 0.7])
+    x_lim = np.array([33.5, 34.9])
+    nsize_sis = 0.1
+    nsize = 0.3
+elif region_name == "TottenMU":
+    ttl = "Totten/Moscow University"
+    sis_ctd = []
+    iceshelves = ["TottenMU_shelf","TottenMU"]
+    nshelf = 0
+    y_lim = np.array([-2.6, 1.6])
+    x_lim = np.array([33.5, 35.2])
+    nsize_sis = 0.5
+elif region_name == "Fimbul":
+    ttl = "Fimbul"
+    sis_ctd = ["Fimbul_M1","Fimbul_M2","Fimbul_M3"]
+    iceshelves = ["Fimbul_shelf","Fimbul"]
+    nshelf = 0
+    y_lim = np.array([-2.2, 1.5])
+    x_lim = np.array([33.3, 34.8])
+    nsize_sis = 0.2
 
 iam, areaCell, isz = gmask_is.get_mask(iceshelves)
 
@@ -126,11 +169,11 @@ CS = plt.contour(PSgrid, PTgrid, neutralDensity, contours, linestyles=':', linew
 plt.clabel(CS, fontsize=8, inline=1, fmt='%4.2f')
 
 #clr = 'rybm'
-clr = ["lightskyblue", "darkblue", "lightcoral", "maroon"]
+clr = ["lightskyblue", "darkblue", "lightcoral", "maroon", "moccasin", "darkorange"]
 
 ctr = 0
 # Load and plot TS variables for control simulation(s)
-for s in range(len(sims)):
+for s in range(len(tseries)):
     file_ts = f'/Users/irenavankova/Work/data_sim/E3SM_outputs/SGR/ncfiles/{sims[s]}/{tsegment[s]}/mpaso_ANN_{tclimo[s]}_climo.nc'
     dsOutc = xarray.open_dataset(file_ts)
     dsOutc = dsOutc[['timeMonthly_avg_activeTracers_temperature','timeMonthly_avg_activeTracers_salinity','timeMonthly_avg_layerThickness']]
@@ -168,7 +211,18 @@ if 'PTsis' in globals():
 plt.plot(PSbins, PTFreezing, linestyle='--', linewidth=1., color='g')
 plt.ylim(y_lim)
 plt.xlim(x_lim)
-plt.show()
+
+fsize = 10
+plt.xlabel('Salinity (PSU)', fontsize=fsize)
+plt.ylabel('Potential temperature ($^\circ$C)', fontsize=fsize)
+plt.title(ttl, fontsize=fsize)
+plt.tight_layout()
+
+dir_fig_save = '/Users/irenavankova/Work/data_sim/SGR/global/TS_eval_sz'
+if opt_save == 1:
+    plt.savefig(f'{dir_fig_save}/{region_name}.png', bbox_inches='tight', dpi=600)
+else:
+    plt.show()
 
 '''
 

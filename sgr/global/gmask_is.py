@@ -60,6 +60,10 @@ def get_mask(is_list):
         elif is_list[n] == "Fimbul":
             # Fimbul
             iam[n,:] = (FloatingMask == 1) & (lat > -72) & (lat < -69.5) & ((lon > 357.3) | (lon < 7.8))
+        elif is_list[n] == "Fimbul_shelf":
+            # Fimbul shelf
+            iam[n, :] = (FloatingMask == 0) & (lat > -72) & (lat < -69.5) & ((lon > 357.3) | (lon < 7.8)) & (H < 1500)
+            isz[n, :] = (latsz > -72) & (latsz < -69.5) & ((lonsz > 357.3) | (lonsz < 7.8)) & (-Hsz < 1500)
         elif is_list[n] == "Ekstrom":
             # Ekstrom
             iam[n,:] = (FloatingMask == 1) & (lat > -72) & (lat < -70) & (lon > 350) & (lon < 352.4)
@@ -78,6 +82,13 @@ def get_mask(is_list):
         elif is_list[n] == "MoscowU":
             # Moscow University
             iam[n, :] = (FloatingMask == 1) & ((lat > -68) & (lat < -66) & (lon > 119.5) & (lon < 122.3)) & ((lat < -67) | (lon > 120.5))
+        elif is_list[n] == "TottenMU":
+            # Totten MoscowU
+            iam[n, :] = (FloatingMask == 1) & (lat > -68) & (lat < -66) & (lon > 113.5) & (lon < 122.3)
+        elif is_list[n] == "TottenMU_shelf":
+            # Totten MoscowU shelf
+            iam[n, :] = (FloatingMask == 0) & (lat > -68) & (lat < -65) & (lon > 114) & (lon < 124) & (H < 1500)
+            isz[n, :] = (latsz > -68) & (latsz < -65) & (lonsz > 114) & (lonsz < 124) & (-Hsz < 1500)
         elif is_list[n] == "George_VI":
             # GeorgeVI
             iam[n, :] = (FloatingMask == 1) & ((lat > -74) & (lat < -70) & (lon > 287.3) & (lon < 293.4)) & ((lat < -72.5) | (lon > 290))
@@ -90,6 +101,10 @@ def get_mask(is_list):
         elif is_list[n] == "Larsen_C":
             # Larsen
             iam[n, :] = (FloatingMask == 1) & (lat > -69.5) & (lat < -66.1) & (lon > 294) & (lon < 300)
+        elif is_list[n] == "Larsen_C_shelf":
+            # Larsen shelf
+            iam[n, :] = (FloatingMask == 0) & (lat > -69.5) & (lat < -66.1) & (lon > 298) & (lon < 310) & (H < 1500)
+            isz[n, :] = (latsz > -69.5) & (latsz < -66.1) & (lonsz > 298) & (lonsz < 310) & (-Hsz < 1500)
         elif is_list[n] == "Filchner-Ronne":
             # FRIS
             iam[n, :] = (FloatingMask == 1) & (lat > -84) & (lat < -74.4) & (lon > 275) & (lon < 330)
