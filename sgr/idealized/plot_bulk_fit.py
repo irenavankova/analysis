@@ -6,7 +6,7 @@ import numpy # for arrays!
 import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
 
-opt_save = 1
+opt_save = 0
 
 rho_fw = 1000.
 secPerYear = 365 * 24 * 60 * 60

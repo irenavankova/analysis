@@ -18,20 +18,23 @@ secPerYear = 365 * 24 * 60 * 60
 
 dir_fig_save = '/Users/irenavankova/Work/data_sim/SGR/global/Scaling'
 
-#iceshelves = ["Amery", "Thwaites", "Getz", "Totten"]
 iceshelves = ["George_VI", "Pine_Island", "Thwaites", "Totten", "Fimbul", "Ross", "Amery", "Filchner-Ronne", "Larsen_C", "Getz"]
-#iceshelves = ["George_VI", "Pine_Island", "Thwaites", "Totten","Fimbul"]
-#iceshelves = ["George_VI", "Pine_Island", "Thwaites", "Totten","Fimbul"]
-#iceshelves = ["George_VI", "Pine_Island", "Thwaites", "Totten","Fimbul", "Ross"]
 
 nmnow = 'All'
 opt_save = 0
-opt_fits = 0
+opt_fits = 1
 
 sgr_file = f'/Users/irenavankova/Work/data_sim/E3SM_files/sgr_files_IV/MALI_20240327/DSGR.massFlux.MALI.out2055.SOwISC12to60E2r4.20240328.nc'
 ds = xarray.open_dataset(sgr_file)
 ds.load()
 sgr = np.squeeze(ds.subglacialRunoffFlux.data)
+
+p_file = f'/Users/irenavankova/Work/data_sim/E3SM_files/E3SM_initial_condition/SOwISC12to60E2r4/ocean.SOwISC12to60E2r4.230220.nc'
+
+dsMesh = xarray.open_dataset(p_file)
+dsMesh = dsMesh[['maxLevelCell']]
+dsMesh.load()
+maxLevelCell = dsMesh.maxLevelCell.data - 1
 
 iam, areaCell, isz = gmask_is.get_mask(iceshelves)
 
@@ -53,9 +56,6 @@ c1 = np.array([0, 0, 0, 0])+41
 c2 = c1 + tseg
 t2 = c1 + tseg
 
-ts1 = 46
-ts2 = ts1+4
-
 tseries = []
 tsegment = []
 tclim = []
@@ -70,42 +70,50 @@ for n in range(len(c1)):
 
 melt = np.zeros((len(iceshelves), len(sims)))
 mr_vol_flux = np.zeros((len(iceshelves), len(sims)))
+tmax = np.zeros((len(iceshelves), len(sims)))
 
+#for n in range(1):
 for n in range(len(iceshelves)):
     shelf_name = iceshelves[n]
     if shelf_name == "PineIsland":
         shelf_name = "Pine_Island"
 
+    #for s in range(1):
     for s in range(len(sims)):
         #print(shelf_name)
         iis = iam[n, :]
 
-        p_file = f'/Users/irenavankova/Work/data_sim/E3SM_outputs/SGR/ncfiles/{sims[s]}/{tsegment[s]}/iceShelfFluxes_{tseries[s]}.nc'
-
-        dsOut = xarray.open_dataset(p_file)
+        c_file = f'/Users/irenavankova/Work/data_sim/E3SM_outputs/SGR/ncfiles/{sims[s]}/{tsegment[s]}/mpaso_ANN_{tclim[s]}_climo.nc'
+        dsOut = xarray.open_dataset(c_file)
+        dsOut = dsOut[['timeMonthly_avg_landIceFreshwaterFluxTotal','timeMonthly_avg_activeTracers_temperature']]
         dsOut.load()
-        MeltFluxNow = np.squeeze(dsOut.integratedMeltFlux.data)
-        Time = np.squeeze(dsOut.Time.data) / d2y
-        if s == 0:
-            regionNames = dsOut.regionNames.data
-            regionNames = np.squeeze(regionNames[0, :])
-            ind_x = np.where((regionNames == shelf_name))
-            print(regionNames[ind_x])
-
-        ind_t = np.where((Time >= ts1) & (Time <= ts2))
-        #ind_t = np.where((Time >= 21) & (Time <= 26))
-        melt[n,s] = np.mean(MeltFluxNow[ind_t, ind_x])
-
-        if do_calc_local == 1:
-            c_file = f'/Users/irenavankova/Work/data_sim/E3SM_outputs/SGR/ncfiles/{sims[s]}/{tsegment[s]}/mpaso_ANN_{tclim[s]}_climo.nc'
-            dsOut = xarray.open_dataset(c_file)
-            dsOut = dsOut[['timeMonthly_avg_landIceFreshwaterFluxTotal']]
-            dsOut.load()
-            mr_clim = np.squeeze(dsOut.timeMonthly_avg_landIceFreshwaterFluxTotal.data)
-
-            mr_mass_flux = np.nansum(mr_clim[iis] * areaCell[iis], axis=0)
-            #mr_vol_flux[n,s] = mr_mass_flux / rho_fw * secPerYear
-            mr_vol_flux[n, s] = mr_mass_flux * secPerYear / 10.0**12
+        mr_clim = np.squeeze(dsOut.timeMonthly_avg_landIceFreshwaterFluxTotal.data)
+        temp_clim = np.squeeze(dsOut.timeMonthly_avg_activeTracers_temperature.data)
+        ix = np.where(iis)[0]
+        '''
+        print(iis.shape)
+        print(ix.shape)
+        print(temp_clim[ix[0],:])
+        print(temp_clim[ix[0], maxLevelCell[ix[0]]])
+        print(temp_clim[ix[2], :])
+        print(temp_clim[ix[2], maxLevelCell[ix[2]]])
+        print(temp_clim)
+        print('BREAK')
+        
+        fHeight = 5
+        fWidth = 8
+        plt.figure(figsize=(fWidth, fHeight))
+        plt.hist(temp_clim)
+        plt.show()
+        '''
+        # Get max sea floor temperature
+        temp_clim = temp_clim[ix,maxLevelCell[ix]]
+        #tmax[n, s] = np.max(temp_clim, axis=0)
+        tmax[n, s] = np.mean(temp_clim, axis=0)
+        # Get melt rate
+        mr_mass_flux = np.nansum(mr_clim[iis] * areaCell[iis], axis=0)
+        #mr_vol_flux[n,s] = mr_mass_flux / rho_fw * secPerYear
+        mr_vol_flux[n, s] = mr_mass_flux * secPerYear / 10.0**12
 
 
 def f_n_pow_1_3(x, a):
@@ -118,26 +126,44 @@ xfit = np.linspace(0,1200,100)
 
 fHeight = 5
 fWidth = 8
-plt.figure(figsize=(fWidth, fHeight))
 clr = 'rkgbmcyrkgb'
 #smb = 'ooooo^^^sss'
 smb = 'ppppp^^^sss'
+sgr_mat = np.zeros((len(iceshelves), len(sims)))
 for n in range(len(iceshelves)):
     #sgr_xax = np.array([0, 1, 4, 8]) * sgr_vol_flux[n]
     #plt.plot(sgr_xax, melt[n,:], linewidth=1, label = iceshelves[n])
     sgr_xax = np.array([0, 1, 4, 8]) * sgr_vol_flux[n]
+    sgr_mat[n,:] = sgr_xax
 
+    '''
     if opt_fits == 1:
-        plt.plot(sgr_xax, melt[n, :] - melt[n, 0], f'{clr[n]}o', linewidth=3, label=iceshelves[n])
-        popt, pcov = curve_fit(f_n_pow_1_3, sgr_xax, melt[n,:]-melt[n,0], p0=10 ** 10)
+        plt.plot(sgr_xax, mr_vol_flux[n, :] - mr_vol_flux[n, 0], f'{clr[n]}{smb[n]}', linewidth=1, linestyle=':')
+        popt, pcov = curve_fit(f_n_pow_1_3, sgr_xax, mr_vol_flux[n, :] - mr_vol_flux[n, 0], p0=10 ** 10)
         plt.plot(xfit, f_n_pow_1_3(xfit, *popt), f'{clr[n]}--', linewidth=1)
-        popt, pcov = curve_fit(f_n_pow_2_3, sgr_xax, melt[n,:]-melt[n,0])
+        popt, pcov = curve_fit(f_n_pow_2_3, sgr_xax, mr_vol_flux[n, :] - mr_vol_flux[n, 0])
         plt.plot(xfit, f_n_pow_2_3(xfit, *popt), f'{clr[n]}-', linewidth=1)
     else:
-        plt.plot(sgr_xax, melt[n, :] - melt[n, 0], f'{clr[n]}{smb[n]}', linewidth=1, linestyle='-', label=iceshelves[n])
-        if do_calc_local == 1:
-            plt.plot(sgr_xax, mr_vol_flux[n, :] - mr_vol_flux[n, 0], f'{clr[n]}x', linewidth=1, linestyle=':')
+        plt.plot(sgr_xax, mr_vol_flux[n, :] - mr_vol_flux[n, 0], f'{clr[n]}{smb[n]}', linewidth=1, linestyle=':')
+    
+    fig, (ax1, ax2) = plt.subplots(2, 1)  # 2 rows, 1 column
+    ax1.plot(sgr_xax, mr_vol_flux[n, :] - mr_vol_flux[n, 0], f'{clr[n]}{smb[n]}', linewidth=1, linestyle=':')
+    ax2.plot(sgr_xax, tmax[n, :], f'{clr[n]}{smb[n]}', linewidth=1, linestyle=':')
+    plt.show()
+    '''
 
+#Plot of T vs SGR points
+fig1, ax1 = plt.subplots()
+#svec = sgr_mat.flatten()
+#tvec = tmax.flatten()
+#ax1.scatter(svec, tvec)
+for n in range(len(iceshelves)):
+    ax1.scatter(sgr_mat[n,:], tmax[n,:],label = iceshelves[n])
+
+plt.legend(loc = 'upper right' ,fontsize=8)
+plt.show()
+
+'''
 plt.xlabel('SGR (m^3/s)')
 plt.ylabel('Integrated melf flux (GT/a)')
 plt.legend(loc = 1,fontsize=8)
@@ -146,6 +172,12 @@ if opt_save == 1:
     plt.savefig(f'{dir_fig_save}/{nmnow}.png', bbox_inches='tight', dpi=300)
 else:
     plt.show()
+'''
+
+#plt.figure(figsize=(fWidth, fHeight))
+#for n in range(len(iceshelves)):
+    #plt.plot(sgr_xax, mr_vol_flux[n, :] - mr_vol_flux[n, 0], f'{clr[n]}{smb[n]}', linewidth=1, linestyle=':')
+
 
 '''
 fHeight = 5
