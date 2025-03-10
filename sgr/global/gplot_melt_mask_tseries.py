@@ -9,7 +9,7 @@ import os
 from scipy import signal
 import gmask_is
 
-opt_save = 1
+opt_save = 0
 dir_fig_save = '/Users/irenavankova/Work/data_sim/SGR/global/Tseries'
 Lwide = 0.75
 
@@ -32,7 +32,7 @@ Time = (np.arange(12*ny)+1)/12
 #iceshelves = ["Amery" , "RoiB", "Munin", "Nivl", "Fimbul", "Ekstrom"]
 #iceshelves = ["Amery" , "RoiB", "Munin", "Fimbul"]
 
-casenum = 'FRIS'
+casenum = 'Amundsen'
 dir_fig_save = f'{dir_fig_save}/{casenum}'
 if not os.path.exists(dir_fig_save):
     os.mkdir(dir_fig_save)
@@ -70,14 +70,14 @@ if casenum == 'FRIS':
     ncor = [1]
     mp = [1]
 
-iam, areaCell = gmask_is.get_mask(iceshelves)
+iam, areaCell, isz = gmask_is.get_mask(iceshelves)
 print(iam.shape)
 iis = iam[0,:]
 print(iis)
 
 for s in range(len(sims)):
     #Load melt
-    p_file = f'/Users/irenavankova/Work/data_sim/E3SM_outputs/SGR/ncfiles/{sims[s]}/{tsegment}/mpasTimeSeriesOcean.nc'
+    p_file = f'/Users/irenavankova/Work/data_sim/E3SM_outputs/SGR/ncfiles/{sims[s]}/{tsegment}/LIFW.nc'
     dsOut = xarray.open_dataset(p_file)
     dsOut = dsOut[['timeMonthly_avg_landIceFreshwaterFluxTotal']]
     dsOut.load()
