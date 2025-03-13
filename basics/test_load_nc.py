@@ -8,7 +8,7 @@ import gsw
 import os
 
 
-p_file = '/Users/irenavankova/Work/data_sim/E3SM_outputs/SGR/ncfiles/my_array.nc'
+p_file = '/Users/irenavankova/Work/data_sim/E3SM_outputs/SGR/ncfiles/post_derived/melt_flux_tseries.nc'
 dsOut = xarray.open_dataset(p_file)
 
 MeltFlux = np.array(dsOut.MeltFlux.data)
@@ -30,8 +30,8 @@ plt.clf()
 clr = ["brown", "orange", "deepskyblue" , "black"]
 
 #np.shape(H)[1]
-#for ind_r in range(np.shape(MeltFlux)[2]):
-for ind_r in range(1):
+for ind_r in range(np.shape(MeltFlux)[2]):
+#for ind_r in range(iceshelves):
 
     for s in range(len(sims)):
 
@@ -43,7 +43,7 @@ for ind_r in range(1):
             smb = '-'
 
         print(np.squeeze(MeltFlux[:, s, ind_r]))
-        plt.plot(Time, np.squeeze(MeltFlux[:, s, ind_r]) ,smb, color = clr[s] ,linewidth=1.5, label = sims[s])
+        plt.plot(Time, (np.squeeze(MeltFlux[:, s, ind_r])) ,smb, color = clr[s] ,linewidth=1, label = sims[s])
         #ind_t = np.where((Time >= 25) & (Time <= 50))
         #mmean = np.mean(MeltFluxNow[ind_t, ind_r])
         #print(mmean)

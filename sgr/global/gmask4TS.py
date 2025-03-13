@@ -34,6 +34,11 @@ plt.figure(figsize=(fWidth, fHeight))
 plt.plot(lon,lat,'b.')
 plt.plot(lon[iii],lat[iii],'r.')
 
+#ANT-AMERY
+iam = (FloatingMask == 1) & ((lat < -74.3608) | (lat > -67.7122) | (lon < 62.0419) | (lon > 78))
+#plt.plot(lon[iam],lat[iam],'g.')
+#plt.show()
+
 #AMERY
 iam = (FloatingMask == 1) & (lat > -74.3608) & (lat < -67.7122) & (lon > 62.0419) & (lon < 78)
 plt.plot(lon[iam],lat[iam],'g.')
@@ -153,13 +158,29 @@ plt.plot(lon[iam],lat[iam],'c.')
 iam = (FloatingMask == 1) & (lat > -71.5) & (lat < -69) & (lon >24) & (lon < 33)
 plt.plot(lon[iam],lat[iam],'y.')
 
-#Muninisen (Borchgrevnik)
+#Muninisen (Borchgrevink)
 iam = (FloatingMask == 1) & (lat > -71.5) & (lat < -69) & (lon >19) & (lon < 22)
 plt.plot(lon[iam],lat[iam],'m.')
 
 #Ekstrom
 iam = (FloatingMask == 1) & (lat > -72) & (lat < -70) & (lon >350) & (lon < 352.4)
 plt.plot(lon[iam],lat[iam],'m.')
+
+#Riiser-Larsen/Brunt
+iam = (FloatingMask == 1) & (lat > -76) & (lat < -71.66) & (lon >332.5) & (lon < 350)
+plt.plot(lon[iam],lat[iam],'c.')
+
+#Shackleton
+iam = (FloatingMask == 1) & (lat > -67) & (lat < -64) & (lon >92.5) & (lon < 105)
+plt.plot(lon[iam],lat[iam],'c.')
+
+#West
+iam = (FloatingMask == 1) & (lat > -68) & (lat < -66) & (lon >80) & (lon < 90)
+plt.plot(lon[iam],lat[iam],'k.')
+
+#Nickerson/Sulzberger/Swinbourne
+iam = (FloatingMask == 1) & (lat > -78) & (lat < -75) & (lon > 206) & (lon < 220)
+plt.plot(lon[iam],lat[iam],'c.')
 
 
 

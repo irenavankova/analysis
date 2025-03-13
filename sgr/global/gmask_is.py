@@ -41,7 +41,10 @@ def get_mask(is_list):
     isz = np.zeros((len(is_list), len(latsz)))
 
     for n in range(len(is_list)):
-        if is_list[n] == "Amery":
+        if is_list[n] == "Antarctica":
+            #Antarctica
+            iam[n,:] = (FloatingMask == 1)
+        elif is_list[n] == "Amery":
             #AMERY
             iam[n,:] = (FloatingMask == 1) & (lat > -74.3608) & (lat < -67.7122) & (lon > 62.0419) & (lon < 78)
         elif is_list[n] == "Amery_shelf":
@@ -127,6 +130,22 @@ def get_mask(is_list):
         elif is_list[n] == "Amundsen_shelf":
             iam[n, :] = (FloatingMask == 0) & (lat > -76) & (lat < -71) & (lon > 225) & (lon < 260) & (H < 1500)
             isz[n, :] = (latsz > -76) & (latsz < -71) & (lonsz > 225) & (lonsz < 260) & (-Hsz < 1500)
+        elif is_list[n] == "Riiser-Larsen/Brunt":
+            # Riiser-Larsen/Brunt
+            iam[n, :] = (FloatingMask == 1) & (lat > -76) & (lat < -71.66) & (lon > 332.5) & (lon < 350)
+        elif is_list[n] == "Antarctica-Amery":
+            # Antarctica-AMERY
+            iam[n, :] = (FloatingMask == 1) & ((lat < -74.3608) | (lat > -67.7122) | (lon < 62.0419) | (lon > 78))
+        elif is_list[n] == "Shackleton":
+            # Shackleton
+            iam[n, :] = (FloatingMask == 1) & (lat > -67) & (lat < -64) & (lon > 92.5) & (lon < 105)
+        elif is_list[n] == "West":
+            # West
+            iam[n, :] = (FloatingMask == 1) & (lat > -68) & (lat < -66) & (lon > 80) & (lon < 90)
+        elif is_list[n] == "NSS":
+            # Nickerson/Sulzberger/Swinbourne
+            iam[n, :] = (FloatingMask == 1) & (lat > -78) & (lat < -75) & (lon > 206) & (lon < 220)
+
 
     #iam = iam.astype(int)
     iam = iam.astype(bool)
