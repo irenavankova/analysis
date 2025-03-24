@@ -9,8 +9,8 @@ import os
 import matplotlib.ticker as ticker
 from scipy import signal
 
-opt_plot = 3
-opt_save = 1
+opt_plot = 0
+opt_save = 0
 
 if opt_plot == 0:
     fname = 'val'
@@ -21,7 +21,7 @@ elif opt_plot == 2:
 elif opt_plot == 3:
     fname = 'var'
 
-Tmax = 110
+Tmax = 50
 fyrs = f'y{Tmax}'
 
 p_file = f'/Users/irenavankova/Work/data_sim/E3SM_outputs/SGR/ncfiles/post_derived/melt_flux_tseries_{fyrs}.nc'
@@ -54,7 +54,7 @@ SgrMassFlux = np.array(dsOut.SgrMassFlux.data)
 SgrMassFlux = SgrMassFlux/1e12
 sgr_unit = 'GT/a'
 
-Tmin = 20
+Tmin = 0
 
 itmin = Tmin*12
 itmax = Tmax*12

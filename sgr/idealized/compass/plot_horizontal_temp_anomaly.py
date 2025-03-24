@@ -24,13 +24,15 @@ cmap_rho = 'cmo.balance'
 vmax = 0.2
 vmin = -vmax
 
-temp = 'rdn'
+temp = 'ra'
+#temp = 'rd'
 sgr = ["A", "A","A", "A"]
 hloc = ["112", "132", "122", "142"]
 
 c = 0
 out_name = f'{temp}_{hloc[c]}{sgr[c]}'
-plot_folder = f'/Users/irenavankova/Work/data_sim/SGR/idealized/plots/horizontal/temp_anom/{out_name}'
+#plot_folder = f'/Users/irenavankova/Work/data_sim/SGR/idealized/plots/horizontal/temp_anom/{out_name}'
+plot_folder = f'/Users/irenavankova/Desktop/test_temp/{out_name}'
 
 fdir = f'{p_base}/{temp}/{temp}_{hloc[c]}{sgr[c]}'
 fdir_ref = f'{p_base}/{temp}/{temp}_112N'

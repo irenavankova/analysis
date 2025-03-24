@@ -11,7 +11,7 @@ from scipy import signal
 from scipy.optimize import curve_fit
 
 
-opt_save = 1
+opt_save = 0
 
 Tmax = 50
 fyrs = f'y{Tmax}'
@@ -63,12 +63,12 @@ itmax = Tmax*12
 #ts1 = np.array([21, 24, 31, 41])
 #ts2 = np.array([23, 32, 40, 50])#
 
-ts1 = np.array([21, 41])
-ts2 = np.array([23, 50])
-tseg = f'main'
+#ts1 = np.array([21, 41])
+#ts2 = np.array([23, 50])
+#tseg = f'main'
 
-#ts1 = np.array([21])
-#ts2 = np.array([23])
+ts1 = np.array([20])
+ts2 = np.array([22])
 #tseg = f'{ts1[0]}_{ts2[0]}'
 
 
