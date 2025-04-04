@@ -66,7 +66,7 @@ elif region_name == "FRIS":
     nsize = 0.2
     nsize_sis = 0.2
 elif region_name == "Amundsen":
-    ttl = "Amundsen Sea shelves"
+    ttl = "Amundsen"
     sis_ctd = ["Thwaites_T1"]
     iceshelves = ["Amundsen_shelf","Amundsen"]
     nshelf = 0
@@ -178,7 +178,8 @@ CS = plt.contour(PSgrid, PTgrid, neutralDensity, contours, linestyles=':', linew
 plt.clabel(CS, fontsize=8, inline=1, fmt='%4.2f')
 
 #clr = 'rybm'
-clr = ["lightskyblue", "royalblue", "moccasin", "darkorange", "yellowgreen","darkolivegreen","plum", "purple", "lightcoral", "maroon"]
+#clr = ["lightskyblue", "royalblue", "moccasin", "darkorange", "yellowgreen","darkolivegreen","plum", "purple", "lightcoral", "maroon"]
+clr = ["lightcoral", "brown", "moccasin", "darkorange", "lightskyblue", "dodgerblue", "plum", "indigo"]
 
 ctr = 0
 PTcm = np.zeros(len(tseries)*len(iceshelves))
@@ -251,9 +252,9 @@ plt.ylim(y_lim)
 plt.xlim(x_lim)
 
 fsize = 10
-plt.xlabel('Salinity (PSU)', fontsize=fsize)
-plt.ylabel('Potential temperature ($^\circ$C)', fontsize=fsize)
-plt.title(ttl, fontsize=fsize)
+plt.xlabel('Salinity (PSU)', fontsize=fsize+4)
+plt.ylabel('Potential temperature ($^\circ$C)', fontsize=fsize+4)
+plt.title(ttl, fontsize=fsize+4)
 plt.tight_layout()
 
 dir_fig_save = '/Users/irenavankova/Work/data_sim/SGR/global/TS_eval_sgr'

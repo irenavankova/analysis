@@ -101,7 +101,7 @@ for j in range(len(region_name)):
 
 #plt.show()
 
-colors = ["lightgray", "slategray", "cyan","orange","yellow","brown","lightcoral","green","yellowgreen","royalblue","lightskyblue","darkorchid","plum","olive","darkkhaki"]
+colors = ["lightgray", "slategray", "cyan","green","yellowgreen","brown","lightcoral","orange","gold","royalblue","lightskyblue","darkorchid","plum","olive","darkkhaki"]
 
 # Create the colormap
 cmap_name = "segcor"

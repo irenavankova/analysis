@@ -73,7 +73,9 @@ itmax2 = Tmax2*12
 Time2 = Time2-Toffset
 
 
-clr = ["brown", "orange", "deepskyblue" , "black"]
+#clr = ["brown", "orange", "deepskyblue" , "black"]
+clr = ["brown", "darkorange", "deepskyblue", "indigo"]
+
 
 ncols = 2
 nrows = (len(ii)+1) // ncols
@@ -98,18 +100,18 @@ for ind_r in range(len(ii)):
         if s == 0:
             #smb = 'k:'
             smb = '-'
-            ref = np.squeeze(MeltFlux[itmin:itmax, s, ii[ind_r]])
+            if opt_plot > 0:
+                ref = np.squeeze(MeltFlux[itmin:itmax, s, ii[ind_r]])
+            else:
+                ref = np.squeeze(MeltFlux2[itmin:itmax2, s, ii[ind_r]])
         else:
             smb = '-'
 
         #print(np.squeeze(MeltFlux[:, s, ind_r]))
-        if s > 1:
-            print(50)
+        if (s > 1) | (opt_plot > 0):
             yplt = (np.squeeze(MeltFlux[itmin:itmax, s, ii[ind_r]]))
             tplt = Time[itmin:itmax]
         else:
-            print(110)
-            print(MeltFlux2.shape)
             yplt = (np.squeeze(MeltFlux2[itmin:itmax2, s, ii[ind_r]]))
             tplt = Time2[itmin:itmax2]
 
@@ -148,6 +150,10 @@ for ind_r in range(len(ii)):
         plt.setp(axes[j, k].get_xticklabels(), visible=False)
     axes[j,k].grid(which='major', linestyle=':', linewidth='0.5', color='gray')
     axes[j, k].yaxis.set_major_locator(ticker.MaxNLocator(nbins = 3))
+
+    if npl[ind_r] == 'Filchner-Ronne':
+        ymin, ymax = axes[j,k].get_ylim()
+        axes[j, k].set_ylim(numpy.array([-0.1, ymax]))
 
     k = k + 1
     if k > ncols-1:

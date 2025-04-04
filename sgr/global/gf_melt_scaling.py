@@ -11,7 +11,7 @@ from scipy import signal
 from scipy.optimize import curve_fit
 
 
-opt_save = 0
+opt_save = 1
 
 Tmax = 50
 fyrs = f'y{Tmax}'
@@ -37,8 +37,12 @@ sgr_unit = 'kg/(m$^{2}$a)'
 
 #ii = np.array([0, 12, 8, 7, 9, 17, 10, 1, 2, 5, 16, 15])
 #ii = np.arange(0,23,1)
-ipl = ["Antarctica", "Antarctica-Amery", "George_VI", "Pine_Island", "Thwaites", "Getz", "NSS", "Ross", "Totten", "Shackleton", "Amery", "RoiB", "Fimbul", "Riiser-Larsen/Brunt", "Filchner-Ronne","Larsen_C"]
+#ipl = ["Antarctica", "Antarctica-Amery", "George_VI", "Pine_Island", "Thwaites", "Getz", "NSS", "Ross", "Totten", "Shackleton", "Amery", "RoiB", "Fimbul", "Riiser-Larsen/Brunt", "Filchner-Ronne","Larsen_C"]
 #ipl = ["Antarctica", "Antarctica-Amery", "George_VI","Thwaites", "Getz", "NSS", "Ross"]
+ipl = ["Antarctica", "Antarctica-Amery", "Pine_Island", "Thwaites", "Getz", "NSS", "Ross", "Totten", "Amery", "Fimbul", "Filchner-Ronne","Larsen_C"]
+npl = ["Antarctica", "Antarctica-Amery", "Pine Island", "Thwaites", "Getz", "NSS", "Ross", "Totten", "Amery", "Fimbul", "Filchner-Ronne","Larsen C"]
+
+
 indices = []
 for i, item1 in enumerate(iceshelves):
     if item1 in ipl:
@@ -63,21 +67,23 @@ itmax = Tmax*12
 #ts1 = np.array([21, 24, 31, 41])
 #ts2 = np.array([23, 32, 40, 50])#
 
-#ts1 = np.array([21, 41])
-#ts2 = np.array([23, 50])
-#tseg = f'main'
+ts1 = np.array([21, 41])
+ts2 = np.array([23, 50])
+tseg = f'main'
 
-ts1 = np.array([20])
-ts2 = np.array([22])
+#ts1 = np.array([20])
+#ts2 = np.array([22])
 #tseg = f'{ts1[0]}_{ts2[0]}'
 
 
 #clr = ["brown", "orange", "deepskyblue" , "black"]
 #clr = ["lightskyblue", "royalblue", "moccasin", "darkorange", "yellowgreen","darkolivegreen","plum", "purple", "lightcoral", "maroon"]
-clr = ["royalblue", "darkorange", "lightskyblue", "moccasin", "yellowgreen","darkolivegreen","plum", "purple", "lightcoral", "maroon"]
+#clr = ["royalblue", "darkorange", "lightskyblue", "moccasin", "yellowgreen","darkolivegreen","plum", "purple", "lightcoral", "maroon"]
+clr = ["black", "red", "lightskyblue", "moccasin", "yellowgreen","darkolivegreen","plum", "purple", "lightcoral", "maroon"]
 
-ncols = 3
-nrows = (len(ii)+1) // ncols+1
+ncols = 2
+#nrows = (len(ii)+1) // ncols+1
+nrows = (len(ii)+1) // ncols
 
 def f_n_pow_1_3(x, a):
     return a * np.power(x, 1/3)
@@ -89,11 +95,11 @@ def f_n_lin(x, a):
     return a * x
 
 fHeight = 20
-fWidth = 16
+fWidth = 12
 cm = 1/2.54
 
 fig, axes = plt.subplots(nrows, ncols, figsize=(fWidth*cm, fHeight*cm))
-plt.subplots_adjust(hspace=cm*1.25)  # Increase vertical spacing
+plt.subplots_adjust(hspace=cm*1.25,wspace=0.75*cm)  # Increase vertical spacing
 
 
 #np.shape(H)[1]
@@ -124,7 +130,7 @@ for ind_r in range(len(ii)):
         axes[j, k].plot(sgr_fit, f_n_lin(sgr_fit, *popt), ':', color=clr[ind_ts], linewidth=0.75)
 
     fsize = 8
-    axes[j,k].set_title(f'{iceshelves[ii[ind_r]]}, $F_s$/$A$ = {round(SgrMassFlux[ii[ind_r]])} {sgr_unit}', fontsize=fsize-1)
+    axes[j,k].set_title(f'{npl[ind_r]}, $F_s$/$A$ = {round(SgrMassFlux[ii[ind_r]])} {sgr_unit}', fontsize=fsize-1)
     axes[j,k].autoscale(enable=True, axis='both', tight=True)
     axes[j,k].tick_params(axis='both', labelsize=fsize)
     if k == 0:
@@ -143,10 +149,10 @@ for ind_r in range(len(ii)):
         k = 0
         j = j + 1
 
-fig.delaxes(axes[nrows-1][ncols-2])
-fig.delaxes(axes[nrows-1][ncols-1])
+#fig.delaxes(axes[nrows-1][ncols-2])
+#fig.delaxes(axes[nrows-1][ncols-1])
 
 if opt_save == 1:
-    plt.savefig(f'/Users/irenavankova/Work/data_sim/SGR/global/Figs/melt_scaling/melt_scaling_{tseg}.png', bbox_inches='tight', dpi=300)
+    plt.savefig(f'/Users/irenavankova/Work/data_sim/SGR/global/Figs/melt_scaling/melt_12scaling_{tseg}.png', bbox_inches='tight', dpi=300)
 else:
     plt.show()

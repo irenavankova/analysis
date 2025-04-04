@@ -17,7 +17,8 @@ rho_fw = 1000.
 kgInGt = 1e12
 
 Nmali = [0, 1, 4, 8]
-clr = ["brown", "orange", "deepskyblue" , "black"]
+#åclr = ["brown", "orange", "deepskyblue" , "black"]
+clr = ["brown", "darkorange", "deepskyblue", "indigo"]
 
 cdir = f'/Users/irenavankova/Work/data_sim/E3SM_outputs/SGR/ncfiles/post_derived/sgr_fw/fw_tseries_M'
 

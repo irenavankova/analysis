@@ -10,14 +10,14 @@ import os
 import matplotlib.colors as mcolors
 import gmask_is
 
-region_name = "Amundsen"
-opt_save = 0
+region_name = "Amery"
+opt_save = 1
 nsize = 0.1
 nsize_sis = 0.5
 
 # MPAS Ocean outputs
 
-c1 = np.array([21])
+c1 = np.array([41])
 #c1 = np.array([21, 41, 101])
 c2 = c1 + 9
 t2 = c1 + 9
@@ -62,7 +62,7 @@ elif region_name == "FRIS":
     x_lim = np.array([33.5, 34.9])
     nsize_sis = 0.1
 elif region_name == "Amundsen":
-    ttl = "Amundsen Sea shelves"
+    ttl = "Amundsen"
     sis_ctd = ["Thwaites_T1"]
     iceshelves = ["Amundsen_shelf","Amundsen"]
     nshelf = 0
@@ -169,7 +169,9 @@ CS = plt.contour(PSgrid, PTgrid, neutralDensity, contours, linestyles=':', linew
 plt.clabel(CS, fontsize=8, inline=1, fmt='%4.2f')
 
 #clr = 'rybm'
-clr = ["lightskyblue", "darkblue", "lightcoral", "maroon", "moccasin", "darkorange"]
+#clr = ["lightskyblue", "royalblue", "lightcoral", "maroon", "moccasin", "darkorange"]
+#clr = ["lightskyblue", "royalblue", "lightcoral", "maroon", "moccasin", "darkorange"]
+clr = ["lightcoral", "brown", "moccasin", "darkorange", "lightskyblue", "dodgerblue", "plum", "indigo"]
 
 ctr = 0
 # Load and plot TS variables for control simulation(s)
@@ -213,9 +215,9 @@ plt.ylim(y_lim)
 plt.xlim(x_lim)
 
 fsize = 10
-plt.xlabel('Salinity (PSU)', fontsize=fsize)
-plt.ylabel('Potential temperature ($^\circ$C)', fontsize=fsize)
-plt.title(ttl, fontsize=fsize)
+plt.xlabel('Salinity (PSU)', fontsize=fsize+4)
+plt.ylabel('Potential temperature ($^\circ$C)', fontsize=fsize+4)
+plt.title(ttl, fontsize=fsize+4)
 plt.tight_layout()
 
 dir_fig_save = '/Users/irenavankova/Work/data_sim/SGR/global/TS_eval_sz'
