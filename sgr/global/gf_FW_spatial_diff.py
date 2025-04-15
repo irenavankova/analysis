@@ -10,10 +10,15 @@ import cartopy.crs as ccrs
 import xarray as xr
 import numpy as np
 import cmocean
-#y1 = '41'
-#y2 = '50'
-y1 = '101'
+y1 = '50'
+y2 = '50'
+y1 = '110'
 y2 = '110'
+
+#opt_nlay40 = 40
+#nlayleg = '_upper1000m'
+opt_nlay40 = 0
+nlayleg = '_all'
 
 opt_mali = 1
 
@@ -65,6 +70,21 @@ FWM = np.nan_to_num(FWM, nan=0.0)
 mkm = 1000
 x = ds['x'].values/mkm
 y = ds['y'].values/mkm
+lat = ds['lat'].values
+
+xmax = 3500
+xmin = -xmax
+ymax = xmax
+ymin = -ymax
+
+
+if opt_nlay40 == 40:
+    FWC = FWC[:, :, 0:39]
+    FWM = FWM[:, :, 0:39]
+    depthC = depthC[:, :, 0:39]
+    depthM = depthM[:, :, 0:39]
+    layerThicknessC = layerThicknessC[:, :, 0:39]
+    layerThicknessM = layerThicknessM[:, :, 0:39]
 
 #FW thickness (depth integrated)
 VolFWC = np.nansum(np.multiply(layerThicknessC, FWC), axis=2)
@@ -131,7 +151,7 @@ fig, ax = plt.subplots(nrows, ncols, figsize=(fWidth*cm, fHeight*cm))
 plt.subplots_adjust(hspace=0.5*cm,wspace=0.1*cm)  # Increase vertical spacing
 
 # Define custom colormap with 3 colors: white for 0, gray for NaN, transparent for 1
-colors = [(1, 1, 1, 0),  # White for 0
+colors = [(1, 1, 1),  # White for 0
           (0.5, 0.5, 0.5),  # Gray for NaN
           (1, 1, 1, 0)]  # Transparent for 1
 # Create a new colormap from the defined colors
@@ -142,6 +162,7 @@ binary_cmap.set_bad((0.5, 0.5, 0.5))  # Set NaN to gray
 cmap = plt.cm.RdYlBu_r
 
 binary_mask = 0*DcmaxC+1
+binary_mask[lat > -60] = 0
 
 ctr = 0
 for j in range(nrows):
@@ -155,7 +176,10 @@ for j in range(nrows):
             ynow = DcmaxC
             ttl = 'Depth of maximum concentration'
             cmin = 0
-            cmax = 5000
+            if opt_nlay40 == 40:
+                cmax = 1000
+            else:
+                cmax = 5000
         elif ctr == 2:
             ynow = CmaxC
             ttl = 'Maximum concentration'
@@ -170,7 +194,10 @@ for j in range(nrows):
             ynow = DcmaxM
             ttl = 'Depth of max concentration'
             cmin = 0
-            cmax = 5000
+            if opt_nlay40 == 40:
+                cmax = 1000
+            else:
+                cmax = 5000
         elif ctr == 5:
             ynow = CmaxM
             ttl = 'Max concentration'
@@ -207,8 +234,8 @@ for j in range(nrows):
 
         ax[j, k].autoscale(enable=True, axis='both', tight=True)
         ax[j, k].tick_params(axis='both', labelsize=fsize)
-        #ax[j, k].set_xlim([xmin, xmax])
-        #ax[j, k].set_ylim([ymin, ymax])
+        ax[j, k].set_xlim([xmin, xmax])
+        ax[j, k].set_ylim([ymin, ymax])
         ctr = ctr + 1
         if k == 0:
             ax[j, k].set_ylabel('Northing (km)', fontsize=fsize)
@@ -219,8 +246,15 @@ for j in range(nrows):
         else:
             plt.setp(ax[j, k].get_xticklabels(), visible=False)
 
-opt_save = 1
+opt_save = 0
 if opt_save == 1:
-    plt.savefig(f'/Users/irenavankova/Work/data_sim/SGR/global/Figs/FW_spatial/FW_spatial_diff_{fname}_{y1}_{y2}.png', bbox_inches='tight', dpi=600)
+    plt.savefig(f'/Users/irenavankova/Work/data_sim/SGR/global/Figs/FW_spatial/FW_spatial_diff_{fname}_{y1}_{y2}{nlayleg}.png', bbox_inches='tight', dpi=600)
 else:
     plt.show()
+
+fig = plt.figure()
+DcmaxC[lat > -60] = np.NaN
+DcmaxC1d = DcmaxC.reshape(-1)
+DcmaxC1d = DcmaxC1d[~np.isnan(DcmaxC1d)]
+plt.hist(DcmaxC1d, bins=1000, color='skyblue', edgecolor='black')
+plt.show()

@@ -14,19 +14,30 @@ import cmocean
 mtocm = 100
 opt_save = 1
 opt_mali = 1
+opt_yy = 101
 
-#y1 = 21
-#y2 = 21
-#seas = '01'
+if opt_yy == 0:
+    y1 = 21
+    y2 = 21
+    seas = '01'
+    fname_in = f'mpaso_{seas}_00{y1}01_00{y2}01_climo.nc'
+elif opt_yy == 22:
+    y1 = 22
+    y2 = 23
+    seas = 'ANN'
+    fname_in = f'mpaso_{seas}_00{y1}01_00{y2}12_climo.nc'
+elif opt_yy == 41:
+    y1 = 41
+    y2 = 50
+    seas = 'ANN'
+    fname_in = f'mpaso_{seas}_00{y1}01_00{y2}12_climo.nc'
+elif opt_yy == 101:
+    y1 = 101
+    y2 = 110
+    seas = 'ANN'
+    fname_in = f'mpaso_{seas}_0{y1}01_0{y2}12_climo.nc'
 
-y1 = 41
-y2 = 50
-seas = 'ANN'
-
-fname_in = f'mpaso_{seas}_00{y1}01_00{y2}12_climo.nc'
-#fname_in = f'mpaso_{seas}_00{y1}01_00{y2}01_climo.nc'
-
-# Load the NetCDF filec using xarray
+# Load the NetCDF file using xarray
 lf = xr.open_dataset('/Users/irenavankova/Desktop/pyremap_test/test/lifm_6000.0x6000.0km_10.0km_Antarctic_stereo.nc')
 landIceFloatingMask = numpy.squeeze(lf['landIceFloatingMask'].values)
 print(sum(sum(landIceFloatingMask == 0)))
@@ -50,7 +61,7 @@ if opt_mali == 4:
 if opt_mali == 1:
     mali_file = 'S12_mali'
     fname = 'M1'
-    cmax = 0.03
+    cmax = 0.02
 
 outdir_mali = f'/Users/irenavankova/Work/data_sim/E3SM_outputs/SGR/ncfiles/{mali_file}/clim_{y1}-{y2}_ts_1-{y2}/cc2D'
 dm = xr.open_dataset(f'{outdir_mali}/{fname_in}')
@@ -73,8 +84,19 @@ Tm = Tmb-Tmi
 Tp = Tm-Tc
 Up = Um-Uc
 
-cmap = plt.cm.seismic
+#cmap = plt.cm.seismic
+
+# Load the 'cmo.balance' colormap
+cmapbal = cmocean.cm.balance
+colors = cmapbal(numpy.linspace(0, 1, 256))
+middle_idx = 128
+colors[middle_idx] = numpy.array([1, 1, 1, 1])  # RGBA for white
+cmap = plt.cm.colors.ListedColormap(colors)
+
 #cmap = cmocean.cm.balance  # You can change this to another colormap if preferred
+cmap = plt.cm.seismic
+
+
 cmap.set_bad(color='green')  # Set the 'bad' color (NaN) to gray
 
 # Set up the figure and axis

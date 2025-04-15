@@ -51,10 +51,10 @@ remapper.build_mapping_file(method='bilinear', mpiTasks=4)
 # select the SST at the initial time as an example data set
 #conc = "/Users/irenavankova/Work/data_sim/E3SM_outputs/SGR/ncfiles/S12_control/clim_41-50_ts_1-50/conc_LIFW_41_50.nc"
 #p_file = f'/Users/irenavankova/Work/data_sim/E3SM_files/E3SM_initial_condition/SOwISC12to60E2r4/ocean.SOwISC12to60E2r4.230220.nc'
-#fdir = '/Users/irenavankova/Work/data_sim/E3SM_outputs/SGR/ncfiles/S12_mali/clim_101-110_ts_1-110/fw'
-#conc = f'{fdir}/mpaso_ANN_010101_011012_climo.nc'
-fdir = '/Users/irenavankova/Work/data_sim/E3SM_outputs/SGR/ncfiles/S12_control/clim_41-50_ts_1-50/fw'
-conc = f'{fdir}/mpaso_ANN_004101_005012_climo.nc'
+#fdir = '/Users/irenavankova/Work/data_sim/E3SM_outputs/SGR/ncfiles/S12_control/clim_110-110_ts_1-110/fw'
+#conc = f'{fdir}/mpaso_ANN_011001_011012_climo.nc'
+fdir = '/Users/irenavankova/Work/data_sim/E3SM_outputs/SGR/ncfiles/S12_mali_x4/clim_50-50_ts_1-50/fw'
+conc = f'{fdir}/mpaso_ANN_005001_005012_climo.nc'
 
 
 ds = xarray.open_dataset(conc)
