@@ -80,7 +80,7 @@ tseg = f'main'
 #clr = ["lightskyblue", "royalblue", "moccasin", "darkorange", "yellowgreen","darkolivegreen","plum", "purple", "lightcoral", "maroon"]
 #clr = ["royalblue", "darkorange", "lightskyblue", "moccasin", "yellowgreen","darkolivegreen","plum", "purple", "lightcoral", "maroon"]
 clr = ["black", "red", "lightskyblue", "moccasin", "yellowgreen","darkolivegreen","plum", "purple", "lightcoral", "maroon"]
-
+abc = 'abcdefghijklmnopq'
 ncols = 2
 #nrows = (len(ii)+1) // ncols+1
 nrows = (len(ii)+1) // ncols
@@ -130,11 +130,11 @@ for ind_r in range(len(ii)):
         axes[j, k].plot(sgr_fit, f_n_lin(sgr_fit, *popt), ':', color=clr[ind_ts], linewidth=0.75)
 
     fsize = 8
-    axes[j,k].set_title(f'{npl[ind_r]}, $F_s$/$A$ = {round(SgrMassFlux[ii[ind_r]])} {sgr_unit}', fontsize=fsize-1)
+    axes[j,k].set_title(f'{abc[ind_r]}) {npl[ind_r]}, $F_s$/$A$ = {round(SgrMassFlux[ii[ind_r]])} {sgr_unit}', fontsize=fsize-1)
     axes[j,k].autoscale(enable=True, axis='both', tight=True)
     axes[j,k].tick_params(axis='both', labelsize=fsize)
     if k == 0:
-        axes[j, k].set_ylabel('$\Delta \dot{M}$ (GT/a)', fontsize=fsize)
+        axes[j, k].set_ylabel('$\Delta \dot{M}$ (Gt/a)', fontsize=fsize)
 
     if j == nrows-1:
         axes[j, k].set_xlabel('$F_s$ factor', fontsize=fsize)

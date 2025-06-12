@@ -9,7 +9,7 @@ import os
 import matplotlib.ticker as ticker
 from scipy import signal
 
-opt_plot = 0
+opt_plot = 2
 opt_save = 1
 
 if opt_plot == 0:
@@ -44,6 +44,7 @@ Time2 = np.array(dsOut2.time.data)
 #ipl = ["Antarctica", "Antarctica-Amery", "George_VI", "Pine_Island", "Thwaites", "Getz", "NSS", "Ross", "Totten", "Shackleton", "Amery", "RoiB", "Fimbul", "Riiser-Larsen/Brunt", "Filchner-Ronne","Larsen_C"]
 ipl = ["Antarctica", "Antarctica-Amery", "Pine_Island", "Thwaites", "Getz", "NSS", "Ross", "Totten", "Amery", "Fimbul", "Filchner-Ronne","Larsen_C"]
 npl = ["Antarctica", "Antarctica-Amery", "Pine Island", "Thwaites", "Getz", "NSS", "Ross", "Totten", "Amery", "Fimbul", "Filchner-Ronne","Larsen C"]
+abc = 'abcdefghijklmnopq'
 
 indices = []
 for i, item1 in enumerate(iceshelves):
@@ -61,7 +62,7 @@ dsOut = xarray.open_dataset(p_file)
 SgrMassFlux = np.array(dsOut.SgrMassFlux.data)
 
 SgrMassFlux = SgrMassFlux/1e12
-sgr_unit = 'GT/a'
+sgr_unit = 'Gt/a'
 
 Tmin = 20
 Toffset = 20
@@ -127,23 +128,23 @@ for ind_r in range(len(ii)):
     fsize = 8
     axes[j,k].set_xlim(numpy.array([Tmin, Tmax2])-Toffset)
     #axes[j,k].set_xlabel('Time (a)', fontsize=fsize)
-    #axes[j,k].set_ylabel('Integrated melf flux (GT/a)', fontsize=fsize)
+    #axes[j,k].set_ylabel('Integrated melf flux (Gt/a)', fontsize=fsize)
 
     #axes[j,k].set_legend(loc = 2,fontsize=12)
     #axes[j,k].set_title(iceshelves[ii[ind_r]], fontsize=fsize)
-    axes[j,k].set_title(f'{npl[ind_r]}, $F_s$ = {round(SgrMassFlux[ii[ind_r]],1)} {sgr_unit}', fontsize=fsize-1)
+    axes[j,k].set_title(f'{abc[ind_r]}) {npl[ind_r]}, $F_s$ = {round(SgrMassFlux[ii[ind_r]],1)} {sgr_unit}', fontsize=fsize-1)
     #axes[j,k].set_title(f'{iceshelves[ii[ind_r]]}, $F_s$ = {round(SgrMassFlux[ii[ind_r]],1)} {sgr_unit}', fontsize=fsize-1)
     axes[j,k].autoscale(enable=True, axis='both', tight=True)
     axes[j,k].tick_params(axis='both', labelsize=fsize)
     if k == 0:
         if opt_plot == 0:
-            axes[j, k].set_ylabel('$\dot{M}$ (GT/a)', fontsize=fsize)
+            axes[j, k].set_ylabel('$\dot{M}$ (Gt/a)', fontsize=fsize)
         elif opt_plot == 1:
-            axes[j, k].set_ylabel('$\dot{M}$ diff (GT/a)', fontsize=fsize)
+            axes[j, k].set_ylabel('$\dot{M}$ diff (Gt/a)', fontsize=fsize)
         elif opt_plot == 2:
             axes[j, k].set_ylabel('$\dot{M} perc$', fontsize=fsize)
         elif opt_plot == 3:
-            axes[j, k].set_ylabel('$\delta \dot{M}$ (GT/a)', fontsize=fsize)
+            axes[j, k].set_ylabel('$\delta \dot{M}$ (Gt/a)', fontsize=fsize)
     if j == nrows-1:
         axes[j, k].set_xlabel('Time (a)', fontsize=fsize)
     else:

@@ -10,6 +10,7 @@ import cartopy.crs as ccrs
 import xarray as xr
 import numpy as np
 import cmocean
+from scipy.signal import butter, filtfilt
 
 opt_save = 0
 
@@ -20,7 +21,7 @@ Nmali = [0, 1, 4, 8]
 #åclr = ["brown", "orange", "deepskyblue" , "black"]
 clr = ["brown", "darkorange", "deepskyblue", "indigo"]
 
-cdir = f'/Users/irenavankova/Work/data_sim/E3SM_outputs/SGR/ncfiles/post_derived/sgr_fw/fw_tseries_M'
+cdir = f'/Users/irenavankova/Work/data_sim/E3SM_outputs/SGR/ncfiles/post_derived/sgr_si/si_cav_tseries_M'
 
 ncols = 2
 nrows = 1
@@ -28,6 +29,13 @@ nrows = 1
 fHeight = 6
 fWidth = 16
 cm = 1/2.54
+
+cutoff = 1/(3*365*24*3600) # Cutoff frequency in Hz
+fs = 1/(30*24*3600) # Sampling rate in Hz
+order = 4
+nyquist = 0.5 * fs
+normalized_cutoff = cutoff / nyquist
+b, a = butter(order, normalized_cutoff, btype='high', analog=False, output='ba')
 
 fig, ax = plt.subplots(nrows, ncols, figsize=(fWidth*cm, fHeight*cm))
 plt.subplots_adjust(hspace=0.1*cm,wspace=0.1*cm)  # Increase vertical spacing
@@ -40,15 +48,15 @@ for k in range(2):
         ds.load()
 
         if k == 0:
-            ttle = 'Land ice melt'
-            icav = np.squeeze(ds['VFWLIicav'].values)
-            ishelf = np.squeeze(ds['VFWLIishelf'].values)
-            is60 = np.squeeze(ds['VFWLI1000is60'].values)
+            ttle = 'Land ice FW'
+            icav = np.squeeze(ds['VFWLI_Amery'].values)
+            ishelf = np.squeeze(ds['VFWLI_Ross'].values)
+            is60 = np.squeeze(ds['VFWLI_FRIS'].values)
         else:
-            ttle = 'Subglacial discharge'
-            icav = np.squeeze(ds['VFWSRicav'].values)
-            ishelf = np.squeeze(ds['VFWSRishelf'].values)
-            is60 = np.squeeze(ds['VFWSR1000is60'].values)
+            ttle = 'Sea ice FW'
+            icav = np.squeeze(ds['VFWSI_Amery'].values)
+            ishelf = np.squeeze(ds['VFWSI_Ross'].values)
+            is60 = np.squeeze(ds['VFWSI_FRIS'].values)
 
         # m^3 to Gt
         icav = icav * rho_fw / kgInGt
@@ -58,9 +66,12 @@ for k in range(2):
         if (Nmali[j] == 1) & (k == 0):
             print(Nmali[j])
             print(k)
-            ymax = np.nanmax(is60)
+            #ymax = np.nanmax(is60)
 
         time = (np.squeeze(ds['time'].values)+1)/12
+        #ax[k].plot(time, filtfilt(b, a, icav), color = clr[j] ,linewidth=0.75, linestyle='-')#, label=f'icav{Nmali[j]}')
+        #ax[k].plot(time, filtfilt(b, a, ishelf), color=clr[j], linewidth=0.75, linestyle='--')#, label=f'ishelf{Nmali[j]}')
+        #ax[k].plot(time, filtfilt(b, a, is60), color=clr[j], linewidth=0.75, linestyle=':')#, label=f'is60{Nmali[j]}')
 
         ax[k].plot(time, icav, color = clr[j] ,linewidth=0.75, linestyle='-')#, label=f'icav{Nmali[j]}')
         ax[k].plot(time, ishelf, color=clr[j], linewidth=0.75, linestyle='--')#, label=f'ishelf{Nmali[j]}')
@@ -78,13 +89,13 @@ for k in range(2):
     ax[k].set_xlabel('Time (a)', fontsize=fsize)
     ax[k].tick_params(axis='both', labelsize=fsize)
     # ax[k].rcParams.update({'font.size': 8})
-    ax[k].set_xlim([0, 90])
-    ax[k].set_ylim([0, ymax])
+    #ax[k].set_xlim([0, 90])
+    #ax[k].set_ylim([0, ymax])
 
 
 
 
 if opt_save == 1:
-    plt.savefig(f'/Users/irenavankova/Work/data_sim/SGR/global/Figs/melt_tseries/FW_tseries.png', bbox_inches='tight', dpi=300)
+    plt.savefig(f'/Users/irenavankova/Work/data_sim/SGR/global/Figs/melt_tseries/SIFW_tseries.png', bbox_inches='tight', dpi=300)
 else:
     plt.show()
