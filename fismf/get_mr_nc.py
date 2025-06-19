@@ -14,10 +14,13 @@ landIceFloatingMask = mask_ds['landIceFloatingMask']  # Assuming the variable na
 areaCell = mask_ds['areaCell']  # Assuming the variable name is 'mask' and it's of shape (ncells,)
 
 # Step 2: Open the 100 NetCDF files and concatenate them along the 'time' dimension
-ds = xr.open_mfdataset(f"{fpath}v2_1.SORRM.ssp370_ensmean.mpaso.hist.am.timeSeriesStatsMonthly.*.nc", combine='by_coords')
+ds = xr.open_mfdataset(f"{fpath}v2_1.SORRM.ssp370_ensmean.mpaso.hist.am.timeSeriesStatsMonthly.21*.nc", combine='by_coords')
 #ds = xr.open_mfdataset("data_*.nc", combine='by_coords', chunks={'time': 10})
 
 # Step 3: Apply the mask by multiplying the temperature variable with the mask
+landIceFloatingMask = landIceFloatingMask.expand_dims(time=ds['time'], axis=0)
+areaCell = areaCell.expand_dims(time=ds['time'], axis=0)
+
 lifw = ds['timeMonthly_avg_landIceFreshwaterFlux'] * landIceFloatingMask * areaCell
 
 lifw = lifw * secPerYear / kgingt
