@@ -18,8 +18,8 @@ ds = xr.open_mfdataset(f"{fpath}v2_1.SORRM.ssp370_ensmean.mpaso.hist.am.timeSeri
 #ds = xr.open_mfdataset("data_*.nc", combine='by_coords', chunks={'time': 10})
 
 # Step 3: Apply the mask by multiplying the temperature variable with the mask
-landIceFloatingMask = landIceFloatingMask.expand_dims(time=ds['time'], axis=0)
-areaCell = areaCell.expand_dims(time=ds['time'], axis=0)
+landIceFloatingMask = landIceFloatingMask.expand_dims(time=ds['Time'], axis=0)
+areaCell = areaCell.expand_dims(time=ds['Time'], axis=0)
 
 lifw = ds['timeMonthly_avg_landIceFreshwaterFlux'] * landIceFloatingMask * areaCell
 
