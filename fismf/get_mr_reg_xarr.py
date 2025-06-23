@@ -21,9 +21,6 @@ iam = gmask_reg.get_mask(iceshelves, mask_file)
 
 # Step 2: Open the 100 NetCDF files and concatenate them along the 'time' dimension
 ds = xr.open_mfdataset(f"{fpath}v2_1.SORRM.ssp370_ensmean.mpaso.hist.am.timeSeriesStatsMonthly.21*.nc", combine='by_coords', chunks={'time': 12}, parallel=True, decode_timedelta=True)
-#ds = xr.open_mfdataset("data_*.nc", combine='by_coords', chunks={'time': 10})
-
-print(ds.dims)
 
 landIceFloatingMask = landIceFloatingMask.squeeze('Time')
 
@@ -31,34 +28,23 @@ landIceFloatingMask = landIceFloatingMask.squeeze('Time')
 lifw = ds['timeMonthly_avg_landIceFreshwaterFlux'] 
 lifw = lifw * landIceFloatingMask * areaCell * secPerYear / kgingt
 
-# Step 4: Sum the masked temperature over the 'ncells' dimension for each time step
-lifw_tseries_list = []
+# --- Vectorized masking over all regions ---
+# Stack region mask into xarray DataArray for better alignment
+iam_da = xr.DataArray(iam, dims=['region', 'nCells'], coords={'region': iceshelves})
 
-for n, shelf in enumerate(iceshelves):
-    # Convert boolean mask to indices
-    iis = np.where(iam[n])[0]
+# Expand lifw to shape (region, Time, nCells) by broadcasting
+lifw_broadcasted = lifw.expand_dims(region=iam_da.region)
 
-    # Apply index selection and sum
-    tseries = lifw.isel(nCells=iis).sum(dim='nCells')
-    lifw_tseries_list.append(tseries)
+# Use masking across all regions simultaneously
+lifw_masked = lifw_broadcasted.where(iam_da)
 
-# Combine into a single DataArray with a new 'region' dimension
-lifw_tseries = xr.concat(lifw_tseries_list, dim='region')
-lifw_tseries['region'] = iceshelves  # label the new dimension
-#for n in range(len(iceshelves)):
-#    iis = iam[n, :]
-#    lifw_tseries = lifw.isel(nCells=iis).sum(dim='nCells').compute()
+# Sum over nCells → result shape: (region, Time)
+lifw_tseries = lifw_masked.sum(dim='nCells')
 
-print(lifw_tseries.dims)
+# Transpose to have (Time, region) if desired
+lifw_tseries = lifw_tseries.transpose('Time', 'region')
 lifw_tseries.name = 'lifw'
 
-# Step 5: Save the resulting time series to a new NetCDF file
-
-# Combine into a single Dataset
-tseries_ds = xr.Dataset({
-    'lifw': lifw_tseries,
-})
-
 # Save to NetCDF
-tseries_ds.to_netcdf('lifw_reg_tseries.nc')
+lifw_tseries.to_dataset().to_netcdf('lifw_reg_xarr_tseries.nc')
 
