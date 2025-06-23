@@ -40,7 +40,7 @@ def get_mask(is_list,ocean_rst_file):
             iam[n,:] = (FloatingMask == 1) & (lat > -72) & (lon > 80) & (lon < 166)
         elif is_list[n] == "Amery":
             # Amery
-            iam = (FloatingMask == 1) & (lat > -74.3608) & (lat < -67.7122) & (lon > 62.0419) & (lon < 78)
+            iam[n,:] = (FloatingMask == 1) & (lat > -74.3608) & (lat < -67.7122) & (lon > 62.0419) & (lon < 78)
         elif is_list[n] == "Dml":
             # DML
             iam[n,:] = (FloatingMask == 1) & ((lon < 62.) | (lon > 332))
