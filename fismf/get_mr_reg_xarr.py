@@ -20,7 +20,7 @@ iceshelves = ["Antarctica", "Belli", "Amundsen", "Ross", "Eastant", "Amery", "Dm
 iam = gmask_reg.get_mask(iceshelves, mask_file)
 
 # Step 2: Open the 100 NetCDF files and concatenate them along the 'time' dimension
-ds = xr.open_mfdataset(f"{fpath}v2_1.SORRM.ssp370_ensmean.mpaso.hist.am.timeSeriesStatsMonthly.21*.nc", combine='by_coords', chunks={'time': 12}, parallel=True, decode_timedelta=True)
+ds = xr.open_mfdataset(f"{fpath}v2_1.SORRM.ssp370_ensmean.mpaso.hist.am.timeSeriesStatsMonthly.*.nc", combine='by_coords', chunks={'time': 12}, parallel=True, decode_timedelta=True)
 
 landIceFloatingMask = landIceFloatingMask.squeeze('Time')
 
