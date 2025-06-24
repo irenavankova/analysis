@@ -61,7 +61,7 @@ clr = ["black", "darkorange","lightskyblue", "brown", "royalblue"]
 Lwide = np.array([0.5, 0.5, 0.5, 1.5, 1.5])
 smb = ["-", "--", "--", "-", "-"]
 
-iceshelves = ["Antarctica", "Bellingshausen", "Amundsen", "Ross", "East Antarctica", "Amery", "Dronning Maud Land", "FRIS", "Larsens"]
+iceshelves = ["Antarctica", "Bellingshausen", "Amundsen", "Ross", "East Antarctica", "Amery", "Dronning Maud Land", "Filchner-Ronne", "Larsens"]
 
 ncols = 3
 nrows = int(np.ceil((len(ds_xarr['region']))) / ncols)

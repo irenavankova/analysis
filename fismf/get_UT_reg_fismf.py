@@ -5,8 +5,16 @@ import numpy as np
 
 import gmask_reg
 
+ymem = 751
+
 fpath_pismf = '/lcrc/group/acme/ac.dcomeau/scratch/chrys/E3SMv2_1/v2_1.SORRM.ssp370_ensmean/run/'
-fpath_fismf = '/lcrc/group/acme/ac.dcomeau/scratch/chrys/E3SMv2_1/v2_1.SORRM.ssp370_0701-fismf/archive/ocn/hist/'
+fpath_fismf = f'/lcrc/group/acme/ac.dcomeau/scratch/chrys/E3SMv2_1/v2_1.SORRM.ssp370_0{ymem}-fismf/'
+if ymem == 701:
+    fpath_fismf = f'{fpath_fismf}archive/ocn/hist/'
+elif ymem == 751:
+    fpath_fismf = f'{fpath_fismf}run/'
+
+
 
 secPerYear = 365 * 24 * 60 * 60
 kgingt = 1e12
@@ -33,7 +41,7 @@ def preprocess(dss):
         ]
     ]
 #ds = xr.open_mfdataset(f"{fpath_fismf}v2_1.SORRM.ssp370_ensmean.mpaso.hist.am.timeSeriesStatsMonthly.21*.nc", combine='by_coords', chunks={'time': 12}, parallel=True, decode_timedelta=True, preprocess=preprocess)
-ds = xr.open_mfdataset(f"{fpath_fismf}v2_1.SORRM.ssp370_0701-fismf.mpaso.hist.am.timeSeriesStatsMonthly.21*.nc", combine='by_coords', chunks={'time': 12}, parallel=True, decode_timedelta=True, preprocess=preprocess)
+ds = xr.open_mfdataset(f"{fpath_fismf}v2_1.SORRM.ssp370_0{ymem}-fismf.mpaso.hist.am.timeSeriesStatsMonthly.21*.nc", combine='by_coords', chunks={'time': 12}, parallel=True, decode_timedelta=True, preprocess=preprocess)
 
 landIceFloatingMask = landIceFloatingMask.squeeze('Time')
 
@@ -71,5 +79,5 @@ utsq_tseries = utsq_tseries.transpose('Time', 'region')
 utsq_tseries.name = 'utsq'
 
 # Save to NetCDF
-utsq_tseries.to_dataset().to_netcdf('utsq_reg_fismf_tseries.nc')
+utsq_tseries.to_dataset().to_netcdf(f'utsq_reg_fismf_{ymem}_tseries.nc')
 

@@ -15,17 +15,22 @@ fpath = '/Users/irenavankova/Work/data_sim/E3SM_outputs/FISMF/ncfiles/post_deriv
 fname_xarr = 'lifw_reg_xarr_tseries'
 fname_pismf = 'utsq_reg_ssp_tseries'
 fname_fismf = 'utsq_reg_fismf_tseries'
+fname_lifw_701 = 'lifw_reg_701_tseries'
 
 #ds = xr.open_dataset(f'{fpath}{fname}.nc')
 ds_xarr = xr.open_dataset(f'{fpath}{fname_xarr}.nc')
 ds_pismf = xr.open_dataset(f'{fpath}{fname_pismf}.nc')
 ds_fismf = xr.open_dataset(f'{fpath}{fname_fismf}.nc')
+ds_lifw_701 = xr.open_dataset(f'{fpath}{fname_lifw_701}.nc')
+
 
 # Extract the DataArray (assuming variable is 'lifw')
 #lifw = ds['lifw']  # dims: (Time, region)
 lifwx = ds_xarr['lifw']  # dims: (Time, region)
 n_time = len(ds_xarr['Time'])
 time = np.arange(0,n_time)/12 + 2015
+lifwx_701 = ds_lifw_701['lifw']  # dims: (Time, region)
+
 
 utsq_p = ds_pismf['utsq']  # dims: (Time, region)
 utsq_f = ds_fismf['utsq']  # dims: (Time, region)
@@ -47,12 +52,15 @@ for region in lifwx.region.values:
     utf_reg = utsq_f.sel(region=region)
     k = np.mean(lifw_reg.values / utp_reg.values)
 
+    lifw_701 = lifwx_701.sel(region=region)
+
     print(k)
     plt.plot(time, lifw_reg, '-', label='lifw')
     plt.plot(time, utp_reg * k, '--', label='utp_reg*k')
     plt.plot(time, utf_reg * k, '--', label='utf_reg*k')
     plt.plot(time, utp_reg * kAnt, ':', label='utp_reg*kAnt')
     plt.plot(time, utf_reg * kAnt, ':', label='utf_reg*kAnt')
+    plt.plot(time, lifw_701, '-', label='lifw_701')
 
     plt.title(region)
     plt.xlabel('Time')
