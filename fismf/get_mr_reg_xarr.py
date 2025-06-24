@@ -58,5 +58,5 @@ lifw_tseries.name = 'lifw'
 if opt == 701:
     lifw_tseries.to_dataset().to_netcdf('lifw_reg_701_tseries.nc')
 else:
-    lifw_tseries.to_dataset().to_netcdf('lifw_reg_xarr_tseries.nc')
+    lifw_tseries.to_dataset().to_netcdf('lifw_reg_ave_tseries.nc')
 

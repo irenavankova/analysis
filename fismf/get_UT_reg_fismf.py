@@ -41,7 +41,7 @@ def preprocess(dss):
         ]
     ]
 #ds = xr.open_mfdataset(f"{fpath_fismf}v2_1.SORRM.ssp370_ensmean.mpaso.hist.am.timeSeriesStatsMonthly.21*.nc", combine='by_coords', chunks={'time': 12}, parallel=True, decode_timedelta=True, preprocess=preprocess)
-ds = xr.open_mfdataset(f"{fpath_fismf}v2_1.SORRM.ssp370_0{ymem}-fismf.mpaso.hist.am.timeSeriesStatsMonthly.21*.nc", combine='by_coords', chunks={'time': 12}, parallel=True, decode_timedelta=True, preprocess=preprocess)
+ds = xr.open_mfdataset(f"{fpath_fismf}v2_1.SORRM.ssp370_0{ymem}-fismf.mpaso.hist.am.timeSeriesStatsMonthly.*.nc", combine='by_coords', chunks={'time': 12}, parallel=True, decode_timedelta=True, preprocess=preprocess)
 
 landIceFloatingMask = landIceFloatingMask.squeeze('Time')
 

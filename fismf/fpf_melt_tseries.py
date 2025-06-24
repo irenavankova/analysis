@@ -13,9 +13,9 @@ opt_save = 1
 fname = 'pANS_f701'
 fpath = '/Users/irenavankova/Work/data_sim/E3SM_outputs/FISMF/ncfiles/post_derived/'
 
-fname_xarr = 'lifw_reg_xarr_tseries'
-fname_pismf = 'utsq_reg_ssp_tseries'
-fname_fismf = 'utsq_reg_fismf_tseries'
+fname_xarr = 'lifw_reg_ave_tseries'
+fname_pismf = 'utsq_reg_pismf_ave_tseries'
+fname_fismf = 'utsq_reg_fismf_701_tseries'
 
 #ds = xr.open_dataset(f'{fpath}{fname}.nc')
 ds_xarr = xr.open_dataset(f'{fpath}{fname_xarr}.nc')

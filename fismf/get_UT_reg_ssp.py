@@ -68,5 +68,5 @@ utsq_tseries = utsq_tseries.transpose('Time', 'region')
 utsq_tseries.name = 'utsq'
 
 # Save to NetCDF
-utsq_tseries.to_dataset().to_netcdf('utsq_reg_ssp_tseries.nc')
+utsq_tseries.to_dataset().to_netcdf('utsq_reg_pismf_ave_tseries.nc')
 
