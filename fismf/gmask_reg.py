@@ -70,11 +70,11 @@ def get_mask(is_list,ocean_rst_file):
         elif is_list[n] == "si_ab":
             # AB
             iam[n,:] = (lat < -68) & (lon > 220) & (lon < 294) & (FloatingMask == 0)
-        elif is_list[n] == "si_rossw":
-            # Ross West
-            iam[n,:] = (lat < -60) & (lon > 180) & (lon < 220) & (FloatingMask == 0)
         elif is_list[n] == "si_rosse":
             # Ross East
+            iam[n,:] = (lat < -60) & (lon > 180) & (lon < 220) & (FloatingMask == 0)
+        elif is_list[n] == "si_rossw":
+            # Ross West
             iam[n,:] = (lat < -60) & (lon > 150) & (lon < 180) & (FloatingMask == 0)
 
     iam = iam.astype(bool)

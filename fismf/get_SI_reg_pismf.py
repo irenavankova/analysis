@@ -19,7 +19,7 @@ mask_ds = xr.open_dataset(mask_file)
 landIceFloatingMask = mask_ds['landIceFloatingMask']  # Assuming the variable name is 'mask' and it's of shape (ncells,)
 areaCell = mask_ds['areaCell']  # Assuming the variable name is 'mask' and it's of shape (ncells,)
 
-iceshelves = ["si_so", "si_ab", "si_rossw", "si_rosse", "si_ea", "si_amery", "si_dml", "si_weddell"]
+iceshelves = ["si_so", "si_ab", "si_rosse", "si_rossw", "si_ea", "si_amery", "si_dml", "si_weddell"]
 
 iam = gmask_reg.get_mask(iceshelves, mask_file)
 

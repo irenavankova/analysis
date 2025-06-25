@@ -67,11 +67,11 @@ plt.plot(lon[iam],lat[iam],'r.')
 iam = (lat < -68) & (lon > 220) & (lon < 294) & (FloatingMask == 0)
 plt.plot(lon[iam],lat[iam],'y.')
 
-#Ross West
+#Ross East
 iam = (lat < -60) & (lon > 180) & (lon < 220) & (FloatingMask == 0)
 plt.plot(lon[iam],lat[iam],'m.')
 
-#Ross East
+#Ross West
 iam = (lat < -60) & (lon > 150) & (lon < 180) & (FloatingMask == 0)
 plt.plot(lon[iam],lat[iam],'k.')
 
