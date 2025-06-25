@@ -8,6 +8,7 @@ import gsw
 import os
 import matplotlib.ticker as ticker
 from scipy.signal import butter, filtfilt
+import iv_filt
 
 opt_save = 1
 fname = 'pANS_f701'
@@ -30,12 +31,6 @@ time = np.arange(0,n_time)/12 + 2015
 
 fs = 1/(time[1]-time[0])
 fc = 1/((time[1]-time[0])*36)
-def butter_lowpass_filter(data, fcc, fss, order=4):
-    nyq = 0.5 * fss  # Nyquist frequency
-    normal_cutoff = fcc / nyq
-    b, a = butter(order, normal_cutoff, btype='low', analog=False)
-    y = filtfilt(b, a, data)
-    return y
 
 utsq_p = ds_pismf['utsq']  # dims: (Time, region)
 utsq_f = ds_fismf['utsq']  # dims: (Time, region)
@@ -81,8 +76,8 @@ for r, region in enumerate(lifwx.region.values):
     utf_reg = utsq_f.sel(region=region)
     c = np.mean(lifw_reg.values / utp_reg.values)
 
-    utp_filt = butter_lowpass_filter(utp_reg, fc, fs)
-    utf_filt = butter_lowpass_filter(utf_reg, fc, fs)
+    utp_filt = iv_filt.butter_filter(utp_reg, fc, fs, 'low')
+    utf_filt = iv_filt.butter_filter(utf_reg, fc, fs, 'low')
 
     print(c)
     s = 0
