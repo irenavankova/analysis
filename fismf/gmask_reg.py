@@ -50,6 +50,32 @@ def get_mask(is_list,ocean_rst_file):
         elif is_list[n] == "Larsens":
             # Peninnsula East -Larsens
             iam[n,:] = (FloatingMask == 1) & (lat > -74.3) & (lon > 294) & (lon < 301)
+        elif is_list[n] == "si_so":
+            # Southern Ocean
+            iam[n,:] = (lat < -50) & (FloatingMask == 0)
+        elif is_list[n] == "si_ea":
+            # East Ant
+            iam[n,:] = (lat < -60) & (lon > 90) & (lon < 150) & (FloatingMask == 0)
+        elif is_list[n] == "si_amery":
+            # Amery
+            iam[n,:] = (lat < -60) & (lon > 60) & (lon < 90) & (FloatingMask == 0)
+        elif is_list[n] == "si_dml":
+            # DML
+            iam1 = (lat < -60) & (lon > 350) & (FloatingMask == 0)
+            iam2 = (lat < -60) & (lon > 0) & (lon < 60) & (FloatingMask == 0)
+            iam[n,:] = np.logical_or(iam1, iam2)
+        elif is_list[n] == "si_weddell":
+            # Weddell
+            iam[n,:] = (lat < -60) & (lon > 297) & (lon < 350) & (FloatingMask == 0)
+        elif is_list[n] == "si_ab":
+            # AB
+            iam[n,:] = (lat < -68) & (lon > 220) & (lon < 294) & (FloatingMask == 0)
+        elif is_list[n] == "si_rossw":
+            # Ross West
+            iam[n,:] = (lat < -60) & (lon > 180) & (lon < 220) & (FloatingMask == 0)
+        elif is_list[n] == "si_rosse":
+            # Ross East
+            iam[n,:] = (lat < -60) & (lon > 150) & (lon < 180) & (FloatingMask == 0)
 
     iam = iam.astype(bool)
     return iam

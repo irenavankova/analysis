@@ -7,6 +7,8 @@ import matplotlib.pyplot as plt
 import gsw
 import os
 
+sec = 'sea_ice'
+
 opt_save = 0
 rho_fw = 1000.
 secPerYear = 365 * 24 * 60 * 60
@@ -21,19 +23,60 @@ lat = np.squeeze(dsMesh.latCell.data)
 lon = np.squeeze(dsMesh.lonCell.data)
 lat = lat*180/np.pi
 lon = lon*180/np.pi
-FloatingMask = np.squeeze(dsMesh.landIceFloatingMask.data)
-iii = (FloatingMask == 1)
-
-H = np.squeeze(dsMesh.restingThickness.data)
-H = np.nansum(H, axis=1)
-H = np.squeeze(H)
 
 fHeight = 5
 fWidth = fHeight
 plt.figure(figsize=(fWidth, fHeight))
-plt.plot(lon,lat,'b.')
-plt.plot(lon[iii],lat[iii],'r.')
+#plt.plot(lon,lat,'b.')
 
+FloatingMask = np.squeeze(dsMesh.landIceFloatingMask.data)
+
+if sec == 'ice_shelves':
+    H = np.squeeze(dsMesh.restingThickness.data)
+    H = np.nansum(H, axis=1)
+    H = np.squeeze(H)
+    iii = (FloatingMask == 1)
+    plt.plot(lon[iii],lat[iii],'r.')
+
+
+# Sea-ice regions
+
+#Southern Ocean
+iam = (lat < -50) & (FloatingMask == 0)
+plt.plot(lon[iam],lat[iam],'b.')
+
+#East Ant
+iam = (lat < -60) & (lon > 90) & (lon < 150) & (FloatingMask == 0)
+plt.plot(lon[iam],lat[iam],'c.')
+
+#Amery
+iam = (lat < -60) & (lon > 60) & (lon < 90) & (FloatingMask == 0)
+plt.plot(lon[iam],lat[iam],'r.')
+
+#DML
+iam1 = (lat < -60) & (lon > 350) & (FloatingMask == 0)
+iam2 = (lat < -60) & (lon > 0) & (lon < 60) & (FloatingMask == 0)
+iam = np.logical_or(iam1, iam2)
+plt.plot(lon[iam],lat[iam],'g.')
+
+#Weddell
+iam = (lat < -60) & (lon > 297) & (lon < 350) & (FloatingMask == 0)
+plt.plot(lon[iam],lat[iam],'r.')
+
+#AB
+iam = (lat < -68) & (lon > 220) & (lon < 294) & (FloatingMask == 0)
+plt.plot(lon[iam],lat[iam],'y.')
+
+#Ross West
+iam = (lat < -60) & (lon > 180) & (lon < 220) & (FloatingMask == 0)
+plt.plot(lon[iam],lat[iam],'m.')
+
+#Ross East
+iam = (lat < -60) & (lon > 150) & (lon < 180) & (FloatingMask == 0)
+plt.plot(lon[iam],lat[iam],'k.')
+
+'''
+# Ice shelf regions
 #Peninnsula West -Bellingshausen
 iam1 = (FloatingMask == 1) & (lat > -77.4) & (lon > 261) & (lon < 293.8)
 iam2 = (FloatingMask == 1) & (lat > -77.3) & (lon > 255) & (lon < 262.8)
@@ -69,9 +112,13 @@ plt.plot(lon[iam],lat[iam],'k.')
 #Peninnsula East -Larsens
 iam = (FloatingMask == 1) &  (lat > -74.3) & (lon > 294) & (lon < 301)
 plt.plot(lon[iam],lat[iam],'c.')
+'''
+
+
+
 
 '''
-#Shelves
+# Continental Shelves
 
 # Amundsen sea shelf
 iam = (FloatingMask == 0) & (lat > -76) & (lat < -71) & (lon > 225) & (lon < 260)  & (H < 1500)
