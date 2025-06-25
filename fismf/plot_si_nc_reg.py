@@ -1,0 +1,59 @@
+#!/usr/bin/env python3
+import numpy as np
+import xarray as xr
+import matplotlib.pyplot as plt
+import iv_filt
+
+
+ff = 0
+fpath = '/Users/irenavankova/Work/data_sim/E3SM_outputs/FISMF/ncfiles/post_derived/'
+
+fname_pismf = 'sic_reg_pismf_ave_tseries'
+
+#ds = xr.open_dataset(f'{fpath}{fname}.nc')
+ds_pismf = xr.open_dataset(f'{fpath}{fname_pismf}.nc')
+
+
+# Extract the DataArray (assuming variable is 'lifw')
+#lifw = ds['lifw']  # dims: (Time, region)
+sic = ds_pismf['sic']  # dims: (Time, region)
+n_time = len(ds_pismf['Time'])
+time = np.arange(0,n_time)/12 + 2015
+
+fs = 1/(time[1]-time[0])
+fc = 1/((time[1]-time[0])*36)
+
+for region in sic.region.values:
+    plt.figure(figsize=(12, 6))
+
+    sic_reg = sic.sel(region=region)
+
+    # clr = ["lightskyblue", "royalblue", "moccasin", "darkorange", "yellowgreen","darkolivegreen","plum", "purple", "lightcoral", "maroon"]
+    # clr = ["lightcoral", "brown", "moccasin", "darkorange", "lightskyblue", "dodgerblue", "plum", "indigo"]
+
+    Lwide = 1.25
+
+    if ff == 1:
+        lifw_reg = iv_filt.butter_filter(lifw_reg, fc, fs, 'low')
+        utf_701 = iv_filt.butter_filter(utf_701, fc, fs, 'low')
+        utf_751 = iv_filt.butter_filter(utf_751, fc, fs, 'low')
+        utf_ave = iv_filt.butter_filter(utf_ave, fc, fs, 'low')
+        lifw_701 = iv_filt.butter_filter(lifw_701, fc, fs, 'low')
+
+    plt.plot(time, sic_reg, '-', color="brown", linewidth=Lwide, label='sic_reg')
+    #plt.plot(time, utp_reg * k, '--', color="brown", linewidth=Lwide, label='utp_reg*k')
+    #plt.plot(time, utf_701 * k, '--', color="royalblue", linewidth=Lwide, label='utf_701*k')
+    #plt.plot(time, utf_751 * k, '--', color="darkolivegreen", linewidth=Lwide, label='utf_751*k')
+    #plt.plot(time, utf_ave * k, '--', color="indigo", linewidth=Lwide, label='utf_ave*k')
+    #plt.plot(time, utp_reg * kAnt, ':', color="darkorange", linewidth=Lwide, label='utp_reg*kAnt')
+    #plt.plot(time, utf_701 * kAnt, '--', color="lightskyblue", linewidth=Lwide, label='utf_701*kAnt')
+    #plt.plot(time, utf_751 * kAnt, '--', color="royalblue", linewidth=Lwide, label='utf_751*kAnt')
+    #plt.plot(time, utf_ave * kAnt, '-', color="indigo", linewidth=Lwide, label='utf_ave*kAnt')
+    #plt.plot(time, lifw_701, '--', color="darkorange", linewidth=Lwide, label='lifw_701')
+
+
+    plt.title(region)
+    plt.xlabel('Time')
+    plt.grid(True)
+    plt.legend()
+    plt.show()
