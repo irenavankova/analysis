@@ -6,7 +6,7 @@ import iv_filt
 
 
 ff = 0
-var_plot = 'sic'
+var_plot = 'siv'
 if var_plot == 'sic':
     fac = 1e6
 else:
