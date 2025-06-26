@@ -14,6 +14,10 @@ else:
 
 fpath = '/Users/irenavankova/Work/data_sim/E3SM_outputs/FISMF/ncfiles/post_derived/'
 
+ds = xr.open_dataset(f'{fpath}{'siv_max_over_cells'}.nc')
+sip = ds_pismf[var_plot]  # dims: (Time, region)
+
+
 fname_pismf = 'si_reg_pismf_ave_tseries'
 ds_pismf = xr.open_dataset(f'{fpath}{fname_pismf}.nc')
 fname_fismf = 'si_reg_fismf_701_tseries'
