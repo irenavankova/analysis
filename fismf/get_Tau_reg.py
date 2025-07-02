@@ -18,6 +18,10 @@ elif out_fname == 'hist_ave':
 elif out_fname == 'fismf_701':
     ymem = 701
     fpath_fismf = f'/lcrc/group/acme/ac.dcomeau/scratch/chrys/E3SMv2_1/v2_1.SORRM.ssp370_0{ymem}-fismf/'
+    if ymem == 701:
+        fpath_fismf = f'{fpath_fismf}archive/ocn/hist/'
+    elif ymem == 751:
+        fpath_fismf = f'{fpath_fismf}run/'
     fnc = f"{fpath_fismf}v2_1.SORRM.ssp370_0{ymem}-fismf.mpaso.hist.am.timeSeriesStatsMonthly.*.nc"
 
 # Step 1: Load the mask from a different NetCDF file
