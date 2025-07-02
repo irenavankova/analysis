@@ -6,13 +6,15 @@ import numpy as np
 import gmask_reg
 
 out_fname = 'pismf_ave'
-
+#out_fname = 'hist_ave'
 #out_fname = 'fismf_701'
 
 fpath = '/lcrc/group/acme/ac.dcomeau/scratch/chrys/E3SMv2_1/v2_1.SORRM.ssp370_ensmean/run/'
 
 if out_fname == 'pismf_ave':
-    fnc = '/lcrc/group/acme/ac.dcomeau/scratch/chrys/E3SMv2_1/v2_1.SORRM.ssp370_ensmean/run/v2_1.SORRM.ssp370_ensmean.mpaso.hist.am.timeSeriesStatsMonthly.21*.nc'
+    fnc = '/lcrc/group/acme/ac.dcomeau/scratch/chrys/E3SMv2_1/v2_1.SORRM.ssp370_ensmean/run/v2_1.SORRM.ssp370_ensmean.mpaso.hist.am.timeSeriesStatsMonthly.*.nc'
+elif out_fname == 'hist_ave':
+    fnc = '/lcrc/group/acme/ac.dcomeau/scratch/chrys/E3SMv2_1/v2_1.SORRM.historical_ensmean/run/v2_1.SORRM.historical_ensmean.mpaso.hist.am.timeSeriesStatsMonthly.*.nc'
 elif out_fname == 'fismf_701':
     ymem = 701
     fpath_fismf = f'/lcrc/group/acme/ac.dcomeau/scratch/chrys/E3SMv2_1/v2_1.SORRM.ssp370_0{ymem}-fismf/'
