@@ -11,6 +11,13 @@ out_fname = 'pismf_ave'
 
 fpath = '/lcrc/group/acme/ac.dcomeau/scratch/chrys/E3SMv2_1/v2_1.SORRM.ssp370_ensmean/run/'
 
+if out_fname == 'pismf_ave':
+    fnc = '/lcrc/group/acme/ac.dcomeau/scratch/chrys/E3SMv2_1/v2_1.SORRM.ssp370_ensmean/run/v2_1.SORRM.ssp370_ensmean.mpaso.hist.am.timeSeriesStatsMonthly.21*.nc'
+elif out_fname == 'fismf_701':
+    ymem = 701
+    fpath_fismf = f'/lcrc/group/acme/ac.dcomeau/scratch/chrys/E3SMv2_1/v2_1.SORRM.ssp370_0{ymem}-fismf/'
+    fnc = f"{fpath_fismf}v2_1.SORRM.ssp370_0{ymem}-fismf.mpaso.hist.am.timeSeriesStatsMonthly.*.nc"
+
 # Step 1: Load the mask from a different NetCDF file
 mask_file = f'{fpath}v2_1.SORRM.ssp370_ensmean.mpaso.rst.2015-01-01_00000.nc'  # Specify the mask file
 mask_ds = xr.open_dataset(mask_file)
@@ -21,7 +28,7 @@ iceshelves = ["si_so", "si_ab", "si_rosse", "si_rossw", "si_ea", "si_amery", "si
 
 iam = gmask_reg.get_mask(iceshelves, mask_file)
 
-ds = xr.open_mfdataset(f"{fpath}v2_1.SORRM.ssp370_ensmean.mpaso.hist.am.timeSeriesStatsMonthly.21*.nc", combine='by_coords', chunks={'time': 12}, parallel=True, decode_timedelta=True)
+ds = xr.open_mfdataset(fnc, combine='by_coords', chunks={'time': 12}, parallel=True, decode_timedelta=True)
 
 tau_zonal = ds['timeMonthly_avg_windStressZonal']
 tau_merid = ds['timeMonthly_avg_windStressMeridional']
