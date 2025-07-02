@@ -5,6 +5,8 @@ import matplotlib.pyplot as plt
 import iv_filt
 
 
+
+
 ff = 0
 var_plot = 'siv'
 if var_plot == 'sic':
@@ -14,9 +16,15 @@ else:
 
 fpath = '/Users/irenavankova/Work/data_sim/E3SM_outputs/FISMF/ncfiles/post_derived/'
 
-ds = xr.open_dataset(f'{fpath}{'siv_max_over_cells'}.nc')
-sip = ds_pismf[var_plot]  # dims: (Time, region)
-
+ds = xr.open_dataset(f'{fpath}siv_max_over_cells.nc')
+pmax = ds['pismf_max_over_cells']  # dims: (Time, region)
+fmax = ds['fismf_max_over_cells']  # dims: (Time, region)
+n_time = len(ds['Time'])
+time = np.arange(0,n_time)/12 + 2015
+plt.figure(figsize=(12, 6))
+plt.plot(time, pmax, '-', color="darkorange", linewidth=1.5, label='pmax')
+plt.plot(time, fmax, '-', color="lightskyblue", linewidth=1.5, label='fmax')
+plt.show()
 
 fname_pismf = 'si_reg_pismf_ave_tseries'
 ds_pismf = xr.open_dataset(f'{fpath}{fname_pismf}.nc')
