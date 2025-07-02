@@ -6,7 +6,7 @@ import iv_filt
 
 
 
-
+opt_save = 1
 ff = 0
 var_plot = 'siv'
 if var_plot == 'sic':
@@ -51,7 +51,7 @@ fs = 1/(time[1]-time[0])
 fc = 1/((time[1]-time[0])*36)
 
 for region in sip.region.values:
-    plt.figure(figsize=(12, 6))
+    plt.figure(figsize=(8, 4))
 
     sip_reg = sip.sel(region=region)/fac
     sif_reg = sif.sel(region=region)/fac
@@ -75,22 +75,21 @@ for region in sip.region.values:
     plt.plot(time, sip_reg, '-', color="brown", linewidth=2.5, label='pismf')
     plt.plot(time, sif_reg, '-', color="royalblue", linewidth=2.5, label='fismf_701')
 
-    #plt.plot(time, utp_reg * k, '--', color="brown", linewidth=Lwide, label='utp_reg*k')
-    #plt.plot(time, utf_701 * k, '--', color="royalblue", linewidth=Lwide, label='utf_701*k')
-    #plt.plot(time, utf_751 * k, '--', color="darkolivegreen", linewidth=Lwide, label='utf_751*k')
-    #plt.plot(time, utf_ave * k, '--', color="indigo", linewidth=Lwide, label='utf_ave*k')
-    #plt.plot(time, utp_reg * kAnt, ':', color="darkorange", linewidth=Lwide, label='utp_reg*kAnt')
-    #plt.plot(time, utf_701 * kAnt, '--', color="lightskyblue", linewidth=Lwide, label='utf_701*kAnt')
-    #plt.plot(time, utf_751 * kAnt, '--', color="royalblue", linewidth=Lwide, label='utf_751*kAnt')
-    #plt.plot(time, utf_ave * kAnt, '-', color="indigo", linewidth=Lwide, label='utf_ave*kAnt')
-    #plt.plot(time, lifw_701, '--', color="darkorange", linewidth=Lwide, label='lifw_701')
-
-    plt.title(region)
-    plt.xlabel('Time')
+    fsize = 10
+    plt.title(region,fontsize=fsize)
+    plt.xlim(np.array([np.min(time), np.max(time)]))
+    plt.autoscale(enable=True, axis='both', tight=True)
+    plt.tick_params(axis='both', labelsize=fsize)
+    plt.xlabel('Time (a)', fontsize=fsize)
     if var_plot == 'sic':
-        plt.ylabel('Sea Ice Area (km^2)')
+        plt.ylabel('Sea Ice Area (km^2)', fontsize=fsize)
     else:
-        plt.ylabel('Sea Ice Volume (km^3)')
+        plt.ylabel('Sea Ice Volume (km^3)', fontsize=fsize)
     plt.grid(True)
     plt.legend()
-    plt.show()
+    plt.legend(fontsize=6)
+    if opt_save == 1:
+        plt.savefig(f'/Users/irenavankova/Work/data_sim/FISMF/SeaIceTseries/SIVtseries_{region.replace(" ", "_")}.png', bbox_inches='tight',
+                    dpi=300)
+    else:
+        plt.show()
