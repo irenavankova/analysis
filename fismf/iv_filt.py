@@ -6,6 +6,6 @@ def butter_filter(data, fcc, fss, tp, order=4):
     nyq = 0.5 * fss  # Nyquist frequency
     normal_cutoff = fcc / nyq
     b, a = butter(order, normal_cutoff, btype=tp, analog=False)
-    y = filtfilt(b, a, data)
+    y = filtfilt(b, a, data, padtype=None)
     return y
 
