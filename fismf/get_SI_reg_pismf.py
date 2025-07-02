@@ -30,6 +30,8 @@ landIceFloatingMask = landIceFloatingMask.squeeze('Time')
 sic = ds['timeMonthly_avg_iceAreaCell']
 siv = ds['timeMonthly_avg_iceVolumeCell']
 
+siv = siv.where(siv <= 100, 0)
+
 # --- Vectorized masking over all regions ---
 # Stack region mask into xarray DataArray for better alignment
 iam_da = xr.DataArray(iam, dims=['region', 'nCells'], coords={'region': iceshelves})

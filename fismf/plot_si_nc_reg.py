@@ -19,11 +19,20 @@ fpath = '/Users/irenavankova/Work/data_sim/E3SM_outputs/FISMF/ncfiles/post_deriv
 ds = xr.open_dataset(f'{fpath}siv_max_over_cells.nc')
 pmax = ds['pismf_max_over_cells']  # dims: (Time, region)
 fmax = ds['fismf_max_over_cells']  # dims: (Time, region)
+p10 = ds['pismf_10_over_cells']  # dims: (Time, region)
+f10 = ds['fismf_10_over_cells']  # dims: (Time, region)
+p2 = ds['pismf_2_over_cells']  # dims: (Time, region)
+f2 = ds['fismf_2_over_cells']  # dims: (Time, region)
 n_time = len(ds['Time'])
 time = np.arange(0,n_time)/12 + 2015
 plt.figure(figsize=(12, 6))
 plt.plot(time, pmax, '-', color="darkorange", linewidth=1.5, label='pmax')
 plt.plot(time, fmax, '-', color="lightskyblue", linewidth=1.5, label='fmax')
+plt.plot(time, p2, '--', color="maroon", linewidth=1.5, label='p2')
+plt.plot(time, f2, ':', color="indigo", linewidth=1.5, label='f2')
+plt.plot(time, p10, '--', color="lightcoral", linewidth=1.5, label='p10')
+plt.plot(time, f10, ':', color="dodgerblue", linewidth=1.5, label='f10')
+plt.legend()
 plt.show()
 
 fname_pismf = 'si_reg_pismf_ave_tseries'
