@@ -31,7 +31,7 @@ def preprocess(dss):
             "timeMonthly_avg_activeTracers_temperature"
         ]
     ]
-ds = xr.open_mfdataset(f"{fpath}v2_1.SORRM.historical_ensmean.mpaso.hist.am.timeSeriesStatsMonthly.2014*.nc", combine='by_coords', chunks={'time': 12}, parallel=True, decode_timedelta=True, preprocess=preprocess)
+ds = xr.open_mfdataset(f"{fpath}v2_1.SORRM.historical_ensmean.mpaso.hist.am.timeSeriesStatsMonthly.*.nc", combine='by_coords', chunks={'time': 12}, parallel=True, decode_timedelta=True, preprocess=preprocess)
 
 landIceFloatingMask = landIceFloatingMask.squeeze('Time')
 
