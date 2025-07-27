@@ -5,15 +5,17 @@ import numpy as np
 
 import gmask_reg
 
-ymem = 751
+ymem = 'ave'
 
 fpath_pismf = '/lcrc/group/acme/ac.dcomeau/scratch/chrys/E3SMv2_1/v2_1.SORRM.ssp370_ensmean/run/'
 fpath_fismf = f'/lcrc/group/acme/ac.dcomeau/scratch/chrys/E3SMv2_1/v2_1.SORRM.ssp370_0{ymem}-fismf/'
-if ymem == 701:
-    fpath_fismf = f'{fpath_fismf}archive/ocn/hist/'
-elif ymem == 751:
-    fpath_fismf = f'{fpath_fismf}run/'
 
+if ymem == '701':
+    fpath_fismf = f'{fpath_fismf}archive/ocn/hist/'
+elif ymem == '751':
+    fpath_fismf = f'{fpath_fismf}run/'
+elif ymem == 'ave':
+    fpath_fismf = f'/lcrc/group/acme/ac.dcomeau/scratch/chrys/E3SMv2_1/v2_1.SORRM.ssp370-fismf_ensmean/run/'
 
 
 secPerYear = 365 * 24 * 60 * 60
@@ -26,7 +28,7 @@ landIceFloatingMask = mask_ds['landIceFloatingMask']  # Assuming the variable na
 areaCell = mask_ds['areaCell']  # Assuming the variable name is 'mask' and it's of shape (ncells,)
 
 # Step 2: Open the 100 NetCDF files and concatenate them along the 'time' dimension
-dsPISMF = xr.open_mfdataset(f"{fpath_pismf}v2_1.SORRM.ssp370_ensmean.mpaso.hist.am.timeSeriesStatsMonthly.*.nc", combine='by_coords', chunks={'time': 12}, parallel=True, decode_timedelta=True)
+dsPISMF = xr.open_mfdataset(f"{fpath_pismf}v2_1.SORRM.ssp370_ensmean.mpaso.hist.am.timeSeriesStatsMonthly.21*.nc", combine='by_coords', chunks={'time': 12}, parallel=True, decode_timedelta=True)
 
 iceshelves = ["Antarctica", "Belli", "Amundsen", "Ross", "Eastant", "Amery", "Dml", "Fris", "Larsens"]
 iam = gmask_reg.get_mask(iceshelves, mask_file)
