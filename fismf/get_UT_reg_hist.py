@@ -11,7 +11,9 @@ secPerYear = 365 * 24 * 60 * 60
 kgingt = 1e12
 
 # Step 1: Load the mask from a different NetCDF file
-mask_file = f'{fpath}v2_1.SORRM.historical_ensmean.mpaso.rst.2015-01-01_00000.nc'  # Specify the mask file
+#mask_file = f'{fpath}v2_1.SORRM.historical_ensmean.mpaso.rst.2015-01-01_00000.nc'  # Specify the mask file
+mask_file = f'{fpath}v2_1.SORRM.historical_ensmean.mpaso.rst.0701-01-01_00000.nc'  # Specify the mask file
+
 mask_ds = xr.open_dataset(mask_file)
 landIceFloatingMask = mask_ds['landIceFloatingMask']  # Assuming the variable name is 'mask' and it's of shape (ncells,)
 areaCell = mask_ds['areaCell']  # Assuming the variable name is 'mask' and it's of shape (ncells,)
