@@ -4,7 +4,8 @@ import xarray as xr
 import matplotlib.pyplot as plt
 import iv_filt
 
-opt_save = 1
+opt_save = 0
+ff = 1
 fpath = '/Users/irenavankova/Work/data_sim/E3SM_outputs/FISMF/ncfiles/'
 
 opt_asc = 'asc_transp'
@@ -37,27 +38,32 @@ clr = ["black", "darkorange","lightskyblue", "brown", "royalblue"]
 smb = ["-", "--", "--", "-", "-"]
 
 for transect in Fh.nTransects.values:
-    plt.figure(figsize=(8, 4))
+    plt.figure(figsize=(6, 3))
 
     Fh_reg = Fh.sel(nTransects=transect)
     Ff_reg = Ff.sel(nTransects=transect)
     Fp_reg = Fp.sel(nTransects=transect)
 
-    # clr = ["lightskyblue", "royalblue", "moccasin", "darkorange", "yellowgreen","darkolivegreen","plum", "purple", "lightcoral", "maroon"]
-    # clr = ["lightcoral", "brown", "moccasin", "darkorange", "lightskyblue", "dodgerblue", "plum", "indigo"]
-
     Lwide = 1.0
-
-    Fh_filt = iv_filt.butter_filter(Fh_reg, fc, fs, 'low')
-    Fp_filt = iv_filt.butter_filter(Fp_reg, fc, fs, 'low')
-    Ff_filt = iv_filt.butter_filter(Ff_reg, fc, fs, 'low')
 
     plt.plot(Fht, Fh_reg, '--', color="yellowgreen", linewidth=Lwide)
     plt.plot(Fpt, Fp_reg, '--', color="darkorange", linewidth=Lwide)
     plt.plot(Fpt, Ff_reg, '--', color="lightskyblue", linewidth=Lwide)
-    plt.plot(Fht, Fh_filt, '-', color="darkolivegreen", linewidth=Lwide*2, label='HIST')
-    plt.plot(Fpt, Fp_filt, '-', color="brown", linewidth=Lwide*2, label='EVOMELT')
-    plt.plot(Fpt, Ff_filt, '-', color="royalblue", linewidth=Lwide*2, label='FIXMELT')
+
+    if ff == 1:
+        p_reg = np.append(Fh_reg, Fp_reg, axis=0)
+        f_reg = np.append(Fh_reg, Ff_reg, axis=0)
+
+        p_reg = iv_filt.butter_filter(p_reg, fc, fs, 'low')
+        f_reg = iv_filt.butter_filter(f_reg, fc, fs, 'low')
+
+        Fh_filt = p_reg[0:len(Fht)]
+        Fp_filt = p_reg[len(Fht):]
+        Ff_filt = f_reg[len(Fht):]
+
+        plt.plot(Fht, Fh_filt, '-', color="darkolivegreen", linewidth=Lwide*2, label='HIST')
+        plt.plot(Fpt, Fp_filt, '-', color="brown", linewidth=Lwide*2, label='EVOMELT')
+        plt.plot(Fpt, Ff_filt, '-', color="royalblue", linewidth=Lwide*2, label='FIXMELT')
 
     fsize = 8
     plt.xlim(np.array([np.min(Fht), np.max(Fpt)]))
