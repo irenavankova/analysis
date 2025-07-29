@@ -7,13 +7,18 @@ import iv_filt
 opt_save = 1
 fpath = '/Users/irenavankova/Work/data_sim/E3SM_outputs/FISMF/ncfiles/'
 
-fname_hist = 'hist/TransportTransects_1951-2014.nc'
-fname_pismf = 'pismf/TransportTransects_2015-2100.nc'
-fname_fismf_701 = 'fismf_701/TransportTransects_2015-2100.nc'
+opt_asc = 'asc_transp'
+#opt_asc = ''
+
+fname_hist = f'hist/{opt_asc}/TransportTransects_1951-2014.nc'
+fname_pismf = f'pismf/{opt_asc}/TransportTransects_2015-2100.nc'
+#fname_fismf_701 = 'fismf_701/asc_transp/TransportTransects_2015-2100.nc'
+fname_fismf = f'fismf/{opt_asc}/TransportTransects_2015-2100.nc'
+
 
 ds_hist = xr.open_dataset(f'{fpath}{fname_hist}')
 ds_pismf = xr.open_dataset(f'{fpath}{fname_pismf}')
-ds_fismf_701 = xr.open_dataset(f'{fpath}{fname_fismf_701}')
+ds_fismf = xr.open_dataset(f'{fpath}{fname_fismf}')
 
 # Extract the DataArray (assuming variable is 'lifw')
 Fh = ds_hist['transport']  # dims: (nTransects, Time)
@@ -22,7 +27,7 @@ Fht = np.arange(0,n_time)/12 + 1951
 Fnames = ds_hist['transectNames'].values  # dims: (nTransects, Time)
 
 Fp = ds_pismf['transport']  # dims: (nTransects, Time)
-Ff = ds_fismf_701['transport']  # dims: (nTransects, Time)
+Ff = ds_fismf['transport']  # dims: (nTransects, Time)
 n_time = len(ds_pismf['Time'])
 Fpt = np.arange(0,n_time)/12 + 2015
 
