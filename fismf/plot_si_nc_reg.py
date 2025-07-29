@@ -6,7 +6,7 @@ import iv_filt
 
 
 
-opt_save = 1
+opt_save = 0
 ff = 0
 var_plot = 'siv'
 if var_plot == 'sic':
@@ -37,7 +37,7 @@ plt.show()
 
 fname_pismf = 'si_reg_pismf_ave_tseries'
 ds_pismf = xr.open_dataset(f'{fpath}{fname_pismf}.nc')
-fname_fismf = 'si_reg_fismf_701_tseries'
+fname_fismf = 'si_reg_fismf_ave_tseries'
 ds_fismf = xr.open_dataset(f'{fpath}{fname_fismf}.nc')
 
 # Extract the DataArray

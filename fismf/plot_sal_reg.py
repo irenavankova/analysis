@@ -8,13 +8,11 @@ opt_save = 1
 ff = 1
 fpath = '/Users/irenavankova/Work/data_sim/E3SM_outputs/FISMF/ncfiles/'
 
-#opt_asc = 'asc_transp'
 opt_asc = ''
 
-fname_hist = f'hist/{opt_asc}/TransportTransects_1951-2014.nc'
-fname_pismf = f'pismf/{opt_asc}/TransportTransects_2015-2100.nc'
-#fname_fismf_701 = 'fismf_701/asc_transp/TransportTransects_2015-2100.nc'
-fname_fismf = f'fismf/{opt_asc}/TransportTransects_2015-2100.nc'
+fname_hist = f'hist/{opt_asc}/AntarcticRegions_1951-2014.nc'
+fname_pismf = f'pismf/{opt_asc}/AntarcticRegions_2015-2100.nc'
+fname_fismf = f'fismf/{opt_asc}/AntarcticRegions_2015-2100.nc'
 
 
 ds_hist = xr.open_dataset(f'{fpath}{fname_hist}')
@@ -22,13 +20,13 @@ ds_pismf = xr.open_dataset(f'{fpath}{fname_pismf}')
 ds_fismf = xr.open_dataset(f'{fpath}{fname_fismf}')
 
 # Extract the DataArray (assuming variable is 'lifw')
-Fh = ds_hist['transport']  # dims: (nTransects, Time)
+Fh = ds_hist['salinity']  # dims: (nTransects, Time)
 n_time = len(ds_hist['Time'])
 Fht = np.arange(0,n_time)/12 + 1951
-Fnames = ds_hist['transectNames'].values  # dims: (nTransects, Time)
+Fnames = ds_hist['regionNames'].values  # dims: (nTransects, Time)
 
-Fp = ds_pismf['transport']  # dims: (nTransects, Time)
-Ff = ds_fismf['transport']  # dims: (nTransects, Time)
+Fp = ds_pismf['salinity']  # dims: (nTransects, Time)
+Ff = ds_fismf['salinity']  # dims: (nTransects, Time)
 n_time = len(ds_pismf['Time'])
 Fpt = np.arange(0,n_time)/12 + 2015
 
@@ -37,12 +35,12 @@ fc = 1/((Fht[1]-Fht[0])*36)
 clr = ["black", "darkorange","lightskyblue", "brown", "royalblue"]
 smb = ["-", "--", "--", "-", "-"]
 
-for transect in Fh.nTransects.values:
+for transect in Fh.nRegions.values:
     plt.figure(figsize=(6, 3))
 
-    Fh_reg = Fh.sel(nTransects=transect)
-    Ff_reg = Ff.sel(nTransects=transect)
-    Fp_reg = Fp.sel(nTransects=transect)
+    Fh_reg = Fh.sel(nRegions=transect)
+    Ff_reg = Ff.sel(nRegions=transect)
+    Fp_reg = Fp.sel(nRegions=transect)
 
     Lwide = 1.0
 
@@ -70,16 +68,16 @@ for transect in Fh.nTransects.values:
     plt.autoscale(enable=True, axis='both', tight=True)
     plt.tick_params(axis='both', labelsize=fsize)
 
-    regname = Fh.transectNames[transect].values.item()
+    regname = Fh.regionNames[transect].values.item()
     plt.title(regname,fontsize=fsize)
     plt.xlabel('Time (a)', fontsize=fsize)
-    plt.ylabel('Transport (Sv)', fontsize=fsize)
+    plt.ylabel('Salinity (PSU)', fontsize=fsize)
     plt.grid(True)
     plt.legend()
     plt.legend(fontsize=6)
 
     if opt_save == 1:
-        plt.savefig(f'/Users/irenavankova/Work/data_sim/FISMF/Transport/Transp_{regname.replace(" ", "_")}.png', bbox_inches='tight',
+        plt.savefig(f'/Users/irenavankova/Work/data_sim/FISMF/Salinity/Sal_{regname.replace(" ", "_")}.png', bbox_inches='tight',
                     dpi=300)
     else:
         plt.show()
