@@ -10,6 +10,8 @@ fpath = '/Users/irenavankova/Work/data_sim/E3SM_outputs/FISMF/ncfiles/post_deriv
 
 fname_lifw_hist = 'lifw_reg_hist_ave_tseries'
 fname_lifw_pismf = 'lifw_reg_ave_tseries'
+fname_lifw_fismf = 'lifw_reg_fismf_ave_tseries'
+
 fname_hist = 'utsq_reg_hist_ave_tseries'
 fname_pismf = 'utsq_reg_pismf_ave_tseries'
 fname_fismf = 'utsq_reg_fismf_ave_tseries'
@@ -17,6 +19,8 @@ fname_fismf = 'utsq_reg_fismf_ave_tseries'
 #ds = xr.open_dataset(f'{fpath}{fname}.nc')
 ds_lifw_hist = xr.open_dataset(f'{fpath}{fname_lifw_hist}.nc')
 ds_lifw_pismf = xr.open_dataset(f'{fpath}{fname_lifw_pismf}.nc')
+ds_lifw_fismf = xr.open_dataset(f'{fpath}{fname_lifw_fismf}.nc')
+
 ds_hist = xr.open_dataset(f'{fpath}{fname_hist}.nc')
 ds_pismf = xr.open_dataset(f'{fpath}{fname_pismf}.nc')
 ds_fismf = xr.open_dataset(f'{fpath}{fname_fismf}.nc')
@@ -30,6 +34,9 @@ time_h = np.arange(0,n_time)/12 + 1950
 lifw_p = ds_lifw_pismf['lifw']  # dims: (Time, region)
 n_time = len(ds_lifw_pismf['Time'])
 time_ssp = np.arange(0,n_time)/12 + 2015
+
+lifw_f = ds_lifw_fismf['lifw']  # dims: (Time, region)
+
 
 utsq_h = ds_hist['utsq']  # dims: (Time, region)
 utsq_p = ds_pismf['utsq']  # dims: (Time, region)
@@ -51,6 +58,8 @@ for region in lifw_p.region.values:
 
     lh_reg = lifw_h.sel(region=region)
     lp_reg = lifw_p.sel(region=region)
+    lf_reg = lifw_f.sel(region=region)
+
     uth_reg = utsq_h.sel(region=region)
     utp_reg = utsq_p.sel(region=region)
     utf_reg = utsq_f.sel(region=region)
@@ -85,13 +94,15 @@ for region in lifw_p.region.values:
 
         utf_reg = f_reg[len(time_h):]
 
-        plt.plot(time_h, lh_reg, '-', color="black", linewidth=Lwide, label='lifw_p')
-        plt.plot(time_h, uth_reg * kAnt, '--', color="darkolivegreen", linewidth=Lwide, label='ut_p')
+        plt.plot(time_h, lh_reg, '-', color="black", linewidth=Lwide+2, label='lifw_p')
+        plt.plot(time_h, uth_reg * kAnt, '--', color="darkolivegreen", linewidth=Lwide+2, label='ut_p')
 
-        plt.plot(time_ssp, lp_reg, '-', color="black", linewidth=Lwide, label='lifw_p')
-        plt.plot(time_ssp, utp_reg * kAnt, '--', color="brown", linewidth=Lwide, label='ut_p')
+        plt.plot(time_ssp, lp_reg, '-', color="black", linewidth=Lwide+2, label='lifw_p')
+        plt.plot(time_ssp, utp_reg * kAnt, '--', color="brown", linewidth=Lwide+2, label='ut_p')
 
-        plt.plot(time_ssp, utf_reg * kAnt, '-', color="royalblue", linewidth=Lwide, label='ut_f')
+        plt.plot(time_ssp, utf_reg * kAnt, '-', color="royalblue", linewidth=Lwide+2, label='ut_f')
+
+    plt.plot(time_ssp, lf_reg, '-', color="gold", linewidth=Lwide+2)
 
     plt.title(region)
     plt.xlabel('Time')

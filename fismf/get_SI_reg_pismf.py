@@ -8,8 +8,14 @@ import gmask_reg
 #si_fname = '/lcrc/group/e3sm/ac.vankova/scratch/mpas_analysis/FISMF/pismf/clim_2091-2100_ts_2015-2100/timeseries/mpasTimeSeriesSeaIce.nc'
 #out_fname = 'pismf_ave'
 
-si_fname = '/lcrc/group/e3sm/ac.vankova/scratch/mpas_analysis/FISMF/fismf_701/clim_2091-2100_ts_2015-2100/timeseries/mpasTimeSeriesSeaIce.nc'
-out_fname = 'fismf_701'
+#si_fname = '/lcrc/group/e3sm/ac.vankova/scratch/mpas_analysis/FISMF/fismf_701/clim_2091-2100_ts_2015-2100/timeseries/mpasTimeSeriesSeaIce.nc'
+#out_fname = 'fismf_701'
+
+si_fname = '/lcrc/group/e3sm/ac.vankova/scratch/mpas_analysis/FISMF/fismf/clim_2091-2100_ts_2015-2100/timeseries/mpasTimeSeriesSeaIce.nc'
+out_fname = 'fismf'
+
+#si_fname = '/lcrc/group/e3sm/ac.vankova/scratch/mpas_analysis/FISMF/hist/clim_2005-2014_ts_1951-2014/timeseries/mpasTimeSeriesSeaIce.nc'
+#out_fname = 'hist'
 
 fpath = '/lcrc/group/acme/ac.dcomeau/scratch/chrys/E3SMv2_1/v2_1.SORRM.ssp370_ensmean/run/'
 

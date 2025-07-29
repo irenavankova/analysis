@@ -11,37 +11,55 @@ from scipy.signal import butter, filtfilt
 import iv_filt
 
 opt_save = 1
-fname = 'pANS_f701'
+ff = 1
+#fname = 'pANS_f701'
+fname = 'pANS'
 fpath = '/Users/irenavankova/Work/data_sim/E3SM_outputs/FISMF/ncfiles/post_derived/'
 
-fname_xarr = 'lifw_reg_ave_tseries'
+fname_lifw_hist = 'lifw_reg_hist_ave_tseries'
+fname_lifw_pismf = 'lifw_reg_ave_tseries'
+fname_lifw_fismf = 'lifw_reg_fismf_ave_tseries'
+
+fname_hist = 'utsq_reg_hist_ave_tseries'
 fname_pismf = 'utsq_reg_pismf_ave_tseries'
-fname_fismf = 'utsq_reg_fismf_701_tseries'
+fname_fismf = 'utsq_reg_fismf_ave_tseries'
 
 #ds = xr.open_dataset(f'{fpath}{fname}.nc')
-ds_xarr = xr.open_dataset(f'{fpath}{fname_xarr}.nc')
+ds_lifw_hist = xr.open_dataset(f'{fpath}{fname_lifw_hist}.nc')
+ds_lifw_pismf = xr.open_dataset(f'{fpath}{fname_lifw_pismf}.nc')
+ds_lifw_fismf = xr.open_dataset(f'{fpath}{fname_lifw_fismf}.nc')
+
+ds_hist = xr.open_dataset(f'{fpath}{fname_hist}.nc')
 ds_pismf = xr.open_dataset(f'{fpath}{fname_pismf}.nc')
 ds_fismf = xr.open_dataset(f'{fpath}{fname_fismf}.nc')
 
 # Extract the DataArray (assuming variable is 'lifw')
 #lifw = ds['lifw']  # dims: (Time, region)
-lifwx = ds_xarr['lifw']  # dims: (Time, region)
-n_time = len(ds_xarr['Time'])
-time = np.arange(0,n_time)/12 + 2015
+lifw_h = ds_lifw_hist['lifw']  # dims: (Time, region)
+n_time = len(ds_lifw_hist['Time'])
+time_h = np.arange(0,n_time)/12 + 1950
 
-fs = 1/(time[1]-time[0])
-fc = 1/((time[1]-time[0])*36)
+lifw_p = ds_lifw_pismf['lifw']  # dims: (Time, region)
+n_time = len(ds_lifw_pismf['Time'])
+time_ssp = np.arange(0,n_time)/12 + 2015
 
+lifw_f = ds_lifw_fismf['lifw']  # dims: (Time, region)
+
+
+utsq_h = ds_hist['utsq']  # dims: (Time, region)
 utsq_p = ds_pismf['utsq']  # dims: (Time, region)
 utsq_f = ds_fismf['utsq']  # dims: (Time, region)
 
+fs = 1/(time_ssp[1]-time_ssp[0])
+fc = 1/((time_ssp[1]-time_ssp[0])*36)
+
 # Plot time series for each region
-for region in lifwx.region.values:
+for region in lifw_p.region.values:
     if region == "Antarctica":
-        lifw_reg = lifwx.sel(region=region)
+        lifw_reg = lifw_p.sel(region=region)
         utp_reg = utsq_p.sel(region=region)
-        cAnt = np.mean(lifw_reg.values / utp_reg.values)
-        print(cAnt)
+        kAnt = np.mean(lifw_reg.values / utp_reg.values)
+        print(kAnt)
 
 # PLOT
 #clr = ["black", "brown", "royalblue", "darkorange","lightskyblue"]
@@ -53,49 +71,77 @@ clr = ["black", "darkorange","lightskyblue", "brown", "royalblue"]
 
 #Lwide = np.array([1.25, 0.75, 0.75, 0.75, 0.75])
 #smb = ["-", "-", "-", ":", ":"]
-Lwide = np.array([0.5, 0.5, 0.5, 1.5, 1.5])
-smb = ["-", "--", "--", "-", "-"]
+#Lwide = np.array([0.5, 0.5, 0.5, 1.5, 1.5])
+#smb = ["-", "--", "--", "-", "-"]
+Lwide = 0.5
+Lwide2 = 1.0
 
 iceshelves = ["Antarctica", "Bellingshausen", "Amundsen", "Ross", "East Antarctica", "Amery", "Dronning Maud Land", "Filchner-Ronne", "Larsens"]
+abc = 'abcdefghijklmnop'
+ncols = 2
+nrows = int(np.ceil((len(ds_lifw_pismf['region']))) / ncols)+1
 
-ncols = 3
-nrows = int(np.ceil((len(ds_xarr['region']))) / ncols)
-
-fHeight = 10
-fWidth = 18
+fHeight = 16
+fWidth = 16
 cm = 1/2.54
 
 fig, axes = plt.subplots(nrows, ncols, figsize=(fWidth*cm, fHeight*cm))
-#plt.subplots_adjust(hspace=cm*1.25)  # Increase vertical spacing
-#plt.subplots_adjust(wspace=0.3)  # Increase vertical spacing
+plt.subplots_adjust(hspace=0.3)  # Increase vertical spacing
+plt.subplots_adjust(wspace=0.2)  # Increase vertical spacing
 
 j = int(0); k = int(0)
-for r, region in enumerate(lifwx.region.values):
-    lifw_reg = lifwx.sel(region=region)
+for r, region in enumerate(lifw_p.region.values):
+
+    lh_reg = lifw_h.sel(region=region)
+    lp_reg = lifw_p.sel(region=region)
+    lf_reg = lifw_f.sel(region=region)
+
+    uth_reg = utsq_h.sel(region=region)
     utp_reg = utsq_p.sel(region=region)
     utf_reg = utsq_f.sel(region=region)
-    c = np.mean(lifw_reg.values / utp_reg.values)
 
-    utp_filt = iv_filt.butter_filter(utp_reg, fc, fs, 'low')
-    utf_filt = iv_filt.butter_filter(utf_reg, fc, fs, 'low')
+    l_reg = np.append(lh_reg, lp_reg, axis=0)
+    p_reg = np.append(uth_reg, utp_reg, axis=0)
+    f_reg = np.append(uth_reg, utf_reg, axis=0)
 
-    print(c)
-    s = 0
-    axes[j, k].plot(time, lifw_reg, smb[s], color=clr[s], linewidth=Lwide[s]); s = s +1
-    #axes[j, k].plot(time, utp_reg * c, smb[s], color=clr[s], linewidth=Lwide[s], label='utp_reg*k'); s = s +1
-    #axes[j, k].plot(time, utf_reg * c, smb[s], color=clr[s], linewidth=Lwide[s], label='utf_reg*k'); s = s +1
-    axes[j, k].plot(time, utp_reg * cAnt, smb[s], color=clr[s], linewidth=Lwide[s]); s = s +1
-    axes[j, k].plot(time, utf_reg * cAnt, smb[s], color=clr[s], linewidth=Lwide[s]); s = s +1
-    axes[j, k].plot(time, utp_filt * cAnt, smb[s], color=clr[s], linewidth=Lwide[s], label='EVOMELT'); s = s +1
-    axes[j, k].plot(time, utf_filt * cAnt, smb[s], color=clr[s], linewidth=Lwide[s], label='FIXMELT')
+    axes[j, k].plot(time_h, lh_reg, '-', color="black", linewidth=Lwide)
+    axes[j, k].plot(time_h, uth_reg * kAnt, '--', color="yellowgreen", linewidth=Lwide)
+
+    axes[j, k].plot(time_ssp, lp_reg, '-', color="black", linewidth=Lwide)
+    axes[j, k].plot(time_ssp, utp_reg * kAnt, '--', color="darkorange", linewidth=Lwide)
+
+    axes[j, k].plot(time_ssp, utf_reg * kAnt, '--', color="lightskyblue", linewidth=Lwide)
+
+    if ff == 1:
+        l_reg = iv_filt.butter_filter(l_reg, fc, fs, 'low')
+        p_reg = iv_filt.butter_filter(p_reg, fc, fs, 'low')
+        f_reg = iv_filt.butter_filter(f_reg, fc, fs, 'low')
+
+        lh_reg = l_reg[0:len(time_h)]
+        lp_reg = l_reg[len(time_h):]
+
+        uth_reg = p_reg[0:len(time_h)]
+        utp_reg = p_reg[len(time_h):]
+
+        utf_reg = f_reg[len(time_h):]
+
+        #axes[j, k].plot(time_h, lh_reg, '-', color="black", linewidth=Lwide2, label='lifw_p')
+        axes[j, k].plot(time_h, uth_reg * kAnt, '-', color="darkolivegreen", linewidth=Lwide2, label='HIST')
+
+        #axes[j, k].plot(time_ssp, lp_reg, '-', color="black", linewidth=Lwide2, label='lifw_p')
+        axes[j, k].plot(time_ssp, utp_reg * kAnt, '-', color="brown", linewidth=Lwide2, label='EVOMELT')
+
+        axes[j, k].plot(time_ssp, utf_reg * kAnt, '-', color="royalblue", linewidth=Lwide2, label='FIXMELT')
+
+    axes[j, k].plot(time_ssp, lf_reg, '-', color="gold", linewidth=Lwide2, label='FIXMELT prescribed')
 
     axes[j, k].set_title(region)
     axes[j, k].grid(True)
 
     fsize = 8
-    axes[j, k].set_xlim(numpy.array([np.min(time), np.max(time)]))
-    axes[j, k].set_title(iceshelves[r], fontsize=fsize - 1)
-    axes[j, k].autoscale(enable=True, axis='both', tight=True)
+    axes[j, k].set_xlim(numpy.array([np.min(time_h), np.max(time_ssp)]))
+    axes[j, k].set_title(f'{abc[r]}) {iceshelves[r]}', fontsize=fsize - 1)
+    #axes[j, k].autoscale(enable=True, axis='both', tight=True)
     axes[j, k].tick_params(axis='both', labelsize=fsize)
 
     axes[j, k].grid(which='major', linestyle=':', linewidth='0.5', color='gray')
@@ -114,12 +160,18 @@ for r, region in enumerate(lifwx.region.values):
         axes[j, k].legend()
         axes[j, k].legend(fontsize=6)
 
-    k = k + 1
-    if k > ncols - 1:
+    if r == 0:
+        fig.delaxes(axes[0, 1])
         k = 0
-        j = j + 1
+        j = 1
+    else:
+        k = k + 1
+        if k > ncols - 1:
+            k = 0
+            j = j + 1
 
-fig.tight_layout()
+
+#fig.tight_layout()
 
 if opt_save == 1:
     plt.savefig(f'/Users/irenavankova/Work/data_sim/FISMF/Meltrates/Melt_tseries_{fname}.png', bbox_inches='tight', dpi=300)
