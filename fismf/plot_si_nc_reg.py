@@ -6,7 +6,7 @@ import iv_filt
 
 
 
-opt_save = 0
+opt_save = 1
 ff = 0
 var_plot = 'siv'
 if var_plot == 'sic':
