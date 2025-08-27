@@ -3,6 +3,7 @@ import numpy as np
 import xarray as xr
 import matplotlib.pyplot as plt
 import iv_filt
+from scipy.optimize import curve_fit
 
 
 ff = 1
@@ -44,6 +45,13 @@ utsq_f = ds_fismf['utsq']  # dims: (Time, region)
 
 fs = 1/(time_ssp[1]-time_ssp[0])
 fc = 1/((time_ssp[1]-time_ssp[0])*36)
+
+def f_exp(x, a,b,c):
+    return a * np.exp(x/b) + c
+
+def f_n_lin(x, a, b):
+    return a * x + b
+
 
 # Plot time series for each region
 for region in lifw_p.region.values:
@@ -94,13 +102,44 @@ for region in lifw_p.region.values:
 
         utf_reg = f_reg[len(time_h):]
 
-        plt.plot(time_h, lh_reg, '-', color="black", linewidth=Lwide+2, label='lifw_p')
-        plt.plot(time_h, uth_reg * kAnt, '--', color="darkolivegreen", linewidth=Lwide+2, label='ut_p')
+        plt.plot(time_h, lh_reg, '-', color="black", linewidth=Lwide+2)
+        plt.plot(time_h, uth_reg * kAnt, '--', color="darkolivegreen", linewidth=Lwide+2, label='HIST')
 
-        plt.plot(time_ssp, lp_reg, '-', color="black", linewidth=Lwide+2, label='lifw_p')
-        plt.plot(time_ssp, utp_reg * kAnt, '--', color="brown", linewidth=Lwide+2, label='ut_p')
+        plt.plot(time_ssp, lp_reg, '-', color="black", linewidth=Lwide+2)
+        plt.plot(time_ssp, utp_reg * kAnt, '--', color="brown", linewidth=Lwide+2, label='EVOMELT')
 
-        plt.plot(time_ssp, utf_reg * kAnt, '-', color="royalblue", linewidth=Lwide+2, label='ut_f')
+        plt.plot(time_ssp, utf_reg * kAnt, '-', color="royalblue", linewidth=Lwide+2, label='FIXMELT')
+
+        popt, pcov = curve_fit(f_n_lin, time_ssp-time_ssp[0], utf_reg * kAnt)
+        plt.plot(time_ssp, f_n_lin(time_ssp-time_ssp[0], *popt), '-', color="magenta", linewidth=2)
+
+        popt, pcov = curve_fit(f_exp, time_ssp - time_ssp[0], utf_reg * kAnt, p0=[1, 100, 1200])
+        plt.plot(time_ssp, f_exp(time_ssp - time_ssp[0], *popt), '--', color="cyan", linewidth=2)
+
+        offset = time_ssp[0]
+        offset = 2040
+        i1 = 12*25
+        popt, pcov = curve_fit(f_n_lin, time_ssp[i1:] - offset, utp_reg[i1:] * kAnt)
+        plt.plot(time_ssp[i1:], f_n_lin(time_ssp[i1:] - offset, *popt), '-', color="magenta", linewidth=2)
+
+        popt, pcov = curve_fit(f_exp, time_ssp[i1:] - offset, utp_reg[i1:] * kAnt, p0=[1, 100, 1200])
+        plt.plot(time_ssp[i1:], f_exp(time_ssp[i1:] - offset, *popt), '--', color="cyan", linewidth=2)
+
+        fflux = np.sum(utf_reg * kAnt)/12 - np.sum(lf_reg.values)/12
+        pflux = np.sum(utp_reg * kAnt)/12 - np.sum(lf_reg.values)/12
+
+        print(fflux)
+
+        # Calculate the center of the plot
+        x_center = (plt.xlim()[0] + plt.xlim()[1]) / 2
+        y_center = (plt.ylim()[0] + plt.ylim()[1]) / 2
+
+        # Add text to the center of the plot
+        #plt.text(x_center, y_center, f'Ffulx = {fflux} GT', ha='center', va='center', fontsize=12, color='red')
+        #plt.text(x_center, y_center+y_center/8, f'Pflux = {pflux} GT', ha='center', va='center', fontsize=12, color='red')
+        #plt.text(x_center, y_center+y_center/4, f'diff = {pflux-fflux} GT', ha='center', va='center', fontsize=12, color='red')
+        #plt.text(x_center, y_center+y_center/2, f'perc = {(pflux-fflux)/fflux*100} %', ha='center', va='center', fontsize=12, color='red')
+
 
     plt.plot(time_ssp, lf_reg, '-', color="gold", linewidth=Lwide+2)
 
