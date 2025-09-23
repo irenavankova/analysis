@@ -9,7 +9,7 @@ import os
 import matplotlib.ticker as ticker
 from scipy import signal
 
-opt_plot = 2
+opt_plot = 4
 opt_save = 1
 
 if opt_plot == 0:
@@ -20,6 +20,8 @@ elif opt_plot == 2:
     fname = 'perc'
 elif opt_plot == 3:
     fname = 'var'
+elif opt_plot == 4:
+    fname = 'rel'
 
 Tmax = 50
 fyrs = f'y{Tmax}'
@@ -121,9 +123,11 @@ for ind_r in range(len(ii)):
         elif opt_plot == 1:
             axes[j,k].plot(tplt, yplt-ref ,smb, color = clr[s] ,linewidth=0.75, label = sims[s])
         elif opt_plot == 2:
-            axes[j,k].plot(tplt, yplt/ref ,smb, color = clr[s] ,linewidth=0.75, label = sims[s])
+            axes[j,k].plot(tplt, yplt/ref,smb, color = clr[s] ,linewidth=0.75, label = sims[s])
         elif opt_plot == 3:
             axes[j,k].plot(tplt, signal.detrend(yplt) ,smb, color = clr[s] ,linewidth=0.75, label = sims[s])
+        elif opt_plot == 4:
+            axes[j, k].plot(tplt, (yplt-ref) / ref, smb, color=clr[s], linewidth=0.75, label=sims[s])
 
     fsize = 8
     axes[j,k].set_xlim(numpy.array([Tmin, Tmax2])-Toffset)
@@ -142,9 +146,13 @@ for ind_r in range(len(ii)):
         elif opt_plot == 1:
             axes[j, k].set_ylabel('$\dot{M}$ diff (Gt/a)', fontsize=fsize)
         elif opt_plot == 2:
-            axes[j, k].set_ylabel('$\dot{M} perc$', fontsize=fsize)
+            axes[j, k].set_ylabel('$\dot{M}$ frac', fontsize=fsize)
         elif opt_plot == 3:
             axes[j, k].set_ylabel('$\delta \dot{M}$ (Gt/a)', fontsize=fsize)
+        elif opt_plot == 4:
+            #axes[j, k].set_ylabel('Rel. $\Delta\dot{M}$', fontsize=fsize)
+            axes[j, k].set_ylabel('$\Delta\dot{M} / \dot{M}_{CTRL}$', fontsize=fsize)
+
     if j == nrows-1:
         axes[j, k].set_xlabel('Time (a)', fontsize=fsize)
     else:

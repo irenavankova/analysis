@@ -11,7 +11,7 @@ import sys
 sys.path.append('../sgr/global')
 import gmask_is
 
-region_name = "TottenMU"
+region_name = "Amery"
 opt_save = 1
 nsize = 0.1
 nsize_sis = 0.5
@@ -237,8 +237,8 @@ for s in range(len(sims)):
         ctr = ctr + 1
 
 ctr = 0
-plt.plot(PScms, PTcms, 'k')
-plt.plot(PScmn, PTcmn, 'k')
+#plt.plot(PScms, PTcms, 'k')
+#plt.plot(PScmn, PTcmn, 'k')
 for s in range(len(sims)):
     for n in range(len(iceshelves)):
         if n == nshelf:

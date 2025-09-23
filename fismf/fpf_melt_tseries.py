@@ -76,18 +76,18 @@ clr = ["black", "darkorange","lightskyblue", "brown", "royalblue"]
 Lwide = 0.5
 Lwide2 = 1.0
 
-iceshelves = ["Antarctica", "Bellingshausen", "Amundsen", "Ross", "East Antarctica", "Amery", "Dronning Maud Land", "Filchner-Ronne", "Larsens"]
+iceshelves = ["Antarctica", "Bellingshausen", "Amundsen", "Ross", "East Antarctica", "Amery", "Dronning Maud Land", "Filchner-Ronne", "Western Weddell"]
 abc = 'abcdefghijklmnop'
 ncols = 2
 nrows = int(np.ceil((len(ds_lifw_pismf['region']))) / ncols)+1
 
-fHeight = 16
+fHeight = 17
 fWidth = 16
 cm = 1/2.54
 
 fig, axes = plt.subplots(nrows, ncols, figsize=(fWidth*cm, fHeight*cm))
-plt.subplots_adjust(hspace=0.3)  # Increase vertical spacing
-plt.subplots_adjust(wspace=0.2)  # Increase vertical spacing
+plt.subplots_adjust(hspace=0.4)  # Increase vertical spacing
+plt.subplots_adjust(wspace=0.2)  # Increase horizontal spacing
 
 j = int(0); k = int(0)
 for r, region in enumerate(lifw_p.region.values):

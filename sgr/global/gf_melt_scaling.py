@@ -20,7 +20,13 @@ p_file = f'/Users/irenavankova/Work/data_sim/E3SM_outputs/SGR/ncfiles/post_deriv
 dsOut = xarray.open_dataset(p_file)
 
 MeltFlux = np.array(dsOut.MeltFlux.data)
-Time = np.array(dsOut.time.data)
+Time = np.array(dsOut.time.data) + 1 - 1/24
+
+print('Time')
+print(Time[0])
+print(Time[11])
+print(Time[-1])
+
 iceshelves = np.array(dsOut.iceshelves.data)
 sims = np.array(dsOut.sims.data)
 
@@ -67,8 +73,24 @@ itmax = Tmax*12
 #ts1 = np.array([21, 24, 31, 41])
 #ts2 = np.array([23, 32, 40, 50])#
 
-ts1 = np.array([21, 41])
-ts2 = np.array([23, 50])
+#ORIGINAL SUBMISSION:
+#ts1 = np.array([21, 41])
+#ts2 = np.array([23, 50])
+
+#ts1 = np.array([21, 41]) #includes years 21, 22, 23
+#ts2 = np.array([24, 51]) #includes years 41, 42, ..., 50
+#tseg = f'y3'
+
+#ts1 = np.array([22, 41]) #includes years 22, 23
+#ts2 = np.array([24, 51]) #includes years 41, 42, ..., 50
+#tseg = f'y2'
+
+#ts1 = np.array([21, 41]) #includes years 21
+#ts2 = np.array([22, 51]) #includes years 41, 42, ..., 50
+#tseg = f'y1'
+
+ts1 = np.array([22, 41]) #includes years 22, 22
+ts2 = np.array([23, 51]) #includes years 41, 42, ..., 50
 tseg = f'main'
 
 #ts1 = np.array([20])
@@ -106,14 +128,20 @@ plt.subplots_adjust(hspace=cm*1.25,wspace=0.75*cm)  # Increase vertical spacing
 j = 0; k = 0
 #for ind_r in range(np.shape(MeltFlux)[2]):
 for ind_r in range(len(ii)):
+    print('SGR mass flux')
     print(SgrMassFlux[ii[ind_r]])
     sgr_fit = np.arange(0, 9, 0.1)#*SgrMassFlux[ii[ind_r]]
     sgr = np.array([0, 1, 4, 8])#*SgrMassFlux[ii[ind_r]]
 
     for ind_ts in range(len(ts1)):
         melt = np.zeros(len(sims))
-        ind_t = np.where((Time > ts1[ind_ts]) & (Time <= ts2[ind_ts]))
-        #print(Time[ind_t])
+        ind_t = np.where((Time > ts1[ind_ts]) & (Time < ts2[ind_ts]))
+        print('Time')
+        print(ind_t[0][0])
+        print(Time[ind_t[0][0]])
+        print(ind_t[-1][0])
+        print(Time[ind_t[-1][-1]])
+        #print(ind_t[-1])
 
         for s in range(len(sims)):
             yplt = (np.squeeze(MeltFlux[:, s, ii[ind_r]]))
@@ -142,7 +170,11 @@ for ind_r in range(len(ii)):
         plt.setp(axes[j, k].get_xticklabels(), visible=False)
     axes[j,k].grid(which='major', linestyle=':', linewidth='0.5', color='gray')
     axes[j, k].yaxis.set_major_locator(ticker.MaxNLocator(nbins = 3))
-    axes[j, k].set_xlim([0, 8])
+    axes[j, k].set_xlim([-0.5, 8.5])
+    ymin, ymax = axes[j, k].get_ylim()
+    y_offset = 0.1 * max(abs(ymin), abs(ymax))
+    axes[j, k].set_ylim(ymin-y_offset, ymax + y_offset)
+    axes[j, k].set_xticks([0, 2, 4, 6, 8])
 
     k = k + 1
     if k > ncols-1:
@@ -153,6 +185,6 @@ for ind_r in range(len(ii)):
 #fig.delaxes(axes[nrows-1][ncols-1])
 
 if opt_save == 1:
-    plt.savefig(f'/Users/irenavankova/Work/data_sim/SGR/global/Figs/melt_scaling/melt_12scaling_{tseg}.png', bbox_inches='tight', dpi=300)
+    plt.savefig(f'/Users/irenavankova/Work/data_sim/SGR/global/Figs/melt_scaling/melt_12scaling_{tseg}_R2.png', bbox_inches='tight', dpi=300)
 else:
     plt.show()

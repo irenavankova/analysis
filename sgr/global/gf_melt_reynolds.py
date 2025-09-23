@@ -14,7 +14,7 @@ import cmocean
 mtocm = 100
 opt_save = 1
 opt_mali = 1
-opt_yy = 101
+opt_yy = 41
 
 if opt_yy == 0:
     y1 = 21
@@ -130,13 +130,13 @@ for j in range(2):
     for k in range(2):
         if ctr == 0:
             ynow = Tc*Up
-            ttl = '$u_p^{*}T_c^{*}$'
+            ttl = '$\Delta u^{*}T_c^{*}$'
         elif ctr == 1:
             ynow = Tp*Uc
-            ttl = '$u_c^{*}T_p^{*}$'
+            ttl = '$u_c^{*} \Delta T^{*}$'
         elif ctr == 2:
             ynow = Tp*Up
-            ttl = '$u_p^{*}T_p^{*}$'
+            ttl = '$\Delta u^{*} \Delta T^{*}$'
         elif ctr == 3:
             ynow = (Tm * Um - Tc * Uc)
             ttl = '$u_s^{*}T_s^{*} - u_c^{*}T_c^{*}$'
@@ -165,7 +165,9 @@ print(sum(sum(binary_mask == 0)))
 print(sum(sum(numpy.isnan(binary_mask))))
 print(sum(sum(binary_mask == 1)))
 
-cbar = fig.colorbar(c, ax=ax, label='UT (cm/s * deg C)', fraction=0.02, pad=0.04)
+#cbar = fig.colorbar(c, ax=ax, label='UT (cm/s * deg C)', fraction=0.02, pad=0.04)
+cbar = fig.colorbar(c, ax=ax, orientation='horizontal', label='UT (cm/s * deg C)', fraction=0.02, pad=0.04)
+
 cbar.ax.tick_params(labelsize=fsize-1)  # Set tick label font size
 cbar.set_label('$u^{*}T^{*}$ ($^{\circ}$C m/s)', fontsize=fsize)  # Set colorbar label font size
 
