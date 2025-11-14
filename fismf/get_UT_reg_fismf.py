@@ -14,6 +14,8 @@ if ymem == '701':
     fpath_fismf = f'{fpath_fismf}archive/ocn/hist/'
 elif ymem == '751':
     fpath_fismf = f'{fpath_fismf}run/'
+elif ymem == '801':
+    fpath_fismf = f'{fpath_fismf}run/'
 elif ymem == 'ave':
     fpath_fismf = f'/lcrc/group/acme/ac.dcomeau/scratch/chrys/E3SMv2_1/v2_1.SORRM.ssp370-fismf_ensmean/run/'
 
