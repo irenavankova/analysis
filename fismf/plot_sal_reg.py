@@ -6,7 +6,8 @@ import iv_filt
 
 opt_save = 1
 ff = 1
-fpath = '/Users/irenavankova/Work/data_sim/E3SM_outputs/FISMF/ncfiles/'
+#fpath = '/Users/irenavankova/Work/data_sim/E3SM_outputs/FISMF/ncfiles/'
+fpath = '/Users/irenavankova/Work/data_sim/FISMF/FISMF_E3SM_ouputs/ncfiles/'
 
 opt_asc = ''
 
@@ -36,48 +37,59 @@ clr = ["black", "darkorange","lightskyblue", "brown", "royalblue"]
 smb = ["-", "--", "--", "-", "-"]
 
 for transect in Fh.nRegions.values:
-    plt.figure(figsize=(6, 3))
+    dopl = 0
+    if Fh.regionNames[transect].values.item() == 'Western Weddell Sea Shelf':
+        yl = np.array([34.1, 34.6])
+        dopl = 1
+    elif Fh.regionNames[transect].values.item() == 'Western Ross Sea Shelf':
+        yl = np.array([34.35, 34.85])
+        dopl = 1
 
-    Fh_reg = Fh.sel(nRegions=transect)
-    Ff_reg = Ff.sel(nRegions=transect)
-    Fp_reg = Fp.sel(nRegions=transect)
+    if dopl == 1:
+        plt.figure(figsize=(6, 3))
 
-    Lwide = 1.0
+        Fh_reg = Fh.sel(nRegions=transect)
+        Ff_reg = Ff.sel(nRegions=transect)
+        Fp_reg = Fp.sel(nRegions=transect)
 
-    plt.plot(Fht, Fh_reg, '--', color="yellowgreen", linewidth=Lwide)
-    plt.plot(Fpt, Fp_reg, '--', color="darkorange", linewidth=Lwide)
-    plt.plot(Fpt, Ff_reg, '--', color="lightskyblue", linewidth=Lwide)
+        Lwide = 1.0
 
-    if ff == 1:
-        p_reg = np.append(Fh_reg, Fp_reg, axis=0)
-        f_reg = np.append(Fh_reg, Ff_reg, axis=0)
+        plt.plot(Fht, Fh_reg, '--', color="yellowgreen", linewidth=Lwide)
+        plt.plot(Fpt, Fp_reg, '--', color="darkorange", linewidth=Lwide)
+        plt.plot(Fpt, Ff_reg, '--', color="lightskyblue", linewidth=Lwide)
 
-        p_reg = iv_filt.butter_filter(p_reg, fc, fs, 'low')
-        f_reg = iv_filt.butter_filter(f_reg, fc, fs, 'low')
+        if ff == 1:
+            p_reg = np.append(Fh_reg, Fp_reg, axis=0)
+            f_reg = np.append(Fh_reg, Ff_reg, axis=0)
 
-        Fh_filt = p_reg[0:len(Fht)]
-        Fp_filt = p_reg[len(Fht):]
-        Ff_filt = f_reg[len(Fht):]
+            p_reg = iv_filt.butter_filter(p_reg, fc, fs, 'low')
+            f_reg = iv_filt.butter_filter(f_reg, fc, fs, 'low')
 
-        plt.plot(Fht, Fh_filt, '-', color="darkolivegreen", linewidth=Lwide*2, label='HIST')
-        plt.plot(Fpt, Fp_filt, '-', color="brown", linewidth=Lwide*2, label='EVOMELT')
-        plt.plot(Fpt, Ff_filt, '-', color="royalblue", linewidth=Lwide*2, label='FIXMELT')
+            Fh_filt = p_reg[0:len(Fht)]
+            Fp_filt = p_reg[len(Fht):]
+            Ff_filt = f_reg[len(Fht):]
 
-    fsize = 8
-    plt.xlim(np.array([np.min(Fht), np.max(Fpt)]))
-    plt.autoscale(enable=True, axis='both', tight=True)
-    plt.tick_params(axis='both', labelsize=fsize)
+            plt.plot(Fht, Fh_filt, '-', color="darkolivegreen", linewidth=Lwide*2, label='HIST')
+            plt.plot(Fpt, Fp_filt, '-', color="brown", linewidth=Lwide*2, label='EVOMELT')
+            plt.plot(Fpt, Ff_filt, '-', color="royalblue", linewidth=Lwide*2, label='FIXMELT')
 
-    regname = Fh.regionNames[transect].values.item()
-    plt.title(regname,fontsize=fsize)
-    plt.xlabel('Time (a)', fontsize=fsize)
-    plt.ylabel('Salinity (PSU)', fontsize=fsize)
-    plt.grid(True)
-    plt.legend()
-    plt.legend(fontsize=6)
+        fsize = 10
+        plt.xlim(np.array([np.min(Fht), np.max(Fpt)]))
+        plt.ylim(yl)
+        #plt.autoscale(enable=True, axis='both', tight=True)
+        plt.tick_params(axis='both', labelsize=fsize)
 
-    if opt_save == 1:
-        plt.savefig(f'/Users/irenavankova/Work/data_sim/FISMF/Salinity/Sal_{regname.replace(" ", "_")}.png', bbox_inches='tight',
-                    dpi=300)
-    else:
-        plt.show()
+        regname = Fh.regionNames[transect].values.item()
+        plt.title(regname,fontsize=fsize)
+        plt.xlabel('Time (a)', fontsize=fsize)
+        plt.ylabel('Salinity (PSU)', fontsize=fsize)
+        plt.grid(True)
+        plt.legend()
+        plt.legend(fontsize=8)
+
+        if opt_save == 1:
+            #        plt.savefig(f'/Users/irenavankova/Work/data_sim/FISMF/Salinity/Sal_{regname.replace(" ", "_")}.png', bbox_inches='tight', dpi=300)
+            plt.savefig(f'/Users/irenavankova/Work/data_sim/FISMF/Salinity/paper/SalP_{regname.replace(" ", "_")}.png', bbox_inches='tight',
+                        dpi=300)
+        else:
+            plt.show()

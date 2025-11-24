@@ -22,6 +22,9 @@ def get_mask(is_list,ocean_rst_file):
         if is_list[n] == "Antarctica":
             #Antarctica
             iam[n,:] = (FloatingMask == 1)
+        elif is_list[n] == "Rest":
+            #Antarctica
+            iam[n,:] = (FloatingMask == 0)
         elif is_list[n] == "Belli":
             # Peninnsula West -Bellingshausen
             iam1 = (FloatingMask == 1) & (lat > -77.4) & (lon > 261) & (lon < 293.8)

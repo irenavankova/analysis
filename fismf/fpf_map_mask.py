@@ -37,7 +37,7 @@ regMask[icav] = ctr
 
 #region_name = ["Amundsen","Amery","Ross","FRIS","Larsen","Fimbul"]
 #iceshelves = ["Antarctica", "Bellingshausen", "Amundsen", "Ross", "East Antarctica", "Amery", "Dronning Maud Land", "Filchner-Ronne", "Larsens"]
-iceshelves = ["Antarctica", "Belli", "Amundsen", "Ross", "Eastant", "Amery", "Dml", "Fris", "Larsens"]
+iceshelves = ["Rest", "Antarctica", "Belli", "Amundsen", "Ross", "Eastant", "Amery", "Dml", "Fris", "Larsens"]
 
 
 iam = gmask_reg.get_mask(iceshelves, p_file)
@@ -54,7 +54,7 @@ for n in range(len(iceshelves)):
 ##clr = ["lightskyblue", "royalblue", "moccasin", "darkorange", "yellowgreen","darkolivegreen","plum", "purple", "lightcoral", "maroon"]
 #colors = ["lightgray", "slategray", "cyan","green","yellowgreen","brown","lightcoral","orange","gold","royalblue","lightskyblue","darkorchid","plum","olive","darkkhaki"]
 
-colors = ["lightgray","yellowgreen","royalblue","gold","brown","orange","darkorchid","lightskyblue","plum"]
+colors = ["lightblue", "lightgray","yellowgreen","royalblue","gold","brown","orange","darkorchid","darkolivegreen","plum"]
 
 # Create the colormap
 cmap_name = "segcor"
@@ -106,6 +106,6 @@ fsize = 8
 # Show the plot
 
 if opt_save == 1:
-    plt.savefig(f'/Users/irenavankova/Work/data_sim/FISMF/Meltrates/Melt_tseries_map.png', bbox_inches='tight', dpi=300)
+    plt.savefig(f'/Users/irenavankova/Work/data_sim/FISMF/Meltrates/Melt_tseries_map_R2.png', bbox_inches='tight', dpi=300)
 else:
     plt.show()
