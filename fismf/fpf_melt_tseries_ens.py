@@ -81,7 +81,7 @@ clr = ["black", "darkorange","lightskyblue", "brown", "royalblue"]
 Lwide = 0.5
 Lwide2 = 1.5
 
-iceshelves = ["Antarctica", "Bellingshausen", "Amundsen", "Ross", "East Antarctica", "Amery", "Dronning Maud Land", "Filchner-Ronne", "Western Weddell"]
+iceshelves = ["Antarctica", "Bellingshausen", "Amundsen", "Ross", "East Antarctica", "Amery", "Dronning Maud Land", "Filchner-Ronne", "Larsen"]
 abc = 'abcdefghijklmnop'
 ncols = 2
 nrows = int(np.ceil((len(ds_lifw_pismf['region']))) / ncols)+1

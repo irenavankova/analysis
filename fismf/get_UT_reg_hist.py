@@ -5,14 +5,22 @@ import numpy as np
 
 import gmask_reg
 
-fpath = '/lcrc/group/acme/ac.dcomeau/scratch/chrys/E3SMv2_1/v2_1.SORRM.historical_ensmean/run/'
+ymem = '751'
+
+fpath_hist = '/lcrc/group/acme/ac.dcomeau/scratch/chrys/E3SMv2_1/v2_1.SORRM.historical_ensmean/run/'
+
+if ymem == 'ave':
+    fpath = f'{fpath_hist}'
+else:
+    fpath = f'/lcrc/group/acme/ac.dcomeau/scratch/chrys/E3SMv2_1/v2_1.SORRM.historical_0{ymem}/'
+    fpath = f'{fpath}archive/ocn/hist/'
 
 secPerYear = 365 * 24 * 60 * 60
 kgingt = 1e12
 
 # Step 1: Load the mask from a different NetCDF file
 #mask_file = f'{fpath}v2_1.SORRM.historical_ensmean.mpaso.rst.2015-01-01_00000.nc'  # Specify the mask file
-mask_file = f'{fpath}v2_1.SORRM.historical_ensmean.mpaso.rst.0701-01-01_00000.nc'  # Specify the mask file
+mask_file = f'{fpath_hist}v2_1.SORRM.historical_ensmean.mpaso.rst.0701-01-01_00000.nc'  # Specify the mask file
 
 mask_ds = xr.open_dataset(mask_file)
 landIceFloatingMask = mask_ds['landIceFloatingMask']  # Assuming the variable name is 'mask' and it's of shape (ncells,)
@@ -31,7 +39,14 @@ def preprocess(dss):
             "timeMonthly_avg_activeTracers_temperature"
         ]
     ]
-ds = xr.open_mfdataset(f"{fpath}v2_1.SORRM.historical_ensmean.mpaso.hist.am.timeSeriesStatsMonthly.*.nc", combine='by_coords', chunks={'time': 12}, parallel=True, decode_timedelta=True, preprocess=preprocess)
+
+if ymem == 'ave':
+    ds = xr.open_mfdataset(f"{fpath}v2_1.SORRM.historical_ensmean.mpaso.hist.am.timeSeriesStatsMonthly.*.nc",
+                           combine='by_coords', chunks={'time': 12}, parallel=True, decode_timedelta=True,
+                           preprocess=preprocess)
+else:
+    ds = xr.open_mfdataset(f"{fpath}v2_1.SORRM.historical_0{ymem}.mpaso.hist.am.timeSeriesStatsMonthly.*.nc", combine='by_coords', chunks={'time': 12}, parallel=True, decode_timedelta=True, preprocess=preprocess)
+
 
 landIceFloatingMask = landIceFloatingMask.squeeze('Time')
 
@@ -70,5 +85,6 @@ utsq_tseries = utsq_tseries.transpose('Time', 'region')
 utsq_tseries.name = 'utsq'
 
 # Save to NetCDF
-utsq_tseries.to_dataset().to_netcdf('utsq_reg_hist_ave_tseries.nc')
+utsq_tseries.to_dataset().to_netcdf(f'utsq_reg_hist_{ymem}_tseries.nc')
+
 
