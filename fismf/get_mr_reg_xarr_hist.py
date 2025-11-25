@@ -5,8 +5,17 @@ import numpy as np
 
 import gmask_reg
 
+ymem = '751'
+
 fpath_mask = '/lcrc/group/acme/ac.dcomeau/scratch/chrys/E3SMv2_1/v2_1.SORRM.historical_ensmean/run/'
-fpath = fpath_mask
+
+if ymem == 'ave':
+    fpath = f'{fpath_mask}'
+else:
+    fpath = f'/lcrc/group/acme/ac.dcomeau/scratch/chrys/E3SMv2_1/v2_1.SORRM.historical_0{ymem}/'
+    fpath = f'{fpath}archive/ocn/hist/'
+
+
 secPerYear = 365 * 24 * 60 * 60
 kgingt = 1e12
 
@@ -21,7 +30,11 @@ iceshelves = ["Antarctica", "Belli", "Amundsen", "Ross", "Eastant", "Amery", "Dm
 iam = gmask_reg.get_mask(iceshelves, mask_file)
 
 # Step 2: Open the 100 NetCDF files and concatenate them along the 'time' dimension
-ds = xr.open_mfdataset(f"{fpath}v2_1.SORRM.historical_ensmean.mpaso.hist.am.timeSeriesStatsMonthly.*.nc", combine='by_coords', chunks={'time': 12}, parallel=True, decode_timedelta=True)
+if ymem == 'ave':
+    ds = xr.open_mfdataset(f"{fpath}v2_1.SORRM.historical_ensmean.mpaso.hist.am.timeSeriesStatsMonthly.*.nc",
+                           combine='by_coords', chunks={'time': 12}, parallel=True, decode_timedelta=True)
+else:
+    ds = xr.open_mfdataset(f"{fpath}v2_1.SORRM.historical_0{ymem}.mpaso.hist.am.timeSeriesStatsMonthly.*.nc", combine='by_coords', chunks={'time': 12}, parallel=True, decode_timedelta=True)
 
 landIceFloatingMask = landIceFloatingMask.squeeze('Time')
 
@@ -47,5 +60,9 @@ lifw_tseries = lifw_tseries.transpose('Time', 'region')
 lifw_tseries.name = 'lifw'
 
 # Save to NetCDF
-lifw_tseries.to_dataset().to_netcdf('lifw_reg_hist_ave_tseries.nc')
+if ymem == 'ave':
+    lifw_tseries.to_dataset().to_netcdf('lifw_reg_hist_ave_tseries.nc')
+else:
+    lifw_tseries.to_dataset().to_netcdf(f'lifw_reg_hist_{ymem}_tseries.nc')
+
 
