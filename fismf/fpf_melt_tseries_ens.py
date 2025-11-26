@@ -79,6 +79,7 @@ clr = ["black", "darkorange","lightskyblue", "brown", "royalblue"]
 #Lwide = np.array([0.5, 0.5, 0.5, 1.5, 1.5])
 #smb = ["-", "--", "--", "-", "-"]
 Lwide = 0.5
+Lwide1 = 0.5
 Lwide2 = 1.5
 
 iceshelves = ["Antarctica", "Bellingshausen", "Amundsen", "Ross", "East Antarctica", "Amery", "Dronning Maud Land", "Filchner-Ronne", "Larsen"]
@@ -111,7 +112,7 @@ for r, region in enumerate(lifw_p.region.values):
 
     if opt_plot_raw == 1:
         #axes[j, k].plot(time_h, lh_reg, '-', color="black", linewidth=Lwide)
-        axes[j, k].plot(time_h, uth_reg * kAnt, '--', color="yellowgreen", linewidth=Lwide)
+        axes[j, k].plot(time_h, uth_reg * kAnt, '--', color="palegoldenrod", linewidth=Lwide)
 
         #axes[j, k].plot(time_ssp, lp_reg, '-', color="black", linewidth=Lwide)
         axes[j, k].plot(time_ssp, utp_reg * kAnt, '--', color="navajowhite", linewidth=Lwide)
@@ -120,21 +121,29 @@ for r, region in enumerate(lifw_p.region.values):
 
     if opt_plot_ens == 1:
         for b in range(3):
+
+            ds_hist_ens = xr.open_dataset(f'{fpath}utsq_reg_hist_{ensnum[b]}_tseries.nc')
+            utsq_h_ens = ds_hist_ens['utsq']  # dims: (Time, region)
+            uth_ens = utsq_h_ens.sel(region=region)
+
             ds_pismf_ens = xr.open_dataset(f'{fpath}utsq_reg_pismf_{ensnum[b]}_tseries.nc')
             utsq_p_ens = ds_pismf_ens['utsq']  # dims: (Time, region)
             utp_ens = utsq_p_ens.sel(region=region)
-            p_ens = np.append(uth_reg, utp_ens, axis=0)
+            p_ens = np.append(uth_ens, utp_ens, axis=0)
             p_ens = iv_filt.butter_filter(p_ens, fc, fs, 'low')
 
-            axes[j, k].plot(time_ssp, p_ens[len(time_h):] * kAnt, '-', color="darkorange", linewidth=Lwide+0.5)
+            axes[j, k].plot(time_ssp, p_ens[len(time_h):] * kAnt, '-', color="darkorange", linewidth=Lwide1)
 
             ds_fismf_ens = xr.open_dataset(f'{fpath}utsq_reg_fismf_{ensnum[b]}_tseries.nc')
             utsq_f_ens = ds_fismf_ens['utsq']  # dims: (Time, region)
             utf_ens = utsq_f_ens.sel(region=region)
-            f_ens = np.append(uth_reg, utf_ens, axis=0)
+            f_ens = np.append(uth_ens, utf_ens, axis=0)
             f_ens = iv_filt.butter_filter(f_ens, fc, fs, 'low')
 
-            axes[j, k].plot(time_ssp, f_ens[len(time_h):] * kAnt, '-', color="cornflowerblue", linewidth=Lwide+0.5)
+            axes[j, k].plot(time_ssp, f_ens[len(time_h):] * kAnt, '-', color="cornflowerblue", linewidth=Lwide1)
+
+            axes[j, k].plot(time_h, f_ens[0:len(time_h)] * kAnt, '-', color="yellowgreen", linewidth=Lwide1)
+
 
 
 
