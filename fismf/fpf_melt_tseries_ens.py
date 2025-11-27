@@ -10,10 +10,11 @@ import matplotlib.ticker as ticker
 from scipy.signal import butter, filtfilt
 import iv_filt
 
-opt_save = 1
+opt_save = 0
 opt_plot_raw = 1
 opt_plot_ens = 1
 ff = 1
+nmlast = 12
 #fname = 'pANS_f701'
 fname = 'pANS_R2'
 fpath = '/Users/irenavankova/Work/data_sim/FISMF/FISMF_E3SM_ouputs/ncfiles/post_derived/'
@@ -119,6 +120,16 @@ for r, region in enumerate(lifw_p.region.values):
 
         axes[j, k].plot(time_ssp, utf_reg * kAnt, '--', color="lightblue", linewidth=Lwide)
 
+        if region == 'Antarctica':
+            print('HIST')
+            last_10y = lh_reg[-nmlast:]
+            mval = last_10y.mean()
+            print(mval.values)
+            print('PISMF')
+            last_10y = lp_reg[-nmlast:]
+            mval = last_10y.mean()
+            print(mval.values)
+
     if opt_plot_ens == 1:
         for b in range(3):
 
@@ -144,8 +155,20 @@ for r, region in enumerate(lifw_p.region.values):
 
             axes[j, k].plot(time_h, f_ens[0:len(time_h)] * kAnt, '-', color="yellowgreen", linewidth=Lwide1)
 
+            ds_lifw_fismf_ens = xr.open_dataset(f'{fpath}lifw_reg_fismf_{ensnum[b]}_tseries.nc')
+            lifw_f_ens = ds_lifw_fismf_ens['lifw']  # dims: (Time, region)
+            lf_ens = lifw_f_ens.sel(region=region)
+            axes[j, k].plot(time_ssp, lf_ens, '-', color="gold", linewidth=Lwide1)
 
-
+            if region == 'Antarctica':
+                print(f'HIST_{ensnum[b]}')
+                last_10y = uth_ens[-nmlast:] * kAnt
+                mval = last_10y.mean()
+                print(mval.values)
+                print(f'PISMF_{ensnum[b]}')
+                last_10y = utp_ens[-nmlast:] * kAnt
+                mval = last_10y.mean()
+                print(mval.values)
 
     if ff == 1:
         l_reg = iv_filt.butter_filter(l_reg, fc, fs, 'low')
@@ -167,6 +190,7 @@ for r, region in enumerate(lifw_p.region.values):
         axes[j, k].plot(time_ssp, utp_reg * kAnt, '-', color="brown", linewidth=Lwide2, label='EVOMELT')
 
         axes[j, k].plot(time_ssp, utf_reg * kAnt, '-', color="darkblue", linewidth=Lwide2, label='FIXMELT')
+
 
     axes[j, k].plot(time_ssp, lf_reg, '-', color="gold", linewidth=Lwide2, label='FIXMELT prescribed')
 
