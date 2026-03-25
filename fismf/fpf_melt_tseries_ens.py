@@ -10,7 +10,7 @@ import matplotlib.ticker as ticker
 from scipy.signal import butter, filtfilt
 import iv_filt
 
-opt_save = 0
+opt_save = 1
 opt_plot_raw = 1
 opt_plot_ens = 1
 ff = 1
@@ -233,7 +233,7 @@ for r, region in enumerate(lifw_p.region.values):
 #fig.tight_layout()
 
 if opt_save == 1:
-    plt.savefig(f'/Users/irenavankova/Work/data_sim/FISMF/Meltrates/Melt_tseries_{fname}.png', bbox_inches='tight', dpi=300)
+    plt.savefig(f'/Users/irenavankova/Work/data_sim/FISMF/Meltrates/Melt_tseries_{fname}.pdf', bbox_inches='tight', dpi=300)
 else:
     plt.show()
 
