@@ -11,16 +11,29 @@ import matplotlib.pyplot as plt
 fy = '2-4'
 opt_plot = 2
 opt_save = 1
+var2plot = 'Tstar'
+
 fris_loc = '/Users/irenavankova/Desktop/Fris_hr'
 
 rho_fw = 1000.
 sec_per_day = 86400.
 sec_per_year = sec_per_day * 365.
 kgInGt = 1e12
+mtocm = 100
 
-xmin = -3.5
-xmax = 7.5
 n_bins = 20
+
+if var2plot == 'lifw':
+    xmin = -3.5
+    xmax = 7.5
+    plotlabel = "Melt rate [m/yr]"
+elif var2plot == 'Tstar':
+    xmin = -0.5
+    xmax = 1.5
+    plotlabel = "Thermal driving [C]"
+elif var2plot == 'ustar':
+    xmin = 0
+    xmax = 1.2
 
 # Define the list of values to loop over
 fnums = [8,4,2,1]
@@ -54,15 +67,42 @@ for i, shelf_name in enumerate(iceshelves):
 
         # Load Data and select indices
         ds = xr.open_dataset(out_file).isel(nCells=iis)
-        lifw = ds['timeMonthly_avg_landIceFreshwaterFluxTotal'].values.flatten()
+        if var2plot == 'lifw':
+            lifw = ds['timeMonthly_avg_landIceFreshwaterFluxTotal'].values.flatten()
+            lifw = lifw * FloatingMask * sec_per_year / rho_fw
+            plot_data = lifw
+        elif var2plot == 'Tstar':
+            Tcb = ds[
+                'timeMonthly_avg_landIceBoundaryLayerTracers_landIceBoundaryLayerTemperature'].values.flatten()  # Use the first time step (Time = 1)
+            Tci = ds[
+                'timeMonthly_avg_landIceInterfaceTracers_landIceInterfaceTemperature'].values.flatten()  # Use the first time step (Time = 1)
+            Tc = (Tcb - Tci) * FloatingMask
+            Tc = np.where(FloatingMask == 1, Tc, np.nan)
+            plot_data = Tc
+        elif var2plot == 'ustar':
+            Uc = ds['timeMonthly_avg_landIceFrictionVelocity']  # Use the first time step (Time = 1)
+            Uc = Uc.isel(Time=0).values.flatten()
+            Uc = np.where(FloatingMask == 1, Uc * mtocm, np.nan)
+            plot_data = Uc
+
+
 
         # Calculate Melt rate (m/yr)
         shelf_indices = np.where(FloatingMask == 1)[0]
         area_shelf = areaCell[shelf_indices]
-        melt_shelf = lifw[shelf_indices] * sec_per_year / rho_fw
-
+        pdat_shelf = plot_data[shelf_indices]
         total_shelf_area = np.sum(area_shelf)
-        total_melt_flux = np.sum(melt_shelf * area_shelf)*rho_fw/kgInGt
+
+        if var2plot == 'lifw':
+            total_melt_flux = np.sum(pdat_shelf * area_shelf)*rho_fw/kgInGt
+            plabel = f'F{fnum} (Melt flux: {total_melt_flux:.2f} Gt/yr)'
+        elif var2plot == 'ustar':
+            mean_ustar = np.sum(pdat_shelf * area_shelf)/total_shelf_area
+            plabel = f'F{fnum} (Mean u*: {mean_ustar:.2f} cm/s)'
+        elif var2plot == 'Tstar':
+            mean_ustar = np.sum(pdat_shelf * area_shelf)/total_shelf_area
+            plabel = f'F{fnum} (Mean T*: {mean_ustar:.2f} C)'
+
 
         plot_range = (xmin, xmax)
         #n_bins = 60
@@ -76,12 +116,12 @@ for i, shelf_name in enumerate(iceshelves):
 
         # 3. Compute histogram values (counts) manually
         # This returns the heights for each bin
-        hist_vals, _ = np.histogram(melt_shelf, bins=bins, weights=weights)
+        hist_vals, _ = np.histogram(pdat_shelf, bins=bins, weights=weights)
 
         # 4. Plot as a line connecting bin centers
         current_color = color_map.get(fnum, 'gray')
         ax.plot(bin_centers, hist_vals,
-                label=f'F{fnum} (Melt flux: {total_melt_flux:.2f} Gt/yr)',
+                label=plabel,
                 color=current_color,
                 linewidth=1.5,
                 alpha=1.0)
@@ -103,7 +143,7 @@ for j in range(len(iceshelves), len(axes)):
 plt.tight_layout()
 
 if opt_save == 1:
-    plt.savefig(f'{fris_loc}/Fris_plots/melt/Melt_hist_V2_{savename}_Y{fy}.png',
+    plt.savefig(f'{fris_loc}/Fris_plots/var_spatial/{var2plot}_histo_V1.png',
                 bbox_inches='tight', dpi=300)
 else:
     plt.show()
