@@ -90,4 +90,4 @@ for name, var in vars_3d.items():
 
 # --- Save cleaner dataset to NetCDF ---
 out_ds = xr.Dataset(tseries_dict)
-out_ds.to_netcdf(f'ocean_reg_tseries_{dx}_{sec}.nc')
+out_ds.to_netcdf(f'bulk_tseries_{dx}_{sec}.nc')
