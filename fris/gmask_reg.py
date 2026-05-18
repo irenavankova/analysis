@@ -7,7 +7,7 @@ def get_mask(is_list,ocean_rst_file,opt_noGL=1):
     #ocean_rst_file is MPAS-ocean file
 
     dsMesh = xarray.open_dataset(ocean_rst_file)
-    dsMesh = dsMesh[['latCell', 'lonCell','landIceFloatingMask', 'cellsOnCell','nEdgesOnCell' 'layerThickness']]
+    dsMesh = dsMesh[['latCell', 'lonCell','landIceFloatingMask', 'cellsOnCell','nEdgesOnCell', 'layerThickness']]
     dsMesh.load()
 
     lat = np.squeeze(dsMesh.latCell.data)
