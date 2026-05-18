@@ -5,81 +5,139 @@ import glob
 import xarray as xr
 import matplotlib.pyplot as plt
 
-Fnum = '8'
-dx = f'F{Fnum}'
-sec = 'Spin6'
+# ==============================================================================
+# USER CONFIGURATION
+# ==============================================================================
+# Directory containing your reduced netCDF files ('.' means current directory)
+data_dir = '/Users/ivankova/Desktop/Fris_hr/Fris_derived/'
 
-# Define filename and output directory for plots
-fpath = '/Users/ivankova/Desktop/Fris_hr/Fris_derived'
-fsave = '/Users/ivankova/Desktop/Fris_hr/Fris_plots/bulk_tseries'
-nc_file = f'{fpath}/bulk_tseries_1by1_{dx}_{sec}.nc'
-output_dir = f'{fsave}/plots_{dx}_{sec}'
+# Define offsets for specific runs.
+# If a file is found but its name isn't listed here, its offset defaults to 0.0.
+year_offsets = {
+    'F8': 0.0,
+    'F4': 0.0,
+    # Format: 'Unique_Filename_Part': offset_in_years
+}
+
+output_dir = '/Users/ivankova/Desktop/Fris_hr/Fris_plots/bulk_tseries/compare_all/'
 os.makedirs(output_dir, exist_ok=True)
+# ==============================================================================
 
-print(f"Opening data file: {nc_file}")
-if not os.path.exists(nc_file):
-    raise FileNotFoundError(f"Could not find the time series file: {nc_file}")
+print(f"Scanning '{data_dir}' for time series netCDF files...")
+file_pattern = os.path.join(data_dir, "bulk_tseries_*.nc")
+found_files = sorted(glob.glob(file_pattern))
 
-# Load the consolidated time series dataset
-with xr.open_dataset(nc_file) as ds:
-    # Identify variables to plot (exclude coordinate/dimension names)
-    plot_vars = [v for v in ds.data_vars if v not in ['Time', 'region']]
+if not found_files:
+    raise FileNotFoundError(f"Error: No files matching 'bulk_tseries_*.nc' found in '{data_dir}'")
 
-    # Extract coordinates
-    raw_time_coords = ds['Time'].values
-    regions = ds['region'].values
+# Automatically build the configuration list from discovered files
+files_config = []
+for fpath in found_files:
+    fname = os.path.basename(fpath)
 
-    # --- FIX: Convert cftime to a decimal model year float array ---
-    print("Converting climate calendar to continuous decimal model years...")
-    time_coords = [
-        t.year + (t.month - 1) / 12.0
-        for t in raw_time_coords
-    ]
+    # Generate a clean label by stripping 'bulk_tseries_' and '.nc'
+    # e.g., 'bulk_tseries_F8_Spin6.nc' -> 'F8_Spin6'
+    clean_label = fname.replace('bulk_tseries_', '').replace('.nc', '')
 
-    print(f"Found {len(plot_vars)} variables to plot over {len(regions)} regions.")
+    # Check if this file or label matches any keys in our offset dictionary
+    offset_value = 0.0
+    for key, val in year_offsets.items():
+        if key in fname:
+            offset_value = val
+            break
 
-    # Loop over each reduced 3D variable (e.g., temp_max, salt_mean, rho_min)
-    for var_name in plot_vars:
-        print(f"Generating plot for: {var_name}...")
+    files_config.append({
+        'path': fpath,
+        'label': clean_label,
+        'offset': offset_value
+    })
+    print(f"--> Detected: {fname} | Assigned Label: {clean_label} | Offset: {offset_value} years")
 
-        # Initialize a crisp, clean figure
-        fig, ax = plt.subplots(figsize=(11, 6), dpi=150)
+# Step 1: Use the first file to determine the available variables and regions
+with xr.open_dataset(files_config[0]['path']) as ds_ref:
+    plot_vars = [v for v in ds_ref.data_vars if v not in ['Time', 'region']]
+    regions = ds_ref['region'].values.tolist()
 
-        # Extract data slice for this variable: shape (Time, region)
-        data_slice = ds[var_name]
+num_regions = len(regions)
+print(f"\nProcessing {len(plot_vars)} variables across {num_regions} regions...")
 
-        # Loop through regions and plot them as separate lines
-        for region in regions:
-            # Select data for the specific region
-            reg_data = data_slice.sel(region=region)
+# Determine the grid layout dynamically (2 columns wide)
+ncols = 2
+nrows = (num_regions + 1) // ncols
 
-            # Plot using the decimal model year axis
-            ax.plot(time_coords, reg_data.values, label=str(region), linewidth=1.5)
+# Step 2: Loop over each variable (e.g., temp_max, salt_mean, rho_min)
+for var_name in plot_vars:
+    print(f"Generating multi-panel comparison plot for: {var_name}...")
 
-        # Figure formatting and aesthetics
-        ax.set_title(f"Time Series: {var_name} ({dx} - {sec})", fontsize=14, fontweight='normal', pad=15)
-        ax.set_xlabel("Model Year", fontsize=12, labelpad=10)
+    fig, axes = plt.subplots(nrows=nrows, ncols=ncols, figsize=(15, 3.5 * nrows), dpi=150, sharex=True)
+    axes_flat = axes.flatten()
 
-        # Dynamically set y-axis labels based on the tracer type
-        if 'temp' in var_name:
-            ax.set_ylabel("Temperature (°C)", fontsize=12)
-        elif 'salt' in var_name:
-            ax.set_ylabel("Salinity (psu)", fontsize=12)
-        elif 'rho' in var_name:
-            ax.set_ylabel("Potential Density (kg/m³)", fontsize=12)
-        else:
-            ax.set_ylabel("Value", fontsize=12)
+    legend_handles = []
+    legend_labels = []
 
+    # Step 3: Loop through each discovered file and plot its data onto the panels
+    for cfg in files_config:
+        with xr.open_dataset(cfg['path']) as ds:
+
+            if var_name not in ds.data_vars:
+                continue
+
+            raw_time = ds['Time'].values
+
+            # Apply decimal conversion + user-specified year offset
+            time_coords = [
+                (t.year + (t.month - 1) / 12.0) + cfg['offset']
+                for t in raw_time
+            ]
+
+            data_slice = ds[var_name]
+
+            # Step 4: Distribute data points to their respective regional subplots
+            for reg_idx, region in enumerate(regions):
+                ax = axes_flat[reg_idx]
+
+                if region in ds['region'].values:
+                    reg_data = data_slice.sel(region=region)
+
+                    line, = ax.plot(time_coords, reg_data.values,
+                                    label=cfg['label'], linewidth=1.5, alpha=0.85)
+
+                    if reg_idx == 0:
+                        legend_handles.append(line)
+                        legend_labels.append(cfg['label'])
+
+    # Step 5: Formatting and beautifying the subplots
+    for reg_idx, region in enumerate(regions):
+        ax = axes_flat[reg_idx]
+        ax.set_title(f"Region: {region}", fontsize=11, fontweight='bold', loc='left')
         ax.grid(True, linestyle='--', alpha=0.5)
 
-        # Place legend nicely outside the plot frame
-        ax.legend(loc='upper left', bbox_to_anchor=(1.02, 1), title="Regions", frameon=True)
+        if reg_idx % ncols == 0:  # Only label leftmost y-axes
+            if 'temp' in var_name:
+                ax.set_ylabel("Temperature (°C)", fontsize=10)
+            elif 'salt' in var_name:
+                ax.set_ylabel("Salinity (psu)", fontsize=10)
+            elif 'rho' in var_name:
+                ax.set_ylabel("Density (kg/m³)", fontsize=10)
+            else:
+                ax.set_ylabel("Value", fontsize=10)
 
-        plt.tight_layout()
+        if reg_idx >= (num_regions - ncols):
+            ax.set_xlabel("Adjusted Model Year (incl. Offset)", fontsize=10)
 
-        # Define the output save path
-        save_path = os.path.join(output_dir, f"{var_name}_{dx}_{sec}.png")
-        plt.savefig(save_path, bbox_inches='tight')
-        plt.close(fig)  # Free up memory immediately
+    # Clean up leftover empty subplot blocks
+    for residual_idx in range(num_regions, len(axes_flat)):
+        fig.delaxes(axes_flat[residual_idx])
 
-print(f"Success! All plots have been saved into the directory: '{output_dir}/'")
+    # Aesthetics and global legend positioning
+    fig.suptitle(f"Regional Comparison Time Series: {var_name}", fontsize=16, fontweight='bold', y=0.99)
+    fig.legend(legend_handles, legend_labels, loc='upper center',
+               bbox_to_anchor=(0.5, 0.96), ncol=len(files_config), frameon=True, fontsize=11)
+
+    plt.tight_layout(rect=[0, 0, 1, 0.94])
+
+    save_path = os.path.join(output_dir, f"compare_{var_name}.png")
+    plt.savefig(save_path, bbox_inches='tight')
+    plt.close(fig)
+
+print(f"\nSuccess! All multi-panel comparison plots are saved in: '{output_dir}/'")
