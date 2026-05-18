@@ -19,8 +19,8 @@ mask_file = f'{fpath}/{run_name}.mpaso.rst.0002-01-01_00000.nc'
 mask_ds = xr.open_dataset(mask_file)
 areaCell = mask_ds['areaCell']  # Horizontal grid cell area (nCells,)
 
-regs = ["RonneDcavity", "FilchnerDcavity", "BerknerSouth"]
-#regs = ["FRIS", "FRISshelf", "RonneDshelf", "FilchnerDshelf", "BerknerBank", "RonneDcavity", "FilchnerDcavity", "BerknerSouth"]
+#regs = ["RonneDcavity", "FilchnerDcavity", "BerknerSouth"]
+regs = ["FRIS", "FRISshelf", "RonneDshelf", "FilchnerDshelf", "BerknerBank", "RonneDcavity", "FilchnerDcavity", "BerknerSouth"]
 
 print(f"Getting masks...")
 
@@ -34,7 +34,9 @@ iam_da = xr.DataArray(iam, dims=['region', 'nCells'], coords={'region': regs})
 print(f"Getting a file list...")
 
 # Get a sorted list of all individual history files
-file_pattern = f"{fpath}/{run_name}.mpaso.hist.am.timeSeriesStatsMonthly.0004.*.nc"
+#file_pattern = f"{fpath}/{run_name}.mpaso.hist.am.timeSeriesStatsMonthly.0004.*.nc"
+file_pattern = f"{fpath}/{run_name}.mpaso.hist.am.timeSeriesStatsMonthly.*.nc"
+
 file_list = sorted(glob.glob(file_pattern))
 
 if not file_list:
@@ -107,6 +109,6 @@ out_ds = xr.concat(monthly_tseries_list, dim='Time')
 out_ds = out_ds.transpose('Time', 'region')
 
 # Save cleaner dataset to NetCDF
-output_filename = f'bulk_tseries_1by1_{dx}_{sec}_test.nc'
+output_filename = f'bulk_tseries_1by1_{dx}_{sec}.nc'
 out_ds.to_netcdf(output_filename)
 print(f"Successfully saved consolidated time series to: {output_filename}")
