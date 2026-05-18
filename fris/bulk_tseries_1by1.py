@@ -9,9 +9,34 @@ import gmask_reg
 Fnum = '8'
 dx = f'F{Fnum}'
 sec = 'Spin6'
+subsec = 'p1'
 
-run_name = f"20240227.GMPAS-JRA1p5-DIB-PISMF.TL319_FRISwISC0{Fnum}to60E3r1.spinY6_scr5.chicoma-cpu"
-fpath = f'/pscratch/sd/v/vankova/lanl/FRIS_Irena/FRIS_spinY6/{run_name}/run'
+
+if sec == 'Spin6':
+    run_name = f"20240227.GMPAS-JRA1p5-DIB-PISMF.TL319_FRISwISC0{Fnum}to60E3r1.spinY6_scr5.chicoma-cpu"
+    fpath = f'/pscratch/sd/v/vankova/lanl/FRIS_Irena/FRIS_spinY6/{run_name}/run'
+    subsec = ''
+elif sec == 'Spin1':
+    if Fnum == '8':
+        run_name = f"20231108.GMPAS-JRA1p5-DIB-PISMF-TMIX.TL319_FRISwISC04to60E3r1.spinup.chicoma-cpu"
+        subsec = ''
+    elif Fnum == '4':
+        run_name = f"20231118.GMPAS-JRA1p5-DIB-PISMF-TMIX.TL319_FRISwISC01to60E3r1.spinup.chicoma-cpu"
+        subsec = ''
+    elif Fnum == '2':
+        if subsec == 'p1':
+            run_name = f"20231118.GMPAS-JRA1p5-DIB-PISMF-TMIX.TL319_FRISwISC02to60E3r1.spinup.chicoma-cpu"
+        else:
+            run_name = f"20231208.GMPAS-JRA1p5-DIB-PISMF-TMIX.TL319_FRISwISC02to60E3r1.spinup.anvil"
+    elif Fnum == '1':
+        if subsec == 'p1':
+            run_name = f"20231209.GMPAS-JRA1p5-DIB-PISMF-TMIX.TL319_FRISwISC01to60E3r1.spinup.anvil"
+        else:
+            run_name = f"20240201.GMPAS-JRA1p5-DIB-PISMF-TMIX.TL319_FRISwISC01to60E3r1.spinupY5.chicoma-cpu"
+
+    fpath = f'/pscratch/sd/v/vankova/lanl/FRIS_Irena/FRIS_spinY1/{run_name}/run'
+
+
 
 # Step 1: Load the mask and grid metrics from the restart NetCDF file
 mask_file = f'{fpath}/{run_name}.mpaso.rst.0002-01-01_00000.nc'
@@ -109,6 +134,6 @@ out_ds = xr.concat(monthly_tseries_list, dim='Time')
 out_ds = out_ds.transpose('Time', 'region')
 
 # Save cleaner dataset to NetCDF
-output_filename = f'bulk_tseries_1by1_{dx}_{sec}.nc'
+output_filename = f'bulk_tseries_1by1_{dx}_{sec}{subsec}.nc'
 out_ds.to_netcdf(output_filename)
 print(f"Successfully saved consolidated time series to: {output_filename}")
