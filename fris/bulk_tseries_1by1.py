@@ -19,15 +19,22 @@ mask_file = f'{fpath}/{run_name}.mpaso.rst.0002-01-01_00000.nc'
 mask_ds = xr.open_dataset(mask_file)
 areaCell = mask_ds['areaCell']  # Horizontal grid cell area (nCells,)
 
-regs = ["FRIS", "FRISshelf", "RonneDshelf", "FilchnerDshelf", "BerknerBank", "RonneDcavity", "FilchnerDcavity",
-        "BerknerSouth"]
+regs = ["RonneDcavity", "FilchnerDcavity", "BerknerSouth"]
+#regs = ["FRIS", "FRISshelf", "RonneDshelf", "FilchnerDshelf", "BerknerBank", "RonneDcavity", "FilchnerDcavity", "BerknerSouth"]
+
+print(f"Getting masks...")
+
 iam = gmask_reg.get_mask(regs, mask_file)
+
+print(f"Reshaping masks...")
 
 # Reshape the region mask into an xarray DataArray for seamless broadcasting: (region, nCells)
 iam_da = xr.DataArray(iam, dims=['region', 'nCells'], coords={'region': regs})
 
+print(f"Getting a file list...")
+
 # Get a sorted list of all individual history files
-file_pattern = f"{fpath}/{run_name}.mpaso.hist.am.timeSeriesStatsMonthly.*.nc"
+file_pattern = f"{fpath}/{run_name}.mpaso.hist.am.timeSeriesStatsMonthly.0004.*.nc"
 file_list = sorted(glob.glob(file_pattern))
 
 if not file_list:
@@ -65,11 +72,13 @@ for idx, file_path in enumerate(file_list):
 
         for name, var in vars_3d.items():
             # 1. Broadcast variable across horizontal region mask dimensions
+            print(f"Broadcasting regions...")
             var_broadcasted = var.expand_dims(region=iam_da.region)
 
             # 2. Mask out data points falling outside boundaries or that are uninitialized
             var_masked = var_broadcasted.where(iam_da).where(var_broadcasted.notnull())
 
+            print(f"Calculating metrics...")
             # 3. Calculate spatial Minimum and Maximum over both spatial dimensions (nCells, nVertLevels)
             file_metrics[f'{name}_max'] = var_masked.max(dim=['nCells', 'nVertLevels'], skipna=True).transpose('Time',
                                                                                                                'region')
@@ -98,6 +107,6 @@ out_ds = xr.concat(monthly_tseries_list, dim='Time')
 out_ds = out_ds.transpose('Time', 'region')
 
 # Save cleaner dataset to NetCDF
-output_filename = f'bulk_tseries_1by1_{dx}_{sec}.nc'
+output_filename = f'bulk_tseries_1by1_{dx}_{sec}_test.nc'
 out_ds.to_netcdf(output_filename)
 print(f"Successfully saved consolidated time series to: {output_filename}")
