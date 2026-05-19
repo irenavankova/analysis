@@ -2,12 +2,16 @@
 import numpy as np
 import xarray
 
-def get_mask(is_list,ocean_rst_file,opt_noGL=1):
+def get_mask(is_list,ocean_rst_file,opt_noGL=1, opt_wct = 1):
     #is_list is list of region names
     #ocean_rst_file is MPAS-ocean file
 
     dsMesh = xarray.open_dataset(ocean_rst_file)
-    dsMesh = dsMesh[['latCell', 'lonCell','landIceFloatingMask', 'cellsOnCell','nEdgesOnCell', 'layerThickness']]
+    if opt_wct == 1:
+        dsMesh = dsMesh[['latCell', 'lonCell', 'landIceFloatingMask', 'cellsOnCell', 'nEdgesOnCell', 'layerThickness']]
+    else:
+        dsMesh = dsMesh[['latCell', 'lonCell', 'landIceFloatingMask', 'cellsOnCell', 'nEdgesOnCell']]
+
     dsMesh.load()
 
     lat = np.squeeze(dsMesh.latCell.data)
@@ -16,8 +20,10 @@ def get_mask(is_list,ocean_rst_file,opt_noGL=1):
     lon = lon*180/np.pi
     FloatingMask = np.squeeze(dsMesh.landIceFloatingMask.data)
 
-    wct = dsMesh['layerThickness'].sum(dim='nVertLevels')
-    wct = np.squeeze(wct)
+    if opt_wct == 1:
+        wct = dsMesh['layerThickness'].sum(dim='nVertLevels')
+        wct = np.squeeze(wct)
+
 
     iam = np.zeros((len(is_list), len(FloatingMask)))
 

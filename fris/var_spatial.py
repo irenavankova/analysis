@@ -16,12 +16,13 @@ from matplotlib import colors
 
 
 fnum = 2
-opt_noGL = 1
+opt_noGL = 0
 fy = '2-4'
 opt_plot = 3
 opt_save = 1
 #variables_to_plot = ['lifw', 'Tstar', 'Ti', 'Tbl', 'ustar']
-variables_to_plot = ['Ti', 'Tbl']
+#variables_to_plot = ['Ti', 'Tbl']
+variables_to_plot = ['freeze']
 
 
 fris_loc = '/Users/ivankova/Desktop/Fris_hr'
@@ -29,7 +30,7 @@ mesh_file = f'{fris_loc}/Fris_ncfiles/F{fnum}/ncfiles/F{fnum}mesh.nc'
 out_file = f'{fris_loc}/Fris_ncfiles/F{fnum}/ncfiles/F{fnum}melt_annual_2D_Y{fy}.nc'
 
 iceshelves = ["FRIS"]
-iam = gmask_reg.get_mask(iceshelves, mesh_file, opt_noGL=opt_noGL)
+iam = gmask_reg.get_mask(iceshelves, mesh_file, opt_noGL=opt_noGL, opt_wct=0)
 iis = iam[0,:]
 
 dsMesh = xr.open_dataset(mesh_file)
@@ -65,6 +66,17 @@ for var2plot in variables_to_plot:
         v_max = 3
         plotlabel = "Melt rate [m/yr]"
         varcmap = "RdBu_r"
+        norm = colors.Normalize(vmin=v_min, vmax=v_max)
+    if var2plot == 'freeze':
+        lifw = ds['timeMonthly_avg_landIceFreshwaterFluxTotal']
+        lifw = lifw * FloatingMask * sec_per_year / rho_fw
+        plot_data = lifw.isel(Time=0).values
+        plot_data[plot_data > 0] = np.nan
+        v_min = -1000
+        v_max = 0
+        plotlabel = "Freezing rate [m/yr]"
+        varcmap = "pink"
+        norm = colors.AsinhNorm(linear_width=1.0, vmin=-200, vmax=0)
     elif var2plot == 'Tstar':
         Tcb = ds['timeMonthly_avg_landIceBoundaryLayerTracers_landIceBoundaryLayerTemperature']  # Use the first time step (Time = 1)
         Tci = ds['timeMonthly_avg_landIceInterfaceTracers_landIceInterfaceTemperature']  # Use the first time step (Time = 1)
@@ -74,6 +86,7 @@ for var2plot in variables_to_plot:
         v_max = 1
         plotlabel = "Thermal driving [C]"
         varcmap = "RdBu_r"
+        norm = colors.Normalize(vmin=v_min, vmax=v_max)
     elif var2plot == 'Ti':
         Tci = ds['timeMonthly_avg_landIceInterfaceTracers_landIceInterfaceTemperature']  # Use the first time step (Time = 1)
         plot_data = Tci.isel(Time=0).values
@@ -81,6 +94,7 @@ for var2plot in variables_to_plot:
         v_max = -1.9
         plotlabel = "Temperature interface [C]"
         varcmap = "RdBu_r"
+        norm = colors.Normalize(vmin=v_min, vmax=v_max)
     elif var2plot == 'Tbl':
         Tcb = ds[
             'timeMonthly_avg_landIceBoundaryLayerTracers_landIceBoundaryLayerTemperature']  # Use the first time step (Time = 1)
@@ -89,6 +103,7 @@ for var2plot in variables_to_plot:
         v_max = -1.9
         plotlabel = "Temperature BL [C]"
         varcmap = "RdBu_r"
+        norm = colors.Normalize(vmin=v_min, vmax=v_max)
     elif var2plot == 'ustar':
         Uc = ds['timeMonthly_avg_landIceFrictionVelocity']  # Use the first time step (Time = 1)
         #Uc = Uc*mtocm*FloatingMask
@@ -99,6 +114,7 @@ for var2plot in variables_to_plot:
         v_max = 1.2
         plotlabel = "Friction velocity [cm/s]"
         varcmap = "hot_r"
+        norm = colors.Normalize(vmin=v_min, vmax=v_max)
 
     plot_data = np.where(iis == 0, np.nan, plot_data)
 
@@ -150,7 +166,7 @@ for var2plot in variables_to_plot:
             descriptor,
             plot_data,
             #antialiaseds=False,
-            norm=colors.Normalize(vmin=v_min, vmax=v_max),
+            norm=norm,
             cmap=varcmap
         )
 
