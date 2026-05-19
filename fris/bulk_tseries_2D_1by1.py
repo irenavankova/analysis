@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+# !/usr/bin/env python3
 
 import glob
 import xarray as xr
@@ -8,7 +8,7 @@ import gmask_reg
 
 Fnum = '8'
 dx = f'F{Fnum}'
-sec = 'Spin1'
+sec = 'Spin6'
 subsec = 'p1'
 opt_noGL = 1
 
@@ -50,7 +50,7 @@ areaCell = mask_ds['areaCell']  # Horizontal grid cell area (nCells,)
 regs = ["FRIS","Evans","Institute","Rutford","Foundation","Support Force","Recovery","Slessor","Bailey"]
 
 print(f"Getting masks...")
-iam = gmask_reg.get_mask(regs, mask_file, opt_noGL=1)
+iam = gmask_reg.get_mask(regs, mask_file, opt_noGL=opt_noGL)
 
 print(f"Reshaping masks...")
 # Reshape the region mask into an xarray DataArray for seamless broadcasting: (region, nCells)
@@ -77,6 +77,7 @@ for idx, file_path in enumerate(file_list):
 
         # Pull raw 2D variables explicitly for this single timestep
         melt_rate = ds['timeMonthly_avg_landIceFreshwaterFlux']
+        melt_rate_total = ds['timeMonthly_avg_landIceFreshwaterFluxTotal']
         Tcb = ds['timeMonthly_avg_landIceBoundaryLayerTracers_landIceBoundaryLayerTemperature']
         Uc = ds['timeMonthly_avg_landIceFrictionVelocity']
         Tci = ds['timeMonthly_avg_landIceInterfaceTracers_landIceInterfaceTemperature']
@@ -89,6 +90,7 @@ for idx, file_path in enumerate(file_list):
 
         vars_2d = {
             'melt_rate': melt_rate,
+            'melt_rate_total': melt_rate_total,
             'Uc': Uc,
             'Tc': Tc
         }
@@ -126,6 +128,6 @@ out_ds = xr.concat(monthly_tseries_list, dim='Time')
 out_ds = out_ds.transpose('Time', 'region')
 
 # Save cleaner dataset to NetCDF
-output_filename = f'bulk_tseries_2D_1by1_{dx}_{sec}{subsec}.nc'
+output_filename = f'melt_tseries_1by1_{dx}_{sec}{subsec}.nc'
 out_ds.to_netcdf(output_filename)
 print(f"Successfully saved consolidated time series to: {output_filename}")
