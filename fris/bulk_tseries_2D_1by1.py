@@ -16,8 +16,11 @@ run_name = f"20240227.GMPAS-JRA1p5-DIB-PISMF.TL319_FRISwISC0{Fnum}to60E3r1.spinY
 fpath = f'/pscratch/sd/v/vankova/lanl/FRIS_Irena/FRIS_spinY6/{run_name}/run'
 fpath_mask = fpath
 run_name_mask = run_name
+
+tot_avail = 0
 if sec == 'Spin6':
     subsec = ''
+    tot_avail = 1
 
 if sec == 'Spin1':
     if Fnum == '8':
@@ -77,7 +80,9 @@ for idx, file_path in enumerate(file_list):
 
         # Pull raw 2D variables explicitly for this single timestep
         melt_rate = ds['timeMonthly_avg_landIceFreshwaterFlux']
-        melt_rate_total = ds['timeMonthly_avg_landIceFreshwaterFluxTotal']
+        if tot_avail == 1:
+            melt_rate_total = ds['timeMonthly_avg_landIceFreshwaterFluxTotal']
+
         Tcb = ds['timeMonthly_avg_landIceBoundaryLayerTracers_landIceBoundaryLayerTemperature']
         Uc = ds['timeMonthly_avg_landIceFrictionVelocity']
         Tci = ds['timeMonthly_avg_landIceInterfaceTracers_landIceInterfaceTemperature']
@@ -88,12 +93,19 @@ for idx, file_path in enumerate(file_list):
         # Local dictionary to collect variables from this file
         file_metrics = {}
 
-        vars_2d = {
-            'melt_rate': melt_rate,
-            'melt_rate_total': melt_rate_total,
-            'Uc': Uc,
-            'Tc': Tc
-        }
+        if tot_avail == 1:
+            vars_2d = {
+                'melt_rate': melt_rate,
+                'melt_rate_total': melt_rate_total,
+                'Uc': Uc,
+                'Tc': Tc
+            }
+        else:
+            vars_2d = {
+                'melt_rate': melt_rate,
+                'Uc': Uc,
+                'Tc': Tc
+            }
 
         for name, var in vars_2d.items():
             # 1. Broadcast variable across horizontal region mask dimensions
