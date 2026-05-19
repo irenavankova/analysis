@@ -128,6 +128,6 @@ out_ds = xr.concat(monthly_tseries_list, dim='Time')
 out_ds = out_ds.transpose('Time', 'region')
 
 # Save cleaner dataset to NetCDF
-output_filename = f'melt_tseries_1by1_{dx}_{sec}{subsec}.nc'
+output_filename = f'bulk_tseries_2D_1by1_{dx}_{sec}{subsec}.nc'
 out_ds.to_netcdf(output_filename)
 print(f"Successfully saved consolidated time series to: {output_filename}")
