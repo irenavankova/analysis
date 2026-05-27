@@ -9,8 +9,7 @@ import xarray as xr
 import gmask_reg
 
 
-def print_min_max_and_extremes(file_path, mesh_file, variable_name, opt_noGL=1):
-
+def print_min_max_and_extremes(file_path, mesh_file, computation_key, opt_noGL=1):
     rho_fw = 1000.0
     sec_per_day = 86400.0
     sec_per_year = sec_per_day * 365.0
@@ -27,16 +26,44 @@ def print_min_max_and_extremes(file_path, mesh_file, variable_name, opt_noGL=1):
         # 2. Open the primary data NetCDF file
         with xr.open_dataset(file_path) as ds:
 
-            if variable_name not in ds:
-                print(f"Error: Variable '{variable_name}' not found in the file.")
-                print(f"Available variables: {list(ds.data_vars)}")
+            # Define your custom calculations here using lambda functions.
+            # This makes it incredibly easy to add new options later!
+            calculation_registry = {
+                # Your requested temperature difference calculation
+                "tstar": lambda dataset: (
+                        dataset["timeMonthly_avg_landIceBoundaryLayerTracers_landIceBoundaryLayerTemperature"]
+                        - dataset["timeMonthly_avg_landIceInterfaceTracers_landIceInterfaceTemperature"]
+                ),
+
+                # Standard freshwater flux with unit conversion built-in
+                "lifw_total": lambda dataset: (
+                        dataset["timeMonthly_avg_landIceFreshwaterFluxTotal"] * sec_per_year / rho_fw
+                ),
+
+                # Standard friction velocity (no extra calculations)
+                "ustar": lambda dataset: (
+                    dataset["timeMonthly_avg_landIceFrictionVelocity"] * 100
+                ),
+
+                # Example placeholder for any future calculations you might want
+                # "thermal_driving": lambda dataset: dataset["varA"] - dataset["varB"],
+            }
+
+            # Check if the keyword exists in our registry
+            if computation_key in calculation_registry:
+                print(f"Running custom calculation for key: '{computation_key}'...")
+                data_array = calculation_registry[computation_key](ds)
+
+            # Fallback: If it's not a registered key, check if it's a raw variable name in the file
+            elif computation_key in ds:
+                print(f"Key '{computation_key}' not in registry. Treating as raw variable name...")
+                data_array = ds[computation_key]
+
+            else:
+                print(f"Error: '{computation_key}' is neither a registered calculation nor a valid file variable.")
+                print(f"Available registry keys: {list(calculation_registry.keys())}")
+                print(f"Available raw variables: {list(ds.data_vars)}")
                 return
-
-            # Extract data array
-            data_array = ds[variable_name]
-
-            if variable_name == "timeMonthly_avg_landIceFreshwaterFluxTotal":
-                data_array = data_array * sec_per_year / rho_fw
 
             # Convert to numpy array
             data_np = data_array.values
@@ -56,7 +83,7 @@ def print_min_max_and_extremes(file_path, mesh_file, variable_name, opt_noGL=1):
                 print("Error: No valid numeric data found within the FRIS mask.")
                 return
 
-            # Determine how many elements to grab (handles cases with < 20 points)
+            # Determine how many elements to grab (handles cases with < 50 points)
             num_elements = min(50, len(data_flat))
 
             # Efficiently pull and sort the lowest values
@@ -70,8 +97,8 @@ def print_min_max_and_extremes(file_path, mesh_file, variable_name, opt_noGL=1):
             # Print results to the screen
             gl_status = "WITHOUT Grounding Line" if opt_noGL else "WITH Grounding Line"
             print("=" * 60)
-            print(f"Variable: {variable_name}")
-            print(f"Region:   FRIS ({gl_status})")
+            print(f"Calculation/Variable: {computation_key}")
+            print(f"Region:               FRIS ({gl_status})")
             print(f"Total Grid Cells Analyzed: {len(data_flat)}")
             print("=" * 60)
             print(f"Absolute Minimum Value: {lowest_20[0]}")
@@ -100,9 +127,12 @@ if __name__ == "__main__":
     FILE_NAME = f"/Users/ivankova/Desktop/Fris_hr/Fris_ncfiles/F{Fnum}/ncfiles/F{Fnum}melt_annual_2D_Y4.nc"
     MESH_FILE = f"/Users/ivankova/Desktop/Fris_hr/Fris_ncfiles/F{Fnum}/ncfiles/F{Fnum}mesh.nc"
 
-    VARIABLE = "timeMonthly_avg_landIceFreshwaterFluxTotal"
+    # Simply pass your clean shorthand keyword here!
+    # Options defined above: "temp_diff", "lifw_total", "friction_velocity"
+    # Or, pass a raw variable string like "timeMonthly_avg_landIceFrictionVelocity"
+    COMPUTATION_KEY = "tstar"
 
     # Set opt_noGL=1 to exclude Grounding Line cells, or opt_noGL=0 to include them
     print_min_max_and_extremes(
-        FILE_NAME, MESH_FILE, VARIABLE, opt_noGL=1
+        FILE_NAME, MESH_FILE, COMPUTATION_KEY, opt_noGL=1
     )

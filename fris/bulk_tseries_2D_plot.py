@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 # USER CONFIGURATION: Explicitly specify your files, labels, and start targets
 # ==============================================================================
 # Directory where all your netCDF files are located ('.' means current directory)
-data_dir = '/Users/ivankova/Desktop/Fris_hr/Fris_derived/nc_files/'
+data_dir = '/Users/ivankova/Desktop/Fris_hr/Fris_derived/nc_files/bulk_2D_tseries/'
 opt_save = 1
 
 # Centralized line and time property definitions
@@ -85,7 +85,7 @@ files_config = [
 {
         'filename': 'bulk_tseries_2D_1by1_F2_Spin1p2.nc',
         'label': 'F2 (Spin1p2)',
-        'start_year': 3,
+        'start_year': 2,
         'start_month': 11,
         'color': 'yellowgreen',
         'linewidth': Lwides1,
@@ -97,7 +97,7 @@ files_config = [
         'label': 'F1 (Spin1p1)',
         'start_year': 0,
         'start_month': 1,
-        'color': 'lightgray',
+        'color': 'darkgray',
         'linewidth': Lwides1,
         'linestyle': lstyl1,
         'in_legend': False
@@ -107,7 +107,7 @@ files_config = [
         'label': 'F1 (Spin1p2)',
         'start_year': 0,
         'start_month': 12,
-        'color': 'lightgray',
+        'color': 'darkgray',
         'linewidth': Lwides1,
         'linestyle': lstyl1,
         'in_legend': False
@@ -117,7 +117,7 @@ files_config = [
         'label': 'F1 (Spin1p3)',
         'start_year': 4,
         'start_month': 6,
-        'color': 'lightgray',
+        'color': 'darkgray',
         'linewidth': Lwides1,
         'linestyle': lstyl1,
         'in_legend': False
@@ -267,7 +267,7 @@ for var_name in plot_vars:
 
     plt.tight_layout(rect=[0, 0, 1, 0.94])
 
-    save_path = os.path.join(output_dir, f"compare_{var_name}.png")
+    save_path = os.path.join(output_dir, f"{var_name}.png")
     if opt_save == 1:
         plt.savefig(save_path, bbox_inches='tight')
     else:

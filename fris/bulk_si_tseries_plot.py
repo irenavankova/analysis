@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 # USER CONFIGURATION: Explicitly specify your files, labels, and start targets
 # ==============================================================================
 # Directory where all your netCDF files are located ('.' means current directory)
-data_dir = '/Users/ivankova/Desktop/Fris_hr/Fris_derived/nc_files/bulk_3D_tseries/'
+data_dir = '/Users/ivankova/Desktop/Fris_hr/Fris_derived/nc_files/bulk_seaice_tseries'
 opt_save = 1
 
 # Centralized line and time property definitions
@@ -20,9 +20,18 @@ lstyl6 = '-'
 
 S6_start_yr = 0
 
+# Target dates for vertical lines (defined as tuple: (year, month))
+vline_targets = [
+    (2, 11),
+    (0, 12),
+    (4, 6)
+]
+
+# Note: Ensure these filenames match the sea-ice netCDF outputs you generated
+# (e.g., bulk_seaice_tseries_...)
 files_config = [
     {
-        'filename': 'bulk_tseries_1by1_F8_Spin1.nc',
+        'filename': 'bulk_seaice_tseries_F8_Spin1.nc',
         'label': 'F8 (Spin1)',
         'start_year': 0,
         'start_month': 1,
@@ -32,7 +41,7 @@ files_config = [
         'in_legend': False
     },
     {
-        'filename': 'bulk_tseries_1by1_F8_Spin6.nc',
+        'filename': 'bulk_seaice_tseries_F8_Spin6.nc',
         'label': 'F8 (Spin6)',
         'start_year': S6_start_yr,
         'start_month': 1,
@@ -42,7 +51,7 @@ files_config = [
         'in_legend': True
     },
     {
-        'filename': 'bulk_tseries_1by1_F4_Spin1.nc',
+        'filename': 'bulk_seaice_tseries_F4_Spin1.nc',
         'label': 'F4 (Spin1)',
         'start_year': 0,
         'start_month': 1,
@@ -52,7 +61,7 @@ files_config = [
         'in_legend': False
     },
     {
-        'filename': 'bulk_tseries_1by1_F4_Spin6.nc',
+        'filename': 'bulk_seaice_tseries_F4_Spin6.nc',
         'label': 'F4 (Spin6)',
         'start_year': S6_start_yr,
         'start_month': 1,
@@ -62,7 +71,7 @@ files_config = [
         'in_legend': True
     },
     {
-        'filename': 'bulk_tseries_1by1_F2_Spin6.nc',
+        'filename': 'bulk_seaice_tseries_F2_Spin6.nc',
         'label': 'F2 (Spin6)',
         'start_year': S6_start_yr,
         'start_month': 1,
@@ -72,7 +81,7 @@ files_config = [
         'in_legend': True
     },
     {
-        'filename': 'bulk_tseries_1by1_F2_Spin1p1.nc',
+        'filename': 'bulk_seaice_tseries_F2_Spin1p1.nc',
         'label': 'F2 (Spin1p1)',
         'start_year': 0,
         'start_month': 1,
@@ -81,8 +90,8 @@ files_config = [
         'linestyle': lstyl1,
         'in_legend': False
     },
-{
-        'filename': 'bulk_tseries_1by1_F2_Spin1p2.nc',
+    {
+        'filename': 'bulk_seaice_tseries_F2_Spin1p2.nc',
         'label': 'F2 (Spin1p2)',
         'start_year': 2,
         'start_month': 11,
@@ -92,7 +101,7 @@ files_config = [
         'in_legend': False
     },
     {
-        'filename': 'bulk_tseries_1by1_F1_Spin1p1.nc',
+        'filename': 'bulk_seaice_tseries_F1_Spin1p1.nc',
         'label': 'F1 (Spin1p1)',
         'start_year': 0,
         'start_month': 1,
@@ -102,7 +111,7 @@ files_config = [
         'in_legend': False
     },
     {
-        'filename': 'bulk_tseries_1by1_F1_Spin1p2.nc',
+        'filename': 'bulk_seaice_tseries_F1_Spin1p2.nc',
         'label': 'F1 (Spin1p2)',
         'start_year': 0,
         'start_month': 12,
@@ -112,7 +121,7 @@ files_config = [
         'in_legend': False
     },
     {
-        'filename': 'bulk_tseries_1by1_F1_Spin1p3.nc',
+        'filename': 'bulk_seaice_tseries_F1_Spin1p3.nc',
         'label': 'F1 (Spin1p3)',
         'start_year': 4,
         'start_month': 6,
@@ -122,7 +131,7 @@ files_config = [
         'in_legend': False
     },
     {
-        'filename': 'bulk_tseries_1by1_F1_Spin6.nc',
+        'filename': 'bulk_seaice_tseries_F1_Spin6.nc',
         'label': 'F1 (Spin6)',
         'start_year': S6_start_yr,
         'start_month': 1,
@@ -133,9 +142,16 @@ files_config = [
     },
 ]
 
-output_dir = '/Users/ivankova/Desktop/Fris_hr/Fris_plots/bulk_tseries/compare_all/'
+output_dir = '/Users/ivankova/Desktop/Fris_hr/Fris_plots/seaice_tseries/compare_all/'
 os.makedirs(output_dir, exist_ok=True)
+
 # ==============================================================================
+
+# Pre-calculate the decimal positions for your vertical lines
+vline_positions = []
+for yr, mo in vline_targets:
+    dec_yr = yr + ((mo - 1) / 12.0)
+    vline_positions.append(dec_yr)
 
 print("Validating explicitly configured files...")
 valid_files = []
@@ -144,17 +160,24 @@ for cfg in files_config:
     if os.path.exists(full_path):
         cfg['path'] = full_path
         valid_files.append(cfg)
-        print(f"--> Confirmed: {cfg['filename']} | Label: {cfg['label']} | Target Start: Year {cfg['start_year']}, Month {cfg['start_month']}")
+        print(f"--> Confirmed: {cfg['filename']} | Label: {cfg['label']}")
     else:
         print(f"Warning: Explicitly specified file not found, skipping: {full_path}")
 
 if not valid_files:
     raise FileNotFoundError("Error: None of the explicitly specified NetCDF files were found.")
 
-with xr.open_dataset(valid_files[0]['path']) as ds_ref:
-    plot_vars = [v for v in ds_ref.data_vars if v not in ['Time', 'region']]
-    regions = ds_ref['region'].values.tolist()
+# Collect distinct variables and regions
+plot_vars = set()
+regions = []
+for cfg in valid_files:
+    with xr.open_dataset(cfg['path']) as ds:
+        vars_in_file = [v for v in ds.data_vars if v not in ['Time', 'region']]
+        plot_vars.update(vars_in_file)
+        if not regions:
+            regions = ds['region'].values.tolist()
 
+plot_vars = sorted(list(plot_vars))
 num_regions = len(regions)
 print(f"\nProcessing {len(plot_vars)} variables across {num_regions} regions...")
 
@@ -164,7 +187,6 @@ nrows = (num_regions + 1) // ncols
 for var_name in plot_vars:
     print(f"Generating multi-panel comparison plot for: {var_name}...")
 
-    # Modified: sharex=True and sharey=True enforce identical scale scopes globally across all panels
     fig, axes = plt.subplots(nrows=nrows, ncols=ncols, figsize=(15, 3.5 * nrows), dpi=150, sharex=True, sharey=True)
     axes_flat = axes.flatten()
 
@@ -177,16 +199,25 @@ for var_name in plot_vars:
             if var_name not in ds.data_vars:
                 continue
 
-            raw_time = ds['Time'].values
+            start_year = cfg['start_year']
+            start_month = cfg['start_month']
 
-            native_start_dec = raw_time[0].year + (raw_time[0].month - 1) / 12.0
-            target_start_dec = cfg['start_year'] + (cfg['start_month'] - 1) / 12.0
-            dynamic_offset = target_start_dec - native_start_dec
+            # 2. Get the length of your time dimension from the dataset
+            num_timesteps = ds.sizes['Time']  # e.g., 11
 
-            time_coords = [
-                (t.year + (t.month - 1) / 12.0) + dynamic_offset
-                for t in raw_time
-            ]
+            time_coords = []
+            for i in range(num_timesteps):
+                # Calculate total elapsed months from the target starting point
+                # (Subtracting 1 shifts month from 1-12 down to a 0-11 index for clean math)
+                total_months = (start_month - 1) + i
+
+                # Use floor division and modulo to cleanly advance years and months
+                current_year = start_year + (total_months // 12)
+                current_month_0indexed = total_months % 12
+
+                # Convert it back to your decimal year format
+                decimal_year = current_year + (current_month_0indexed / 12.0)
+                time_coords.append(decimal_year)
 
             data_slice = ds[var_name]
 
@@ -195,35 +226,51 @@ for var_name in plot_vars:
 
                 if region in ds['region'].values:
                     reg_data = data_slice.sel(region=region)
+                    plot_values = reg_data.values
 
-                    # Modified: Extracted custom linewidth and linestyle with safe defaults
-                    line, = ax.plot(time_coords, reg_data.values,
+                    # Unit conversions if necessary
+                    # (Note: production/melting are scaled to m/yr directly in your analysis script)
+                    if 'concentration' in var_name:
+                        # Convert fractional area fraction (0-1) to percentage if preferred
+                        # plot_values = plot_values * 100.0
+                        pass
+
+                    line, = ax.plot(time_coords, plot_values,
                                     label=cfg['label'],
                                     linewidth=cfg.get('linewidth', 1.5),
                                     linestyle=cfg.get('linestyle', '-'),
                                     alpha=0.85,
                                     color=cfg.get('color', None))
 
-                    if reg_idx == 0 and cfg.get('in_legend', True):
+                    if cfg.get('in_legend', True) and cfg['label'] not in legend_labels:
                         legend_handles.append(line)
                         legend_labels.append(cfg['label'])
 
-    # Step 5: Formatting and beautifying the subplots
+    # Step 5: Formatting, beautifying, and adding vertical lines
     for reg_idx, region in enumerate(regions):
         ax = axes_flat[reg_idx]
         ax.set_title(f"Region: {region}", fontsize=11, fontweight='normal', loc='left')
         ax.grid(True, linestyle='--', alpha=0.5)
-
-        # Modified: Force standard numeric output style globally on all active subplots
         ax.ticklabel_format(style='plain', useOffset=False, axis='y')
 
+        # --- Draw the vertical marker lines ---
+        for x_pos in vline_positions:
+            ax.axvline(x=x_pos, color='red', linestyle=':', linewidth=1.2, alpha=0.7, zorder=1)
+
         if reg_idx % ncols == 0:  # Only label leftmost y-axes
-            if 'temp' in var_name:
-                ax.set_ylabel("Temperature (°C)", fontsize=10)
-            elif 'salt' in var_name:
-                ax.set_ylabel("Salinity (psu)", fontsize=10)
-            elif 'rho' in var_name:
-                ax.set_ylabel("Density (kg/m³)", fontsize=10)
+            if 'concentration' in var_name:
+                ax.set_ylabel("Mean Ice Concentration (Fraction)", fontsize=10)
+            elif 'production' in var_name:
+                ax.set_ylabel("Mean Sea Ice Production ($m/year$)", fontsize=10)
+            elif 'melting' in var_name:
+                ax.set_ylabel("Mean Sea Ice Melting ($m/year$)", fontsize=10)
+            elif 'integrated_ice_volume' in var_name:
+                ax.set_ylabel("Integrated Ice Volume ($m^3$)", fontsize=10)
+            elif 'thickness' in var_name:
+                if 'max' in var_name:
+                    ax.set_ylabel("Max Ice Thickness ($m$)", fontsize=10)
+                else:
+                    ax.set_ylabel("Mean Ice Thickness ($m$)", fontsize=10)
             else:
                 ax.set_ylabel("Value", fontsize=10)
 
@@ -234,7 +281,7 @@ for var_name in plot_vars:
     for residual_idx in range(num_regions, len(axes_flat)):
         fig.delaxes(axes_flat[residual_idx])
 
-    fig.suptitle(f"Regional Comparison Time Series: {var_name}", fontsize=16, fontweight='normal', y=0.99)
+    fig.suptitle(f"Regional Sea Ice Comparison: {var_name}", fontsize=16, fontweight='normal', y=0.99)
 
     if legend_handles:
         fig.legend(legend_handles, legend_labels, loc='upper center',
@@ -246,9 +293,8 @@ for var_name in plot_vars:
     if opt_save == 1:
         plt.savefig(save_path, bbox_inches='tight')
     else:
-        # Scale window DPI down slightly dynamically to comfortably fit smaller screens when rendering interactively
         fig.set_dpi(95)
         plt.show()
     plt.close(fig)
 
-print(f"\nSuccess! All multi-panel comparison plots completed.")
+print(f"\nSuccess! All multi-panel sea-ice comparison plots completed.")
