@@ -27,10 +27,11 @@ vline_targets = [
     (4, 6)
 ]
 
+vline_colors = ['yellowgreen', 'darkgray', 'darkgray']
 # Filenames updated to match the automated string outputs from the processing loop
 files_config = [
     {
-        'filename': 'bulk_seaice_tseries_F8_Spin1p1.nc',
+        'filename': 'bulk_seaice_tseries_F8_Spin1p1_V1.nc',
         'label': 'F8 (Spin1p1)',
         'start_year': 0,
         'start_month': 1,
@@ -40,7 +41,7 @@ files_config = [
         'in_legend': False
     },
     {
-        'filename': 'bulk_seaice_tseries_F8_Spin6.nc',
+        'filename': 'bulk_seaice_tseries_F8_Spin6_V1.nc',
         'label': 'F8 (Spin6)',
         'start_year': S6_start_yr,
         'start_month': 1,
@@ -50,7 +51,7 @@ files_config = [
         'in_legend': True
     },
     {
-        'filename': 'bulk_seaice_tseries_F4_Spin1p1.nc',
+        'filename': 'bulk_seaice_tseries_F4_Spin1p1_V1.nc',
         'label': 'F4 (Spin1p1)',
         'start_year': 0,
         'start_month': 1,
@@ -60,7 +61,7 @@ files_config = [
         'in_legend': False
     },
     {
-        'filename': 'bulk_seaice_tseries_F4_Spin6.nc',
+        'filename': 'bulk_seaice_tseries_F4_Spin6_V1.nc',
         'label': 'F4 (Spin6)',
         'start_year': S6_start_yr,
         'start_month': 1,
@@ -70,7 +71,7 @@ files_config = [
         'in_legend': True
     },
     {
-        'filename': 'bulk_seaice_tseries_F2_Spin6.nc',
+        'filename': 'bulk_seaice_tseries_F2_Spin6_V1.nc',
         'label': 'F2 (Spin6)',
         'start_year': S6_start_yr,
         'start_month': 1,
@@ -80,7 +81,7 @@ files_config = [
         'in_legend': True
     },
     {
-        'filename': 'bulk_seaice_tseries_F2_Spin1p1.nc',
+        'filename': 'bulk_seaice_tseries_F2_Spin1p1_V1.nc',
         'label': 'F2 (Spin1p1)',
         'start_year': 0,
         'start_month': 1,
@@ -90,7 +91,7 @@ files_config = [
         'in_legend': False
     },
     {
-        'filename': 'bulk_seaice_tseries_F2_Spin1p2.nc',
+        'filename': 'bulk_seaice_tseries_F2_Spin1p2_V1.nc',
         'label': 'F2 (Spin1p2)',
         'start_year': 2,
         'start_month': 11,
@@ -100,7 +101,7 @@ files_config = [
         'in_legend': False
     },
     {
-        'filename': 'bulk_seaice_tseries_F1_Spin1p1.nc',
+        'filename': 'bulk_seaice_tseries_F1_Spin1p1_V1.nc',
         'label': 'F1 (Spin1p1)',
         'start_year': 0,
         'start_month': 1,
@@ -110,7 +111,7 @@ files_config = [
         'in_legend': False
     },
     {
-        'filename': 'bulk_seaice_tseries_F1_Spin1p2.nc',
+        'filename': 'bulk_seaice_tseries_F1_Spin1p2_V1.nc',
         'label': 'F1 (Spin1p2)',
         'start_year': 0,
         'start_month': 12,
@@ -120,7 +121,7 @@ files_config = [
         'in_legend': False
     },
     {
-        'filename': 'bulk_seaice_tseries_F1_Spin1p3.nc',
+        'filename': 'bulk_seaice_tseries_F1_Spin1p3_V1.nc',
         'label': 'F1 (Spin1p3)',
         'start_year': 4,
         'start_month': 6,
@@ -130,7 +131,7 @@ files_config = [
         'in_legend': False
     },
     {
-        'filename': 'bulk_seaice_tseries_F1_Spin6.nc',
+        'filename': 'bulk_seaice_tseries_F1_Spin6_V1.nc',
         'label': 'F1 (Spin6)',
         'start_year': S6_start_yr,
         'start_month': 1,
@@ -186,7 +187,7 @@ nrows = (num_regions + 1) // ncols
 for var_name in plot_vars:
     print(f"Generating multi-panel comparison plot for: {var_name}...")
 
-    fig, axes = plt.subplots(nrows=nrows, ncols=ncols, figsize=(15, 3.5 * nrows), dpi=150, sharex=True, sharey=True)
+    fig, axes = plt.subplots(nrows=nrows, ncols=ncols, figsize=(15, 3.5 * nrows), dpi=150, sharex=True, sharey=False)
     axes_flat = axes.flatten()
 
     legend_handles = []
@@ -236,12 +237,12 @@ for var_name in plot_vars:
     for reg_idx, region in enumerate(regions):
         ax = axes_flat[reg_idx]
         ax.set_title(f"Region: {region}", fontsize=11, fontweight='normal', loc='left')
-        ax.grid(True, linestyle='--', alpha=0.5)
+        #ax.grid(True, linestyle='--', alpha=0.5)
         ax.ticklabel_format(style='plain', useOffset=False, axis='y')
 
         # --- Draw the vertical marker lines ---
-        for x_pos in vline_positions:
-            ax.axvline(x=x_pos, color='red', linestyle=':', linewidth=1.2, alpha=0.7, zorder=1)
+        for x_pos, line_color in zip(vline_positions, vline_colors):
+            ax.axvline(x=x_pos, color=line_color, linestyle=':', linewidth=1.2, alpha=0.7, zorder=1)
 
         if reg_idx % ncols == 0:  # Only label leftmost y-axes
             # Determine metric type prefix string dynamically

@@ -16,6 +16,7 @@ run_name = f"20240227.GMPAS-JRA1p5-DIB-PISMF.TL319_FRISwISC0{Fnum}to60E3r1.spinY
 fpath = f'/pscratch/sd/v/vankova/lanl/FRIS_Irena/FRIS_spinY6/{run_name}/run'
 fpath_mask = fpath
 run_name_mask = run_name
+mask_file = f'{fpath_mask}/{run_name_mask}.mpaso.rst.0002-01-01_00000.nc'
 
 tot_avail = 0
 if sec == 'Spin6':
@@ -45,7 +46,6 @@ if sec == 'Spin1':
     fpath = f'/pscratch/sd/v/vankova/lanl/FRIS_Irena/FRIS_spinY1/{run_name}/run'
 
 # Step 1: Load the mask and grid metrics from the restart NetCDF file
-mask_file = f'{fpath_mask}/{run_name_mask}.mpaso.rst.0002-01-01_00000.nc'
 
 mask_ds = xr.open_dataset(mask_file)
 areaCell = mask_ds['areaCell']  # Horizontal grid cell area (nCells,)
