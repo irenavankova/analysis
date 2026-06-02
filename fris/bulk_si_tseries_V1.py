@@ -197,6 +197,6 @@ for Fnum, cases in simulations.items():
         out_ds.attrs['high_volume_threshold'] = 100.0 if exclude_high_vol_cells else "N/A"
 
         # Save cleaner dataset to NetCDF
-        output_filename = f'bulk_seaice_tseries_{dx}_{sec}{subsec_str}.nc'
+        output_filename = f'bulk_seaice_tseries_{dx}_{sec}{subsec_str}_V1.nc'
         out_ds.to_netcdf(output_filename)
         print(f"Successfully saved consolidated time series to: {output_filename}")

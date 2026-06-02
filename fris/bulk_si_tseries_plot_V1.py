@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 # USER CONFIGURATION: Explicitly specify your files, labels, and start targets
 # ==============================================================================
 # Directory where all your netCDF files are located
-data_dir = '/Users/ivankova/Desktop/Fris_hr/Fris_derived/nc_files/bulk_seaice_tseries'
+data_dir = '/Users/ivankova/Desktop/Fris_hr/Fris_derived/nc_files/bulk_seaice_tseries_V1'
 opt_save = 1
 
 # Centralized line and time property definitions
