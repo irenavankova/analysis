@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-
 import glob
+import os  # <-- Add this import
 import xarray as xr
 import numpy as np
 
@@ -10,8 +10,22 @@ from fris_coordinates import sites_config, find_nearest_mpas_cells, load_transec
 opt_sites = 'filchdepr'
 loc_transects = '/global/homes/v/vankova/data_analysis/files'
 out_prl = f'/global/homes/v/vankova/data_analysis/my_scripts/nc_files/pts_{opt_sites}'
-#loc_transects = '/Users/ivankova/Desktop/Fris_hr/Fris_derived/pts_4_analysis'
 
+# -------------------------------------------------------------------------
+# Ensure out_prl directory exists with explicit permissions
+# -------------------------------------------------------------------------
+# Define the numeric octal permissions you want (e.g., 0o755 or 0o770)
+desired_mode = 0o755
+
+if not os.path.exists(out_prl):
+    # Create directory with permissions. exist_ok=True prevents race condition errors
+    os.makedirs(out_prl, mode=desired_mode, exist_ok=True)
+    print(f"Created directory: {out_prl} with permissions {oct(desired_mode)}")
+else:
+    # If it already exists, explicitly enforce/update the permissions
+    os.chmod(out_prl, desired_mode)
+    print(f"Directory already exists. Updated permissions to {oct(desired_mode)}")
+    
 if opt_sites == 'obs':
     sites_extract = sites_config
 elif opt_sites == 'shelfbreak':
