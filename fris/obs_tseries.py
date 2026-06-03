@@ -7,9 +7,9 @@ import numpy as np
 # Import the coordinates directly from your existing script
 from fris_coordinates import sites_config, find_nearest_mpas_cells, load_transect_as_sites
 
-
 opt_sites = 'shelfbreak'
-loc_transects = '/Users/ivankova/Desktop/Fris_hr/Fris_derived/pts_4_analysis'
+loc_transects = '/global/homes/v/vankova/data_analysis/files'
+#loc_transects = '/Users/ivankova/Desktop/Fris_hr/Fris_derived/pts_4_analysis'
 
 if opt_sites == 'obs':
     sites_extract = sites_config
