@@ -10,12 +10,13 @@ from scipy.signal import medfilt2d  # Added for medfilt2 equivalent
 # -------------------------------------------------------------------------
 # 1. Configuration & Setup
 # -------------------------------------------------------------------------
+transect_name = 'ronnecenter'  # Change this for each new track
+
 fnameB = '/Users/ivankova/Desktop/Fris_hr/Fris_ncfiles/BedMachineAntarctica-v3.nc'
-transect_name = 'shelfbreak'  # Change this for each new track
 save_dir = '/Users/ivankova/Desktop/Fris_hr/Fris_derived/pts_4_analysis/'
 n = 5                                # Downsampling factor (reduced since region is smaller)
 mkm = 1000.0                         # Meters to kilometers conversion
-vmin = -3000
+vmin = -1500
 
 if not os.path.exists(save_dir):
     os.makedirs(save_dir)
@@ -102,6 +103,12 @@ ax.plot(click_x_km, click_y_km, 'r-o', linewidth=2, label=transect_name)
 ax.legend()
 plt.draw()
 print(f"Captured {len(clicked_points)} points.")
+
+# --- ADDED: Save the plot to the same directory as the input .nc file ---
+plot_save_path = os.path.join(save_dir, f"{transect_name}_plot.png")
+fig.savefig(plot_save_path, bbox_inches='tight', dpi=300)
+print(f"Successfully saved plot to: {plot_save_path}")
+# -------------------------------------------------------------------------
 
 # -------------------------------------------------------------------------
 # 4. Process Coordinates & Save Directly to NetCDF
