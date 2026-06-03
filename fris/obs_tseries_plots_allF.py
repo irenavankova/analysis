@@ -40,12 +40,18 @@ param_meta = {
 # Max length to plot: 5 years * 12 months = 60 months
 MAX_MONTHS = 60
 
-# Global site coordinates reference list to loop through uniformly
+'''
 all_possible_sites = [
     "R01", "R02", "R03", "R04", "R05", "R06", "R07", "R08", "R09", "R10",
     "R12", "R13", "R14", "R15", "FSW2", "FSE1", "FNE1", "FNE3", "Site5a",
     "Site5c", "Site2", "Site3", "Site5", "Fox1", "Fox2", "Fox3", "Fox4",
     "FR5", "FR6", "FSW1"
+]
+'''
+all_possible_sites = [
+    "R01", "R02", "R03", "R04", "R05", "R06", "R07", "R08", "R09", "R10",
+    "R12", "R13", "R14", "R15", "FSW2", "FSE1", "FNE1", "FNE3", "Site5a",
+    "Site5c", "Site2", "Site3", "Site5", "Fox1", "Fox2", "Fox3", "Fox4", "FSW1"
 ]
 
 # =============================================================================
@@ -97,7 +103,9 @@ for sim_case, res_dict in simulation_cases.items():
 
         patch_times_dict[res] = res_patch_years
 
-    # Iterate site by site to construct the grid canvas matrix
+    # -------------------------------------------------------------------------
+    # ITERATE SITE BY SITE AND PLOT
+    # -------------------------------------------------------------------------
     for site_name in all_possible_sites:
 
         # Lookahead validation check: does this site exist in at least one loaded resolution?
@@ -111,6 +119,56 @@ for sim_case, res_dict in simulation_cases.items():
             continue
 
         print(f" -> Constructing Resolution vs Parameter Grid Canvas for Site: {site_name}...")
+
+        # ---------------------------------------------------------------------
+        # STEP 1: CALCULATE LOCAL AXIS LIMITS FOR THIS SPECIFIC SITE ONLY
+        # ---------------------------------------------------------------------
+        site_limits = {param: {'min': np.inf, 'max': -np.inf} for param in parameters}
+
+        for res in resolutions:
+            if res not in case_datasets or site_name not in case_datasets[res]['site'].values:
+                continue
+
+            ds_site_check = case_datasets[res].sel(site=site_name)
+
+            # Isolate layer masking configuration to ignore inactive layer NaNs
+            thick_t0 = ds_site_check['timeMonthly_avg_layerThickness'].isel(
+                Time=0).values if 'timeMonthly_avg_layerThickness' in ds_site_check else None
+            valid_mask = ~np.isnan(thick_t0) if thick_t0 is not None else slice(None)
+
+            for param in parameters:
+                if param == 'temperature':
+                    vname = 'timeMonthly_avg_activeTracers_temperature'
+                    if vname in ds_site_check:
+                        vals = ds_site_check[vname].transpose('nVertLevels', 'Time').values[valid_mask, :]
+                        if vals.size > 0 and not np.all(np.isnan(vals)):
+                            site_limits['temperature']['min'] = min(site_limits['temperature']['min'], np.nanmin(vals))
+                            site_limits['temperature']['max'] = max(site_limits['temperature']['max'], np.nanmax(vals))
+                elif param == 'salinity':
+                    vname = 'timeMonthly_avg_activeTracers_salinity'
+                    if vname in ds_site_check:
+                        vals = ds_site_check[vname].transpose('nVertLevels', 'Time').values[valid_mask, :]
+                        if vals.size > 0 and not np.all(np.isnan(vals)):
+                            site_limits['salinity']['min'] = min(site_limits['salinity']['min'], np.nanmin(vals))
+                            site_limits['salinity']['max'] = max(site_limits['salinity']['max'], np.nanmax(vals))
+                elif param == 'flow_speed':
+                    v_mer = 'timeMonthly_avg_velocityMeridional'
+                    v_zon = 'timeMonthly_avg_velocityZonal'
+                    if v_mer in ds_site_check and v_zon in ds_site_check:
+                        m_matrix = ds_site_check[v_mer].transpose('nVertLevels', 'Time').values[valid_mask, :]
+                        z_matrix = ds_site_check[v_zon].transpose('nVertLevels', 'Time').values[valid_mask, :]
+                        if m_matrix.size > 0 and z_matrix.size > 0:
+                            speed_matrix = np.sqrt(m_matrix ** 2 + z_matrix ** 2) * 100
+                            if not np.all(np.isnan(speed_matrix)):
+                                site_limits['flow_speed']['min'] = min(site_limits['flow_speed']['min'],
+                                                                       np.nanmin(speed_matrix))
+                                site_limits['flow_speed']['max'] = max(site_limits['flow_speed']['max'],
+                                                                       np.nanmax(speed_matrix))
+
+        # Handle empty/nan fallbacks safely for this site
+        for param in parameters:
+            if site_limits[param]['min'] == np.inf or np.isnan(site_limits[param]['min']):
+                site_limits[param]['min'], site_limits[param]['max'] = 0.0, 1.0
 
         # Initialize canvas grid figure: 4 rows (Resolutions) x 3 columns (Parameters)
         fig, axes = plt.subplots(nrows=len(resolutions), ncols=3, figsize=(22, 16), sharex='col')
@@ -183,6 +241,10 @@ for sim_case, res_dict in simulation_cases.items():
                 ax = axes[r_idx, c_idx]
                 meta = param_meta[param]
 
+                # Fetch pre-calculated min and max limits for this specific local site
+                vmin = site_limits[param]['min']
+                vmax = site_limits[param]['max']
+
                 # Dynamic variable isolation
                 if param == 'temperature':
                     vname = 'timeMonthly_avg_activeTracers_temperature'
@@ -198,7 +260,6 @@ for sim_case, res_dict in simulation_cases.items():
                     if v_mer in ds_site and v_zon in ds_site:
                         m_matrix = ds_site[v_mer].transpose('nVertLevels', 'Time').values[valid_layers_mask, :]
                         z_matrix = ds_site[v_zon].transpose('nVertLevels', 'Time').values[valid_layers_mask, :]
-                        # FIX: Apply scaling multiplier outside the square root operation to preserve velocity magnitudes
                         data_matrix = np.sqrt(m_matrix ** 2 + z_matrix ** 2) * 100
                     else:
                         data_matrix = None
@@ -207,12 +268,12 @@ for sim_case, res_dict in simulation_cases.items():
                     ax.text(0.5, 0.5, "Missing Fields", ha='center', va='center', color='red')
                     continue
 
-                # Render pcolormesh field
-                mesh = ax.pcolormesh(x_edges, z_edges, data_matrix, cmap=meta['cmap'], edgecolors='none')
+                # Render pcolormesh field with explicit, shared vmin and vmax for this specific canvas profile
+                mesh = ax.pcolormesh(x_edges, z_edges, data_matrix, cmap=meta['cmap'],
+                                     vmin=vmin, vmax=vmax, edgecolors='none')
                 ax.grid(True, linestyle=':', alpha=0.3, color='black')
 
                 # --- Draw Vertical Patch Boundary Lines ---
-                # Retrieve recorded timestamps for this resolution row and plot them across columns
                 for patch_time in patch_times_dict.get(res, []):
                     ax.axvline(x=patch_time, color='black', linestyle='-', linewidth=1.5, zorder=3)
 

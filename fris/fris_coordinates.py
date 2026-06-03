@@ -175,4 +175,13 @@ if __name__ == "__main__":
         plt.plot(site["lon"], site["lat"], marker=style["marker"], color=style["color"])
 
     plt.show()
-    '''
+
+    all_possible_sites = [
+        "R01", "R02", "R03", "R04", "R05", "R06", "R07", "R08", "R09", "R10",
+        "R12", "R13", "R14", "R15", "FSW2", "FSE1", "FNE1", "FNE3", "Site5a",
+        "Site5c", "Site2", "Site3", "Site5", "Fox1", "Fox2", "Fox3", "Fox4",
+        "FR5", "FR6", "FSW1"
+    ]
+'''
+
+
