@@ -72,13 +72,26 @@ for Fnum, cases in simulations.items():
             'timeMonthly_avg_velocityZonal',
             'timeMonthly_avg_activeTracers_temperature',
             'timeMonthly_avg_activeTracers_salinity',
-            'timeMonthly_avg_potentialDensity'
+            'timeMonthly_avg_potentialDensity',
+            'timeMonthly_avg_BruntVaisalaFreqTop'
+        ]
+
+        # NEW: Added variables utilizing the interface vertical dimension (nVertLevelsP1)
+        vars_3dp1 = [
+            'timeMonthly_avg_vertVelocityTop',
+            'timeMonthly_avg_vertMLEBolusVelocityTop',
+            'timeMonthly_avg_vertGMBolusVelocityTop',
+            'timeMonthly_avg_vertDiffTopOfCell',
+            'timeMonthly_avg_vertViscTopOfCell'
         ]
 
         vars_2d = [
             'timeMonthly_avg_landIceFreshwaterFlux',
             'timeMonthly_avg_landIceFreshwaterFluxTotal',
-            'timeMonthly_avg_ssh'
+            'timeMonthly_avg_ssh',
+            'timeMonthly_avg_dThreshMLD',
+            'timeMonthly_avg_tThreshMLD',
+            'timeMonthly_avg_boundaryLayerDepth'
         ]
 
         monthly_tseries_list = []
@@ -96,8 +109,13 @@ for Fnum, cases in simulations.items():
                     if varname in ds:
                         file_metrics[varname] = ds[varname].isel(nCells=site_da)
 
-                # Pull 3D layered fields safely (Vertical dimension nVertLevels is fully untouched)
+                # Pull 3D mid-layer fields safely
                 for varname in vars_3d:
+                    if varname in ds:
+                        file_metrics[varname] = ds[varname].isel(nCells=site_da)
+
+                # NEW: Pull 3D interface-layer fields safely (nVertLevelsP1)
+                for varname in vars_3dp1:
                     if varname in ds:
                         file_metrics[varname] = ds[varname].isel(nCells=site_da)
 
@@ -108,9 +126,9 @@ for Fnum, cases in simulations.items():
         print("Concatenating monthly site profiles into master dataset...")
         out_ds = xr.concat(monthly_tseries_list, dim='Time')
 
-        # Fix: Safely reorder coordinates explicitly without relying on Ellipsis operators
-        # This yields structural dimensional consistency -> (Time, site, nVertLevels)
-        final_dim_order = [d for d in ['Time', 'site', 'nVertLevels'] if d in out_ds.dims]
+        # Fix: Order dimensions logically, accounting for both nVertLevels and nVertLevelsP1
+        # Variables will be ordered (Time, site, nVertLevels) OR (Time, site, nVertLevelsP1) based on their identity.
+        final_dim_order = [d for d in ['Time', 'site', 'nVertLevels', 'nVertLevelsP1'] if d in out_ds.dims]
         out_ds = out_ds.transpose(*final_dim_order)
 
         # Save cleaner dataset to NetCDF
