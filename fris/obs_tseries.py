@@ -73,7 +73,24 @@ for Fnum, cases in simulations.items():
             'timeMonthly_avg_activeTracers_temperature',
             'timeMonthly_avg_activeTracers_salinity',
             'timeMonthly_avg_potentialDensity',
-            'timeMonthly_avg_BruntVaisalaFreqTop'
+            'timeMonthly_avg_BruntVaisalaFreqTop',
+            'timeMonthly_avg_activeTracersTend_temperatureTend',
+            'timeMonthly_avg_activeTracersTend_salinityTend',
+            'timeMonthly_avg_activeTracerHorizontalAdvectionTendency_temperatureHorizontalAdvectionTendency',
+            'timeMonthly_avg_activeTracerHorizontalAdvectionTendency_salinityHorizontalAdvectionTendency',
+            'timeMonthly_avg_activeTracerVerticalAdvectionTendency_temperatureVerticalAdvectionTendency',
+            'timeMonthly_avg_activeTracerVerticalAdvectionTendency_salinityVerticalAdvectionTendency',
+            'timeMonthly_avg_activeTracerVertMixTendency_temperatureVertMixTendency',
+            'timeMonthly_avg_activeTracerVertMixTendency_salinityVertMixTendency',
+            'timeMonthly_avg_activeTracerHorMixTendency_temperatureHorMixTendency',
+            'timeMonthly_avg_activeTracerHorMixTendency_salinityHorMixTendency',
+            'timeMonthly_avg_activeTracerSurfaceFluxTendency_temperatureSurfaceFluxTendency',
+            'timeMonthly_avg_activeTracerSurfaceFluxTendency_salinitySurfaceFluxTendency',
+            'timeMonthly_avg_temperatureShortWaveTendency',
+            'timeMonthly_avg_activeTracerNonLocalTendency_temperatureNonLocalTendency',
+            'timeMonthly_avg_activeTracerNonLocalTendency_salinityNonLocalTendency',
+            'timeMonthly_avg_activeTracerVerticalAdvectionTopFlux_temperatureVerticalAdvectionTopFlux',
+            'timeMonthly_avg_activeTracerVerticalAdvectionTopFlux_salinityVerticalAdvectionTopFlux'
         ]
 
         # NEW: Added variables utilizing the interface vertical dimension (nVertLevelsP1)
@@ -88,6 +105,9 @@ for Fnum, cases in simulations.items():
         vars_2d = [
             'timeMonthly_avg_landIceFreshwaterFlux',
             'timeMonthly_avg_landIceFreshwaterFluxTotal',
+            'timeMonthly_avg_landIceBoundaryLayerTracers_landIceBoundaryLayerTemperature',
+            'timeMonthly_avg_landIceInterfaceTracers_landIceInterfaceTemperature',
+            'timeMonthly_avg_landIceFrictionVelocity',
             'timeMonthly_avg_ssh',
             'timeMonthly_avg_dThreshMLD',
             'timeMonthly_avg_tThreshMLD',
