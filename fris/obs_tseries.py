@@ -5,7 +5,17 @@ import xarray as xr
 import numpy as np
 
 # Import the coordinates directly from your existing script
-from fris_coordinates import sites_config, find_nearest_mpas_cells
+from fris_coordinates import sites_config, find_nearest_mpas_cells, load_transect_as_sites
+
+
+opt_sites = 'shelfbreak'
+loc_transects = '/Users/ivankova/Desktop/Fris_hr/Fris_derived/pts_4_analysis'
+
+if opt_sites == 'obs':
+    sites_extract = sites_config
+elif opt_sites == 'shelfbreak':
+    transect_nc = f'{loc_transects}/shelfbreak.nc'
+    sites_extract = load_transect_as_sites(transect_nc, name_prefix="SB", site_type = "cherry")
 
 
 simulations = {
@@ -23,7 +33,7 @@ for Fnum, cases in simulations.items():
     mask_file = f'{fpath_mask}/{run_name_mask}.mpaso.rst.0002-01-01_00000.nc'
 
     with xr.open_dataset(mask_file) as dsMesh:
-        site_da = find_nearest_mpas_cells(sites_config, dsMesh)
+        site_da = find_nearest_mpas_cells(sites_extract, dsMesh)
 
     for sec, subsec in cases:
         print("\n" + "=" * 60)
@@ -152,6 +162,6 @@ for Fnum, cases in simulations.items():
         out_ds = out_ds.transpose(*final_dim_order)
 
         # Save cleaner dataset to NetCDF
-        output_filename = f'obs_tseries_{dx}_{sec}{subsec}.nc'
+        output_filename = f'pts_{opt_sites}_tseries_{dx}_{sec}{subsec}.nc'
         out_ds.to_netcdf(output_filename)
         print(f"Successfully consolidated point profiles to: {output_filename}")

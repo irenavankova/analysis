@@ -37,6 +37,29 @@ sites_config = [
     {"name": "FSW1", "lat": -80.43531, "lon": -44.43134, "type": "mooring"}
 ]
 
+def load_transect_as_sites(nc_path, name_prefix="pt", site_type = "none"):
+    """
+    Reads a transect NetCDF file and yields a list of site-like dictionaries
+    compatible with find_nearest_mpas_cells.
+    """
+    with xr.open_dataset(nc_path) as ds:
+        # Extract coordinate arrays
+        lons = ds['longitude'].values
+        lats = ds['latitude'].values
+
+    # Generate sequential site names (e.g., pt_0, pt_1, pt_2...)
+    sites = [
+        {
+            "name": f"{name_prefix}_{i}",
+            "lat": lat,
+            "lon": lon,
+            "type": site_type  # Added to prevent KeyError
+        }
+        for i, (lon, lat) in enumerate(zip(lons, lats))
+    ]
+
+    return sites
+
 
 def find_nearest_mpas_cells(sites, ds_mesh):
     """
@@ -70,7 +93,7 @@ def find_nearest_mpas_cells(sites, ds_mesh):
     return xr.DataArray(site_indices, dims=['site'], coords={'site': site_names})
 
 
-def plot_mesh_and_sites(sites, ds_mesh):
+def plot_mesh_and_sites(sites, ds_mesh, opt_FRIS = False):
     """
     Plots the underlying MPAS mesh regional mask (gray for floating FRIS, yellow for Ronne Shelf),
     finds the nearest MPAS cells for the specified sites, and plots them with custom markers.
@@ -88,9 +111,13 @@ def plot_mesh_and_sites(sites, ds_mesh):
 
     # 2. Define masks based on gmask4TS rules
     # FRIS Floating Mask (to be plotted in lightgray)
-    iam1 = (FloatingMask == 1) & (lat > -84) & (lat < -74.4) & (lon > 275) & (lon < 331)
-    iam2 = (lon < 324.1) | (lat < -78.253)
-    fris_floating = np.logical_and(iam1, iam2) & ~iGL
+    if opt_FRIS == True:
+        iam1 = (FloatingMask == 1) & (lat > -84) & (lat < -74.4) & (lon > 275) & (lon < 331)
+        iam2 = (lon < 324.1) | (lat < -78.253)
+        fris_floating = np.logical_and(iam1, iam2) & ~iGL
+    else:
+        fris_floating = (FloatingMask == 1) & (lat > -84) & (lat < -65) & (lon > 275) & (lon < 350)
+        fris_ocean = (FloatingMask == 0) & (lat > -84) & (lat < -65) & (lon > 275) & (lon < 350)
 
     # 3. Plot background mesh
     plt.figure(figsize=(8, 6))
@@ -103,6 +130,7 @@ def plot_mesh_and_sites(sites, ds_mesh):
         "mooring": {"marker": "o", "color": "red"},
         "fox": {"marker": "^", "color": "orange"},
         "fr": {"marker": "D", "color": "green"},
+        "cherry": {"marker": "h", "color": "magenta"},
         "none": {"marker": "x", "color": "grey"}
     }
 
@@ -110,6 +138,9 @@ def plot_mesh_and_sites(sites, ds_mesh):
     plotted_types = set()
 
     # 5. Plot nearest cells
+    if np.any(fris_floating):
+        plt.plot(lon[fris_ocean], lat[fris_ocean], '.', color='lightgray', markersize=2, label='FRIS Floating')
+
     for site in sites:
         style = styles[site["type"]]
         idx = nearest_da.sel(site=site["name"]).values
@@ -138,16 +169,22 @@ if __name__ == "__main__":
     fnum = 8
     fris_loc = '/Users/ivankova/Desktop/Fris_hr'
     mesh_file = f'{fris_loc}/Fris_ncfiles/F{fnum}/ncfiles/F{fnum}mesh.nc'
+    transect_nc = '/Users/ivankova/Desktop/Fris_hr/Fris_derived/pts_4_analysis/shelfbreak.nc'
 
-    # Open dataset and load required metrics
+    # 2. Open MPAS Mesh
     dsMesh = xr.open_dataset(mesh_file)
     dsMesh = dsMesh[['latCell', 'lonCell', 'xCell', 'yCell', 'zCell',
                      'landIceFloatingMask', 'cellsOnCell', 'nEdgesOnCell']]
     dsMesh.load()
 
     # Execute custom mesh mapping and point visualization
-    plot_mesh_and_sites(sites_config, dsMesh)
+    #plot_mesh_and_sites(sites_config, dsMesh)
+
+    transect_sites = load_transect_as_sites(transect_nc, name_prefix="SB", site_type = "cherry")
+    plot_mesh_and_sites(transect_sites, dsMesh)
+
     plt.show()
+
 
 '''
 
