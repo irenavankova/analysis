@@ -6,8 +6,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 # --- Configuration ---
-input_dir = '/Users/ivankova/Desktop/Fris_hr/Fris_derived/nc_files/obs_tseries'
-output_dir = '/Users/ivankova/Desktop/Fris_hr/Fris_plots/hovmoller'
+ts_name = 'pts_berknerwest'
+
+input_dir = f'/Users/ivankova/Desktop/Fris_hr/Fris_derived/nc_files/pts_tseries/{ts_name}'
+output_dir = f'/Users/ivankova/Desktop/Fris_hr/Fris_plots/hovmoller/{ts_name}'
 os.makedirs(output_dir, exist_ok=True)
 
 # Order of resolutions defining the vertical rows
@@ -16,16 +18,16 @@ resolutions = ['F1', 'F2', 'F4', 'F8']
 # Chained file configurations by Simulation Case
 simulation_cases = {
     'Spin1': {
-        'F1': ['obs_tseries_F1_Spin1p1.nc', 'obs_tseries_F1_Spin1p2.nc', 'obs_tseries_F1_Spin1p3.nc'],
-        'F2': ['obs_tseries_F2_Spin1p1.nc', 'obs_tseries_F2_Spin1p2.nc'],
-        'F4': ['obs_tseries_F4_Spin1p1.nc'],
-        'F8': ['obs_tseries_F8_Spin1p1.nc']
+        'F1': [f'{ts_name}_tseries_F1_Spin1p1.nc', f'{ts_name}_tseries_F1_Spin1p2.nc', f'{ts_name}_tseries_F1_Spin1p3.nc'],
+        'F2': [f'{ts_name}_tseries_F2_Spin1p1.nc', f'{ts_name}_tseries_F2_Spin1p2.nc'],
+        'F4': [f'{ts_name}_tseries_F4_Spin1p1.nc'],
+        'F8': [f'{ts_name}_tseries_F8_Spin1p1.nc']
     },
     'Spin6': {
-        'F1': ['obs_tseries_F1_Spin6p1.nc'],
-        'F2': ['obs_tseries_F2_Spin6p1.nc'],
-        'F4': ['obs_tseries_F4_Spin6p1.nc'],
-        'F8': ['obs_tseries_F8_Spin6p1.nc']
+        'F1': [f'{ts_name}_tseries_F1_Spin6p1.nc'],
+        'F2': [f'{ts_name}_tseries_F2_Spin6p1.nc'],
+        'F4': [f'{ts_name}_tseries_F4_Spin6p1.nc'],
+        'F8': [f'{ts_name}_tseries_F8_Spin6p1.nc']
     }
 }
 
@@ -86,11 +88,13 @@ param_meta = {
 
 MAX_MONTHS = 60  # 5 years for each simulation case
 
-all_possible_sites = [
-    "R01", "R02", "R03", "R04", "R05", "R06", "R07", "R08", "R09", "R10",
-    "R12", "R13", "R14", "R15", "FSW2", "FSE1", "FNE1", "FNE3", "Site5a",
-    "Site5c", "Site2", "Site3", "Site5", "Fox1", "Fox2", "Fox3", "Fox4", "FSW1"
-]
+all_possible_sites = []
+if ts_name == 'obs':
+    all_possible_sites = [
+        "R01", "R02", "R03", "R04", "R05", "R06", "R07", "R08", "R09", "R10",
+        "R12", "R13", "R14", "R15", "FSW2", "FSE1", "FNE1", "FNE3", "Site5a",
+        "Site5c", "Site2", "Site3", "Site5", "Fox1", "Fox2", "Fox3", "Fox4", "FSW1"
+    ]
 
 
 def get_field_data(ds_site, param, valid_layers_mask):
@@ -130,6 +134,11 @@ for res in resolutions:
         full_path = os.path.join(input_dir, fname)
         if os.path.exists(full_path):
             ds_part = xr.open_dataset(full_path)
+
+            if not all_possible_sites and 'site' in ds_part:
+                all_possible_sites = list(ds_part['site'].values)
+                print(f" Found {len(all_possible_sites)} sites in: {fname}")
+
             spin1_ds_list.append(ds_part)
 
             spin1_months_cumulative += ds_part.sizes['Time']

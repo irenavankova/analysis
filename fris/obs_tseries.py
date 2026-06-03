@@ -25,7 +25,7 @@ else:
     # If it already exists, explicitly enforce/update the permissions
     os.chmod(out_prl, desired_mode)
     print(f"Directory already exists. Updated permissions to {oct(desired_mode)}")
-    
+
 if opt_sites == 'obs':
     sites_extract = sites_config
 elif opt_sites == 'shelfbreak':
