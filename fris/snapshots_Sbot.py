@@ -15,7 +15,7 @@ from matplotlib import colors
 # =========================================================================
 # 1. Configuration & Global Path Frameworks
 # =========================================================================
-fris_loc = '/Users/ivankova/Desktop/Fris_hr'
+fris_loc = '/pscratch/sd/v/vankova/fris_analysis/fris_plots'
 opt_region = False
 iceshelves = ["Shelf"]
 
@@ -96,7 +96,7 @@ for Fnum, cases in simulations.items():
             fpath = f'/pscratch/sd/v/vankova/lanl/FRIS_Irena/FRIS_spinY1/{run_name}/run'
 
         # Set up output directories specific to this resolution/simulation subset
-        out_plot_dir = f'{fris_loc}/Fris_plots/snapshots_xy/{dx}_{sec}{subsec_str}'
+        out_plot_dir = f'{fris_loc}/snapshots_Sbot/{dx}_{sec}{subsec_str}'
         os.makedirs(out_plot_dir, mode=0o755, exist_ok=True)
 
         # Glob history archives
