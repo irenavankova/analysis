@@ -26,13 +26,13 @@ if PLOT_VARIABLE == 'area':
     NC_VAR_NAME = 'timeMonthly_avg_iceAreaCell'
     VMIN, VMAX = 0.0, 1.0
     CBAR_LABEL = "Sea Ice Area Fraction"
-    FILE_PREFIX = "IceConc"
+    FILE_PREFIX = "SIConc"
     TITLE_PREFIX = "Sea Ice Concentration"
 elif PLOT_VARIABLE == 'volume':
     NC_VAR_NAME = 'timeMonthly_avg_iceVolumeCell'
-    VMIN, VMAX = 0.0, 10.0
+    VMIN, VMAX = 0.0, 3.0
     CBAR_LABEL = "Sea Ice Thickness (m)"
-    FILE_PREFIX = "IceVol"
+    FILE_PREFIX = "SIVol"
     TITLE_PREFIX = "Sea Ice Thickness"
 else:
     raise ValueError("Invalid PLOT_VARIABLE. Choose either 'area' or 'volume'.")
@@ -161,7 +161,7 @@ if __name__ == "__main__":
                 fpath = f'/pscratch/sd/v/vankova/lanl/FRIS_Irena/FRIS_spinY1/{run_name}/run'
 
             # Resolution-separated snapshot location for Sea Ice
-            out_plot_dir = f'{fris_loc}/snapshots_SIConc/{dx}_{sec}{subsec_str}'
+            out_plot_dir = f'{fris_loc}/snapshots_{FILE_PREFIX}/{dx}_{sec}{subsec_str}'
             os.makedirs(out_plot_dir, mode=0o755, exist_ok=True)
 
             # SWAPPED PATTERN FROM mpaso TO mpassi
