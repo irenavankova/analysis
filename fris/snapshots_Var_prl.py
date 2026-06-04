@@ -144,7 +144,7 @@ if __name__ == "__main__":
             'name': 'timeMonthly_avg_dThreshMLD',
             'vmin': 0,
             'vmax': 500,
-            'contours': [100],
+            'contours': [],
             'cmap': 'cmo.deep',
             'cb_label': 'Mixed Layer Depth [m]',
             'title_prefix': 'MLD',
