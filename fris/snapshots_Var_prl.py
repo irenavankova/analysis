@@ -117,7 +117,7 @@ if __name__ == "__main__":
 
     PLOT_VARIABLE = 'MLD'  # Options: 'area' or 'volume'
 
-    if PLOT_VARIABLE == 'MLD':
+    if PLOT_VARIABLE == 'Tbot':
         VAR_CONFIG = {
             'name': 'timeMonthly_avg_activeTracers_temperature',  # Variable name inside netCDF
             'vmin': -2.6,
@@ -132,7 +132,7 @@ if __name__ == "__main__":
         VAR_CONFIG = {
             'name': 'timeMonthly_avg_columnIntegratedSpeed',
             'vmin': 0.0,
-            'vmax': 0.5,
+            'vmax': 0.3,
             'contours': [],
             'cmap': 'cmo.speed',
             'cb_label': 'Column Integrated Speed [m/s]',
