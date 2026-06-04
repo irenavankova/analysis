@@ -92,6 +92,10 @@ def process_single_file(file_path, idx, total_files, dx, sec, subsec_str, max_le
     output_png_path = f'{out_plot_dir}/{var_config["file_prefix"]}_{dx}_{sec}{subsec_str}_{date_str}.png'
     plt.savefig(output_png_path, bbox_inches='tight', dpi=200)
     plt.close(fig)
+
+    # --- Added print statement to track where images are saved ---
+    print(f"[{os.getpid()}] Saved image to: {output_png_path}")
+
     return None
 
 
