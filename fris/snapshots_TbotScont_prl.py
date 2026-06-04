@@ -8,6 +8,7 @@ import multiprocessing as mp
 from functools import partial
 
 import matplotlib
+
 matplotlib.use('Agg')  # Force non-interactive backend (crucial for clusters)
 import matplotlib.pyplot as plt
 import cartopy.crs as ccrs
@@ -33,6 +34,14 @@ def process_single_file(file_path, idx, total_files, dx, sec, subsec_str, max_le
     print(f"[{os.getpid()}] Processing {idx + 1}/{total_files}: {base_filename}")
 
     with xr.open_dataset(file_path) as ds:
+        # Extract Salinity
+        if 'timeMonthly_avg_activeTracers_salinity' in ds:
+            salinity_3d = ds['timeMonthly_avg_activeTracers_salinity'].isel(Time=0).values
+        elif 'salinity' in ds:
+            salinity_3d = ds['salinity'].isel(Time=0).values
+        else:
+            return f"Error: Salinity missing in {base_filename}"
+
         # Extract Temperature
         if 'timeMonthly_avg_activeTracers_temperature' in ds:
             temp_3d = ds['timeMonthly_avg_activeTracers_temperature'].isel(Time=0).values
@@ -41,11 +50,15 @@ def process_single_file(file_path, idx, total_files, dx, sec, subsec_str, max_le
         else:
             return f"Error: Temperature missing in {base_filename}"
 
-    num_cells = temp_3d.shape[0]
+    num_cells = salinity_3d.shape[0]
+    bottom_salinity = salinity_3d[np.arange(num_cells), max_level_cell]
     bottom_temp = temp_3d[np.arange(num_cells), max_level_cell]
+
+    bottom_salinity = np.where(max_level_cell >= 0, bottom_salinity, np.nan)
     bottom_temp = np.where(max_level_cell >= 0, bottom_temp, np.nan)
 
     if opt_region:
+        bottom_salinity = np.where(iis == 0, np.nan, bottom_salinity)
         bottom_temp = np.where(iis == 0, np.nan, bottom_temp)
 
     # Plot generation
@@ -56,12 +69,11 @@ def process_single_file(file_path, idx, total_files, dx, sec, subsec_str, max_le
     collection = mosaic.polypcolor(ax, descriptor, bottom_temp, norm=colors.Normalize(vmin=-2.6, vmax=-1.8),
                                    cmap="cmo.thermal")
 
-    # Overlay -1.9°C Temperature Isohaline/Isotherm Contour Line
-    valid_mask_temp = ~np.isnan(bottom_temp)
-    if np.any(valid_mask_temp):
+    valid_mask_sal = ~np.isnan(bottom_salinity)
+    if np.any(valid_mask_sal):
         ax.tricontour(
-            lon[valid_mask_temp], lat[valid_mask_temp], bottom_temp[valid_mask_temp],
-            levels=[-1.9], colors='black', linewidths=1.5, transform=ccrs.PlateCarree()
+            lon[valid_mask_sal], lat[valid_mask_sal], bottom_salinity[valid_mask_sal],
+            levels=[34.9], colors='black', linewidths=1.5, transform=ccrs.PlateCarree()
         )
 
     ax.set_extent([-80, -25, -84, -70], ccrs.PlateCarree())
@@ -70,7 +82,7 @@ def process_single_file(file_path, idx, total_files, dx, sec, subsec_str, max_le
     ax.set_facecolor('lightgray')
 
     fig.colorbar(collection, fraction=0.1, shrink=0.5, label="Sea Floor Temperature [°C]")
-    ax.set_title(f"Bottom Temperature & -1.9°C Contour - {dx} {sec} {subsec_str} ({date_str})", fontsize=12,
+    ax.set_title(f"Bottom Temperature & 34.9 Salinity Contour - {dx} {sec} {subsec_str} ({date_str})", fontsize=12,
                  pad=10)
 
     output_png_path = f'{out_plot_dir}/Tbot_{dx}_{sec}{subsec_str}_{date_str}.png'
@@ -132,6 +144,7 @@ if __name__ == "__main__":
                 run_name = f"20240227.GMPAS-JRA1p5-DIB-PISMF.TL319_FRISwISC0{Fnum}to60E3r1.spinY6_scr5.chicoma-cpu"
                 fpath = f'/pscratch/sd/v/vankova/lanl/FRIS_Irena/FRIS_spinY6/{run_name}/run'
             elif sec == 'Spin1':
+                # [Your exact path selection block here remains unchanged]
                 if Fnum == '8':
                     run_name = "20231114.GMPAS-JRA1p5-DIB-PISMF-TMIX.TL319_FRISwISC08to60E3r1.spinup.chicoma-cpu"
                 elif Fnum == '4':
