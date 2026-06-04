@@ -111,7 +111,7 @@ if __name__ == "__main__":
     # Switch out, edit configurations, or loop over multiple dictionaries here.
     # -----------------------------------------------------------------
 
-    PLOT_VARIABLE = 'volume'  # Options: 'area' or 'volume'
+    PLOT_VARIABLE = 'MLD'  # Options: 'area' or 'volume'
 
     if PLOT_VARIABLE == 'MLD':
         VAR_CONFIG = {
