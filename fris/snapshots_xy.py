@@ -21,7 +21,7 @@ fy = '2-4'
 opt_save = 1
 #variables_to_plot = ['lifw', 'Tstar', 'Ti', 'Tbl', 'ustar']
 #variables_to_plot = ['Ti', 'Tbl']
-variables_to_plot = ['Sbot']
+variables_to_plot = ['Tbot']
 
 fris_loc = '/Users/ivankova/Desktop/Fris_hr'
 
@@ -148,6 +148,32 @@ for var2plot in variables_to_plot:
         plotlabel = "Sea Floor Salinity [psu]"
         varcmap = "cmo.haline"  # cmocean haline is great for salinity
         norm = colors.Normalize(vmin=v_min, vmax=v_max)
+    elif var2plot == 'Tbot':
+        # Assuming the variable name in your nc file is something like 'timeMonthly_avg_salinity'
+        # Adjust the string key to match your actual NetCDF file variable name
+        if 'timeMonthly_avg_activeTracers_temperature' in ds:
+            salinity_3d = ds['timeMonthly_avg_activeTracers_temperature'].isel(Time=0).values
+        elif 'temperature' in ds:
+            salinity_3d = ds['temperature'].isel(Time=0).values
+        else:
+            raise KeyError(
+                "Neither 'timeMonthly_avg_activeTracers_temperature' nor 'activeTracers_temperature' was found in the dataset.")
+
+        # salinity_3d has shape (nCells, nVertLevels)
+        # We use advanced numpy indexing to grab the bottom layer for every cell
+        num_cells = salinity_3d.shape[0]
+        bottom_salinity = salinity_3d[np.arange(num_cells), max_level_cell]
+
+        # Mask out land or areas where maxLevelCell was invalid (e.g., < 0)
+        bottom_salinity = np.where(max_level_cell >= 0, bottom_salinity, np.nan)
+
+        plot_data = bottom_salinity
+        v_min = -2.6
+        v_max = -1.0  # Typical Antarctic shelf salinity range, tweak as needed
+        plotlabel = "Sea Floor Temp [C]"
+        varcmap = "cmo.thermal"  # cmocean haline is great for salinity
+        norm = colors.Normalize(vmin=v_min, vmax=v_max)
+
 
     if opt_region == True:
         plot_data = np.where(iis == 0, np.nan, plot_data)
