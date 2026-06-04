@@ -73,6 +73,13 @@ print("Shape FRIS:", bool_array.shape)
 count = np.sum(bool_array)
 print("Number of cells where FRIS == 1:", count)
 
+iam = (lat > -84) & (lat < -70) & (lon > 275) & (lon < 332) & (wct < 2000)
+if opt_noGL == 1:
+    iam = iam & ~iGL
+plt.plot(lon[iam],lat[iam],'r.')
+
+plt.show()
+
 
 #FRIS Shelf
 iam = (FloatingMask == 0) & (lat > -80) & (lat < -72) & (lon > 298) & (lon < 332) & (wct < 1500)

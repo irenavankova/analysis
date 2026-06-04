@@ -92,6 +92,10 @@ def get_mask(is_list,ocean_rst_file,opt_noGL=1, opt_wct = 1):
         elif is_list[n] == "BerknerSouth":
             # Berkner South
             current_mask = (FloatingMask == 1) & (lat > -84) & (lat < -80.5) & (lon > 300) & (lon < 316) & (wct > 500)
+        elif is_list[n] == "Shelf":
+            # WeddellSouth
+            #current_mask = (lat > -84) & (lat < -70) & (lon > 275) & (lon < 335) & (wct < 2000)
+            current_mask = (wct < 2000)
 
         if opt_noGL == 1:
             current_mask = current_mask & ~iGL
