@@ -7,56 +7,53 @@ import os
 
 import matplotlib.pyplot as plt
 import cartopy.crs as ccrs
-#import cartopy.feature as cfeature
+# import cartopy.feature as cfeature
 
 import cmocean
 import mosaic
 import matplotlib.path as mpath
 from matplotlib import colors
 
-
 fnum = 2
 opt_noGL = 0
 fy = '2-4'
 opt_save = 1
-#variables_to_plot = ['lifw', 'Tstar', 'Ti', 'Tbl', 'ustar']
-#variables_to_plot = ['Ti', 'Tbl']
-variables_to_plot = ['Tbot']
+
+# ADDED 'SpeedSurf' alongside 'SpeedBot' to variables to plot
+variables_to_plot = ['SpeedSurf']
 
 fris_loc = '/Users/ivankova/Desktop/Fris_hr'
 
 mesh_file = f'/Users/ivankova/Desktop/Fris_hr/E3SM_init/ocean.ECwISC30to60E2r1.230220.nc'
 out_file = mesh_file
 
-#mesh_file = f'{fris_loc}/Fris_ncfiles/F{fnum}/ncfiles/F{fnum}mesh.nc'
-#out_file = f'{fris_loc}/Fris_ncfiles/F{fnum}/ncfiles/F{fnum}melt_annual_2D_Y{fy}.nc'
-
 opt_region = False
 
 iceshelves = ["Shelf"]
 if opt_region == True:
     iam = gmask_reg.get_mask(iceshelves, mesh_file, opt_noGL=opt_noGL, opt_wct=1)
-    iis = iam[0,:]
-
+    iis = iam[0, :]
 
 dsMesh = xr.open_dataset(mesh_file)
 
-dsMesh = dsMesh[['latCell', 'lonCell','landIceFloatingMask','areaCell','maxLevelCell','nEdges','nVertices','lonEdge','latEdge','lonVertex','latVertex','cellsOnEdge','cellsOnVertex','verticesOnEdge','verticesOnCell','edgesOnVertex']]
+dsMesh = dsMesh[
+    ['latCell', 'lonCell', 'landIceFloatingMask', 'areaCell', 'maxLevelCell', 'nEdges', 'nVertices', 'lonEdge',
+     'latEdge', 'lonVertex', 'latVertex', 'cellsOnEdge', 'cellsOnVertex', 'verticesOnEdge', 'verticesOnCell',
+     'edgesOnVertex']]
 dsMesh.load()
 
 FloatingMask = np.squeeze(dsMesh['landIceFloatingMask'].values)
 areaCell = dsMesh['areaCell'].values
 lat = dsMesh['latCell'].values
 lon = dsMesh['lonCell'].values
-lat = lat*180/np.pi
-lon = lon*180/np.pi
+lat = lat * 180 / np.pi
+lon = lon * 180 / np.pi
 
 max_level_cell = dsMesh['maxLevelCell'].values - 1  # Convert from 1-indexed to 0-indexed
 
 ds = xr.open_dataset(out_file)
-#ds = ds[['timeMonthly_avg_landIceFreshwaterFluxTotal']]
 
-# Melt rate
+# Melt rate config
 rho_fw = 1000.
 sec_per_day = 86400.
 sec_per_year = sec_per_day * 365.
@@ -75,7 +72,7 @@ for var2plot in variables_to_plot:
         plotlabel = "Melt rate [m/yr]"
         varcmap = "RdBu_r"
         norm = colors.Normalize(vmin=v_min, vmax=v_max)
-    if var2plot == 'freeze':
+    elif var2plot == 'freeze':
         lifw = ds['timeMonthly_avg_landIceFreshwaterFluxTotal']
         lifw = lifw * FloatingMask * sec_per_year / rho_fw
         plot_data = lifw.isel(Time=0).values
@@ -86,9 +83,9 @@ for var2plot in variables_to_plot:
         varcmap = "pink"
         norm = colors.AsinhNorm(linear_width=1.0, vmin=-200, vmax=0)
     elif var2plot == 'Tstar':
-        Tcb = ds['timeMonthly_avg_landIceBoundaryLayerTracers_landIceBoundaryLayerTemperature']  # Use the first time step (Time = 1)
-        Tci = ds['timeMonthly_avg_landIceInterfaceTracers_landIceInterfaceTemperature']  # Use the first time step (Time = 1)
-        Tc = (Tcb-Tci)*FloatingMask
+        Tcb = ds['timeMonthly_avg_landIceBoundaryLayerTracers_landIceBoundaryLayerTemperature']
+        Tci = ds['timeMonthly_avg_landIceInterfaceTracers_landIceInterfaceTemperature']
+        Tc = (Tcb - Tci) * FloatingMask
         plot_data = Tc.isel(Time=0).values
         v_min = -1
         v_max = 1
@@ -96,7 +93,7 @@ for var2plot in variables_to_plot:
         varcmap = "RdBu_r"
         norm = colors.Normalize(vmin=v_min, vmax=v_max)
     elif var2plot == 'Ti':
-        Tci = ds['timeMonthly_avg_landIceInterfaceTracers_landIceInterfaceTemperature']  # Use the first time step (Time = 1)
+        Tci = ds['timeMonthly_avg_landIceInterfaceTracers_landIceInterfaceTemperature']
         plot_data = Tci.isel(Time=0).values
         v_min = -2.8
         v_max = -1.9
@@ -104,8 +101,7 @@ for var2plot in variables_to_plot:
         varcmap = "RdBu_r"
         norm = colors.Normalize(vmin=v_min, vmax=v_max)
     elif var2plot == 'Tbl':
-        Tcb = ds[
-            'timeMonthly_avg_landIceBoundaryLayerTracers_landIceBoundaryLayerTemperature']  # Use the first time step (Time = 1)
+        Tcb = ds['timeMonthly_avg_landIceBoundaryLayerTracers_landIceBoundaryLayerTemperature']
         plot_data = Tcb.isel(Time=0).values
         v_min = -2.8
         v_max = -1.9
@@ -113,10 +109,8 @@ for var2plot in variables_to_plot:
         varcmap = "RdBu_r"
         norm = colors.Normalize(vmin=v_min, vmax=v_max)
     elif var2plot == 'ustar':
-        Uc = ds['timeMonthly_avg_landIceFrictionVelocity']  # Use the first time step (Time = 1)
-        #Uc = Uc*mtocm*FloatingMask
+        Uc = ds['timeMonthly_avg_landIceFrictionVelocity']
         Uc = np.where(FloatingMask == 1, Uc * mtocm, np.nan)
-        #plot_data = Uc.isel(Time=0).values
         plot_data = Uc
         v_min = 0.4
         v_max = 1.2
@@ -124,99 +118,118 @@ for var2plot in variables_to_plot:
         varcmap = "hot_r"
         norm = colors.Normalize(vmin=v_min, vmax=v_max)
     elif var2plot == 'Sbot':
-        # Assuming the variable name in your nc file is something like 'timeMonthly_avg_salinity'
-        # Adjust the string key to match your actual NetCDF file variable name
         if 'timeMonthly_avg_activeTracers_salinity' in ds:
             salinity_3d = ds['timeMonthly_avg_activeTracers_salinity'].isel(Time=0).values
         elif 'salinity' in ds:
             salinity_3d = ds['salinity'].isel(Time=0).values
         else:
-            raise KeyError(
-                "Neither 'timeMonthly_avg_activeTracers_salinity' nor 'activeTracers_salinity' was found in the dataset.")
+            raise KeyError("Salinity variable not found.")
 
-        # salinity_3d has shape (nCells, nVertLevels)
-        # We use advanced numpy indexing to grab the bottom layer for every cell
         num_cells = salinity_3d.shape[0]
         bottom_salinity = salinity_3d[np.arange(num_cells), max_level_cell]
-
-        # Mask out land or areas where maxLevelCell was invalid (e.g., < 0)
         bottom_salinity = np.where(max_level_cell >= 0, bottom_salinity, np.nan)
 
         plot_data = bottom_salinity
         v_min = 34.0
-        v_max = 35.0  # Typical Antarctic shelf salinity range, tweak as needed
+        v_max = 35.0
         plotlabel = "Sea Floor Salinity [psu]"
-        varcmap = "cmo.haline"  # cmocean haline is great for salinity
+        varcmap = "cmo.haline"
         norm = colors.Normalize(vmin=v_min, vmax=v_max)
     elif var2plot == 'Tbot':
-        # Assuming the variable name in your nc file is something like 'timeMonthly_avg_salinity'
-        # Adjust the string key to match your actual NetCDF file variable name
         if 'timeMonthly_avg_activeTracers_temperature' in ds:
-            salinity_3d = ds['timeMonthly_avg_activeTracers_temperature'].isel(Time=0).values
+            temp_3d = ds['timeMonthly_avg_activeTracers_temperature'].isel(Time=0).values
         elif 'temperature' in ds:
-            salinity_3d = ds['temperature'].isel(Time=0).values
+            temp_3d = ds['temperature'].isel(Time=0).values
         else:
-            raise KeyError(
-                "Neither 'timeMonthly_avg_activeTracers_temperature' nor 'activeTracers_temperature' was found in the dataset.")
+            raise KeyError("Temperature variable not found.")
 
-        # salinity_3d has shape (nCells, nVertLevels)
-        # We use advanced numpy indexing to grab the bottom layer for every cell
-        num_cells = salinity_3d.shape[0]
-        bottom_salinity = salinity_3d[np.arange(num_cells), max_level_cell]
+        num_cells = temp_3d.shape[0]
+        bottom_temp = temp_3d[np.arange(num_cells), max_level_cell]
+        bottom_temp = np.where(max_level_cell >= 0, bottom_temp, np.nan)
 
-        # Mask out land or areas where maxLevelCell was invalid (e.g., < 0)
-        bottom_salinity = np.where(max_level_cell >= 0, bottom_salinity, np.nan)
-
-        plot_data = bottom_salinity
+        plot_data = bottom_temp
         v_min = -2.6
-        v_max = -1.0  # Typical Antarctic shelf salinity range, tweak as needed
+        v_max = -1.0
         plotlabel = "Sea Floor Temp [C]"
-        varcmap = "cmo.thermal"  # cmocean haline is great for salinity
+        varcmap = "cmo.thermal"
         norm = colors.Normalize(vmin=v_min, vmax=v_max)
 
+    elif var2plot == 'SpeedBot':
+        u_name = 'timeMonthly_avg_velocityZonal' if 'timeMonthly_avg_velocityZonal' in ds else 'velocityZonal'
+        v_name = 'timeMonthly_avg_velocityMeridional' if 'timeMonthly_avg_velocityMeridional' in ds else 'velocityMeridional'
+
+        if u_name not in ds or v_name not in ds:
+            raise KeyError(f"Could not find velocity components '{u_name}' or '{v_name}' in the dataset.")
+
+        u_3d = ds[u_name].isel(Time=0).values
+        v_3d = ds[v_name].isel(Time=0).values
+
+        num_cells = u_3d.shape[0]
+        u_vector = u_3d[np.arange(num_cells), max_level_cell]
+        v_vector = v_3d[np.arange(num_cells), max_level_cell]
+
+        u_vector = np.where(max_level_cell >= 0, u_vector, np.nan)
+        v_vector = np.where(max_level_cell >= 0, v_vector, np.nan)
+
+        plot_data = np.sqrt(u_vector ** 2 + v_vector ** 2)
+        v_min = 0.0
+        v_max = 0.25
+        plotlabel = "Bottom Flow Speed [m/s]"
+        varcmap = "cmo.speed"
+        norm = colors.Normalize(vmin=v_min, vmax=v_max)
+
+    # -------------------------------------------------------------------------
+    # NEW CODE BLOCK: Surface Flow Speed Option
+    # -------------------------------------------------------------------------
+    elif var2plot == 'SpeedSurf':
+        u_surf_name = 'surfaceVelocityZonal'
+        v_surf_name = 'surfaceVelocityMeridional'
+
+        if u_surf_name not in ds or v_surf_name not in ds:
+            raise KeyError(
+                f"Could not find surface velocity components '{u_surf_name}' or '{v_surf_name}' in the dataset.")
+
+        # Since these are 2D (Time, nCells), we do not index by max_level_cell
+        u_vector = ds[u_surf_name].isel(Time=0).values
+        v_vector = ds[v_surf_name].isel(Time=0).values
+
+        # Simple land masking check (using max_level_cell to drop zero-depth points)
+        u_vector = np.where(max_level_cell >= 0, u_vector, np.nan)
+        v_vector = np.where(max_level_cell >= 0, v_vector, np.nan)
+
+        plot_data = np.sqrt(u_vector ** 2 + v_vector ** 2)
+        v_min = 0.0
+        v_max = 0.40  # Surface speeds are generally higher than bottom speeds; adjust dynamically
+        plotlabel = "Surface Flow Speed [m/s]"
+        varcmap = "cmo.speed"
+        norm = colors.Normalize(vmin=v_min, vmax=v_max)
+    # -------------------------------------------------------------------------
 
     if opt_region == True:
         plot_data = np.where(iis == 0, np.nan, plot_data)
-    # Save a clean version of bottom salinity for contouring later
     if var2plot == 'Sbot':
         salinity_contour_data = plot_data
 
-
-    #PLOT
-    #projection = ccrs.PlateCarree()
-    projection = ccrs.SouthPolarStereo()
-
-
-    # define the transform that describes our dataset
-    transform = ccrs.SouthPolarStereo()
-
-    # create the figure and a GeoAxis
+    # PLOT Setup
+    projection = ccrs.PlateCarree()
     fig, ax = plt.subplots(
         figsize=(10, 9),
         constrained_layout=True,
         subplot_kw={"projection": projection},
     )
 
-    # create a `Descriptor` object which takes the mesh information and creates
-    # the polygon coordinate arrays needed for `matplotlib.collections.PolyCollection`.
-    #descriptor = mosaic.Descriptor(dsMesh, projection, transform, use_latlon=False)
     descriptor = mosaic.Descriptor(dsMesh, projection=projection)
 
-    # using the `Descriptor` object we just created, make a pseudocolor plot of
-    # the surface speed, which is defined at cell centers.
     collection = mosaic.polypcolor(
         ax,
         descriptor,
         plot_data,
-        #antialiaseds=False,
         norm=norm,
         cmap=varcmap
     )
 
     if var2plot == 'Sbot':
-        # Remove NaN values to prevent geometry errors in tricontour
         valid_mask = ~np.isnan(salinity_contour_data)
-
         if np.any(valid_mask):
             contour_line = ax.tricontour(
                 lon[valid_mask],
@@ -225,35 +238,62 @@ for var2plot in variables_to_plot:
                 levels=[34.9],
                 colors='black',
                 linewidths=1.5,
-                transform=ccrs.PlateCarree()  # Vital for mapping to your Cartopy axes properly
+                transform=ccrs.PlateCarree()
             )
 
-            # Optional: Uncomment line below if you want inline text labels (e.g., "34.6")
-            # ax.clabel(contour_line, inline=True, fontsize=8, fmt='%1.1f')
+        # -------------------------------------------------------------------------
+        # FIXED UNIVERSAL VECTOR ARROW OVERLAP BLOCK
+        # -------------------------------------------------------------------------
+        if var2plot in ['SpeedBot', 'SpeedSurf']:
+            # Filter within the Cartopy extent boundaries and drop NaNs
+            spatial_mask = (lon >= -80) & (lon <= -25) & (lat >= -84) & (lat <= -70) & (~np.isnan(u_vector))
 
-    # Because this is not a global mesh, it's necessary to explicitly set it's extent.
-    #ax.set_extent([-80, -25, -84, -70], ccrs.PlateCarree())
-    ax.set_extent([-180, 180, -90, -55], ccrs.PlateCarree())
+            # Stride density control (adjust based on mesh density)
+            step = 50
 
-    # Below is needed for a circular boundary
-    theta = np.linspace(0, 2 * np.pi, 100)
-    center, radius = [0.5, 0.5], 0.5
-    verts = np.vstack([np.sin(theta), np.cos(theta)]).T
-    circle = mpath.Path(verts * radius + center)
+            lon_q = lon[spatial_mask][::step]
+            lat_q = lat[spatial_mask][::step]
+            u_q = u_vector[spatial_mask][::step]
+            v_q = v_vector[spatial_mask][::step]
 
-    #ax.set_boundary(circle, transform=ax.transAxes)
+            if len(lon_q) > 0:
+                # CRITICAL FIX: Transform the lon/lat coordinates into map projection space first
+                # This aligns the arrow anchor points to your exact figure view.
+                xy_projected = projection.transform_points(ccrs.PlateCarree(), lon_q, lat_q)
+                x_q = xy_projected[:, 0]
+                y_q = xy_projected[:, 1]
+
+                # Plot using the projected map coordinates instead of raw degrees
+                q = ax.quiver(
+                    x_q, y_q, u_q, v_q,
+                    color='black',
+                    scale=3.0,  # Decrease to 1.0 or 1.5 if arrows still look tiny
+                    width=0.002,
+                    headwidth=3,
+                    pivot='middle'
+                )
+                # Add scale window reference
+                ax.quiverkey(q, 0.85, 0.05, 0.2, r'0.2 m/s', labelpos='E', coordinates='axes', color='black')
+                print(f"Successfully rendered {len(lon_q)} vector arrows for {var2plot}.")
+            else:
+                print(f"WARNING: No data points fell within the spatial mask window for {var2plot}.")
+        # -------------------------------------------------------------------------
+    # -------------------------------------------------------------------------
+
+    ax.set_extent([-80, -25, -84, -70], ccrs.PlateCarree())
+
     ax.set_aspect('auto')
     ax.gridlines(draw_labels=True)
     ax.set_facecolor('lightgray')
-    #ax.coastlines()
+
     fig.colorbar(collection, fraction=0.1, shrink=0.5, label=plotlabel)
+
     if opt_save == 1:
         if opt_noGL == 1:
             plt.savefig(f'{fris_loc}/Fris_plots/snapshots_xy/{var2plot}_F{fnum}_Y{fy}_noGL.png', bbox_inches='tight',
                         dpi=300)
         else:
             plt.savefig(f'{fris_loc}/Fris_plots/snapshots_xy/{var2plot}_F{fnum}_Y{fy}.png', bbox_inches='tight',
-                    dpi=300)
+                        dpi=300)
     else:
         plt.show()
-
