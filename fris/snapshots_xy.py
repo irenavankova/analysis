@@ -183,7 +183,9 @@ for var2plot in variables_to_plot:
 
 
     #PLOT
-    projection = ccrs.PlateCarree()
+    #projection = ccrs.PlateCarree()
+    projection = ccrs.SouthPolarStereo()
+
 
     # define the transform that describes our dataset
     transform = ccrs.SouthPolarStereo()
@@ -230,8 +232,8 @@ for var2plot in variables_to_plot:
             # ax.clabel(contour_line, inline=True, fontsize=8, fmt='%1.1f')
 
     # Because this is not a global mesh, it's necessary to explicitly set it's extent.
-    ax.set_extent([-80, -25, -84, -70], ccrs.PlateCarree())
-    #ax.set_extent([-180, 180, -85, -65], ccrs.PlateCarree())
+    #ax.set_extent([-80, -25, -84, -70], ccrs.PlateCarree())
+    ax.set_extent([-180, 180, -90, -55], ccrs.PlateCarree())
 
     # Below is needed for a circular boundary
     theta = np.linspace(0, 2 * np.pi, 100)
