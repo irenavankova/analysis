@@ -10,7 +10,7 @@ import imageio.v3 as iio
 # =========================================================================
 # 1. CONFIGURATION
 # =========================================================================
-FILE_PREFIX = "IceConc"  # Matches your PLOT_VARIABLE choice ('SIConc' or 'SIVol')
+FILE_PREFIX = "ColSpeed"  # Matches your PLOT_VARIABLE choice ('SIConc' or 'SIVol')
 FRIS_LOC = '/Users/ivankova/Desktop/Fris_hr/Fris_plots_prl'
 OUTPUT_GIF_PATH = f'{FRIS_LOC}/{FILE_PREFIX}_mosaic_timeline.gif'
 DURATION_MS = 250  # Display duration for each frame in milliseconds (250ms = 4 frames/sec)
@@ -45,10 +45,19 @@ for Fnum, cases in simulations.items():
             if date_str:
                 data[dx][sec][date_str] = fpath
 
-# Create the 10-year master timeline (60 months Spin1 + 60 months Spin6)
+# Create timelines based on data availability
 all_spin1_dates = sorted(list(set(d for dx in data for d in data[dx]['Spin1'])))
 all_spin6_dates = sorted(list(set(d for dx in data for d in data[dx]['Spin6'])))
-target_timeline = all_spin1_dates[:60] + all_spin6_dates[:60]
+
+# --- Spin6 Only Fallback Condition ---
+if not all_spin1_dates:
+    print("⚠️ No Spin1 data found. Falling back to Spin6 only (First 5 years / 60 frames).")
+    target_timeline = all_spin6_dates[:60]
+    spin6_only_mode = True
+else:
+    # Standard 10-year master timeline (60 months Spin1 + 60 months Spin6)
+    target_timeline = all_spin1_dates[:60] + all_spin6_dates[:60]
+    spin6_only_mode = False
 
 print(f"Timeline configured: {len(target_timeline)} frames total.")
 
@@ -59,7 +68,12 @@ gif_frames = []
 blank_canvas = None
 
 for idx, date_str in enumerate(target_timeline):
-    phase = 'Spin1' if idx < len(all_spin1_dates[:60]) else 'Spin6'
+    # Determine phase based on mode and index
+    if spin6_only_mode:
+        phase = 'Spin6'
+    else:
+        phase = 'Spin1' if idx < len(all_spin1_dates[:60]) else 'Spin6'
+
     print(f"Stitching Frame {idx + 1}/{len(target_timeline)} ({phase} - {date_str})")
 
 
