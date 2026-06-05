@@ -27,39 +27,6 @@ simulations = {
     '1': [('Spin6', 'p1'), ('Spin1', 'p1'), ('Spin1', 'p2'), ('Spin1', 'p3')]
 }
 
-# Define global-averaged diagnostic variables requested
-vars_global = [
-    'CFLNumberGlobal',
-    'kineticEnergyCellMax'
-]
-
-
-# -------------------------------------------------------------------------
-# Preprocess function for high-performance lazy loading
-# -------------------------------------------------------------------------
-def extract_vars(ds):
-    """
-    Slices out only the requested global metrics immediately upon opening
-    each file. This avoids choking memory when opening thousands of files.
-    """
-    # Detect matching variables or alternatives with 'globalStats_' prefixes
-    valid_vars = [v for v in vars_global if v in ds]
-    alt_vars = [f"globalStats_{v}" for v in vars_global if f"globalStats_{v}" in ds]
-
-    # Extract dataset subset containing ONLY the target variables
-    ds_subset = ds[valid_vars + alt_vars]
-
-    # Normalize naming convention if prefixes were applied by the AM module
-    rename_dict = {f"globalStats_{v}": v for v in vars_global if f"globalStats_{v}" in ds_subset}
-    if rename_dict:
-        ds_subset = ds_subset.rename(rename_dict)
-
-    return ds_subset
-
-
-# -------------------------------------------------------------------------
-# Main Execution Loop
-# -------------------------------------------------------------------------
 for Fnum, cases in simulations.items():
     dx = f'F{Fnum}'
 
@@ -68,7 +35,7 @@ for Fnum, cases in simulations.items():
         print(f"STARTING CONFIGURATION: Resolution={dx} | Section={sec} | Sub-section={subsec}")
         print("=" * 60)
 
-        # Build execution paths identically to your original setup
+        # Build paths identically to your setup
         if sec == 'Spin6':
             subsec_str = ''
             run_name = f"20240227.GMPAS-JRA1p5-DIB-PISMF.TL319_FRISwISC0{Fnum}to60E3r1.spinY6_scr5.chicoma-cpu"
@@ -101,47 +68,52 @@ for Fnum, cases in simulations.items():
         file_list = sorted(glob.glob(file_pattern))
 
         if not file_list:
-            print(f"WARNING: No global stats files found for pattern: {file_pattern}. Skipping.")
+            print(f"WARNING: No global stats files found for: {file_pattern}. Skipping.")
             continue
 
-        print(f"Found {len(file_list)} files. Opening dataset and processing in parallel...")
+        # Global-averaged diagnostic variables requested
+        vars_global = [
+            'CFLNumberGlobal',
+            'kineticEnergyCellMax'
+        ]
 
-        # --- Step 3: Fast Parallel Metadata Aggregation ---
-        # --- Step 3: Fast Parallel Metadata Aggregation ---
-        try:
-            # open_mfdataset reads NetCDF headers concurrently using local Dask worker threads
-            # Added decode_timedelta=True to silence the Python 3.14 warnings
-            out_ds = xr.open_mfdataset(
-                file_list,
-                concat_dim='Time',
-                combine='nested',
-                preprocess=extract_vars,
-                parallel=True,
-                data_vars='minimal',
-                coords='minimal',
-                compat='override',
-                decode_timedelta=True  # <--- Silences FutureWarnings
-            )
+        daily_tseries_list = []
+        print(f"Found {len(file_list)} files. Extracting global metrics...")
 
-            # Ensure proper dimension ordering (Time as leading axis)
+        # --- Step 3: Parse metrics sequentially ---
+        for idx, file_path in enumerate(file_list):
+            # Print update every 10 files to keep log cleaner since daily files are numerous
+            if (idx + 1) % 10 == 0 or idx == 0 or (idx + 1) == len(file_list):
+                print(f"[{idx + 1}/{len(file_list)}] Parsing: {file_path.split('/')[-1]}")
+
+            with xr.open_dataset(file_path, decode_timedelta=True) as ds:
+                file_metrics = {}
+
+                # Drop spatial indexes; grab the global coordinate data cleanly
+                for varname in vars_global:
+                    if varname in ds:
+                        file_metrics[varname] = ds[varname]
+                    else:
+                        # Fallback case if variable naming contains prefixes in the AM module
+                        alt_name = f"globalStats_{varname}"
+                        if alt_name in ds:
+                            file_metrics[varname] = ds[alt_name]
+
+                if file_metrics:
+                    daily_ds = xr.Dataset(file_metrics)
+                    daily_tseries_list.append(daily_ds)
+
+        if daily_tseries_list:
+            print("Concatenating daily global stats into master time-series dataset...")
+            out_ds = xr.concat(daily_tseries_list, dim='Time')
+
+            # Ensure 'Time' is the leading dimension
             if 'Time' in out_ds.dims:
                 out_ds = out_ds.transpose('Time', ...)
 
-            # Define the destination path
+            # Save dataset to NetCDF file
             output_filename = f'{out_prl}/global_stats_tseries_{dx}_{sec}{subsec}.nc'
-
-            # CRITICAL FIX: Load data into memory first to bypass Dask multithreading
-            # conflicts inside the HDF5/NetCDF4 engine during the write phase.
-            print("Loading aggregated timeseries into memory...")
-            out_ds.load()
-
-            # Compute and save consolidated time series data cleanly
-            print(f"Writing aggregated timeseries out to netCDF...")
             out_ds.to_netcdf(output_filename)
-            print(f"SUCCESS: Consolidated global diagnostics saved to: {output_filename}")
-
-            # Explicitly close dataset to release system file handles
-            out_ds.close()
-
-        except Exception as e:
-            print(f"ERROR: Failed processing configuration {dx}_{sec}{subsec}: {e}")
+            print(f"Successfully consolidated global diagnostics to: {output_filename}")
+        else:
+            print(f"No valid variables extracted for configuration: {dx}_{sec}{subsec}")
