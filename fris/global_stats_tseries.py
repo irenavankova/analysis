@@ -107,17 +107,20 @@ for Fnum, cases in simulations.items():
         print(f"Found {len(file_list)} files. Opening dataset and processing in parallel...")
 
         # --- Step 3: Fast Parallel Metadata Aggregation ---
+        # --- Step 3: Fast Parallel Metadata Aggregation ---
         try:
             # open_mfdataset reads NetCDF headers concurrently using local Dask worker threads
+            # Added decode_timedelta=True to silence the Python 3.14 warnings
             out_ds = xr.open_mfdataset(
                 file_list,
                 concat_dim='Time',
                 combine='nested',
                 preprocess=extract_vars,
-                parallel=True,  # Activates multi-threaded IO processing
+                parallel=True,
                 data_vars='minimal',
                 coords='minimal',
-                compat='override'
+                compat='override',
+                decode_timedelta=True  # <--- Silences FutureWarnings
             )
 
             # Ensure proper dimension ordering (Time as leading axis)
@@ -127,7 +130,12 @@ for Fnum, cases in simulations.items():
             # Define the destination path
             output_filename = f'{out_prl}/global_stats_tseries_{dx}_{sec}{subsec}.nc'
 
-            # Compute and save consolidated time series data
+            # CRITICAL FIX: Load data into memory first to bypass Dask multithreading
+            # conflicts inside the HDF5/NetCDF4 engine during the write phase.
+            print("Loading aggregated timeseries into memory...")
+            out_ds.load()
+
+            # Compute and save consolidated time series data cleanly
             print(f"Writing aggregated timeseries out to netCDF...")
             out_ds.to_netcdf(output_filename)
             print(f"SUCCESS: Consolidated global diagnostics saved to: {output_filename}")
