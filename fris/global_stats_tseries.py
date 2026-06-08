@@ -113,7 +113,8 @@ for Fnum, cases in simulations.items():
         # Global-averaged diagnostic variables requested
         vars_global = [
             'CFLNumberGlobal',
-            'kineticEnergyCellMax'
+            'kineticEnergyCellMax',
+            'daysSinceStartOfSim'
         ]
 
         daily_tseries_list = []

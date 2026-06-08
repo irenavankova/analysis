@@ -3,6 +3,7 @@
 import os
 import xarray as xr
 import matplotlib.pyplot as plt
+import numpy as np
 
 # ==============================================================================
 # USER CONFIGURATION: Explicitly specify your files, labels, and start targets
@@ -20,9 +21,8 @@ dtdx_ref = 60.0 / 1.0
 # Centralized line and time property definitions
 Lwides6 = 1.0
 lstyl6 = '-'
-S6_start_yr = 0
 
-# Target dates for vertical lines (defined as tuple: (year, month))
+# Target dates for vertical lines (defined as tuple: (year since start, month))
 vline_targets = [
     (2, 11),
     (0, 12),
@@ -37,8 +37,6 @@ files_config = [
         'filename': 'global_stats_tseries_F8_Spin6p1.nc',
         'label': 'F8 (Spin6)',
         'meshres': 8.0,
-        'start_year': S6_start_yr,
-        'start_month': 1,
         'color': 'brown',
         'linewidth': Lwides6,
         'linestyle': lstyl6,
@@ -48,8 +46,6 @@ files_config = [
         'filename': 'global_stats_tseries_F4_Spin6p1.nc',
         'label': 'F4 (Spin6)',
         'meshres': 4.0,
-        'start_year': S6_start_yr,
-        'start_month': 1,
         'color': 'royalblue',
         'linewidth': Lwides6,
         'linestyle': lstyl6,
@@ -59,8 +55,6 @@ files_config = [
         'filename': 'global_stats_tseries_F2_Spin6p1.nc',
         'label': 'F2 (Spin6)',
         'meshres': 2.0,
-        'start_year': S6_start_yr,
-        'start_month': 1,
         'color': 'forestgreen',
         'linewidth': Lwides6,
         'linestyle': lstyl6,
@@ -70,8 +64,6 @@ files_config = [
         'filename': 'global_stats_tseries_F1_Spin6p1.nc',
         'label': 'F1 (Spin6)',
         'meshres': 1.0,
-        'start_year': S6_start_yr,
-        'start_month': 1,
         'color': 'black',
         'linewidth': Lwides6,
         'linestyle': lstyl6,
@@ -116,18 +108,50 @@ legend_labels = []
 for cfg in valid_files:
     with xr.open_dataset(cfg['path']) as ds:
 
-        # Get the length of your time dimension from the dataset
-        num_timesteps = ds.sizes['Time']
-        start_year = cfg['start_year']
-        start_month = cfg['start_month']
-
+        # ----------------------------------------------------------------------
+        # STRING-BASED CALENDAR PARSING (NO PANDAS)
+        # ----------------------------------------------------------------------
+        # Force values to strings or extract string properties safely
+        raw_times = ds['Time'].values
         time_coords = []
-        for i in range(num_timesteps):
-            total_months = (start_month - 1) + i
-            current_year = start_year + (total_months // 12)
-            current_month_0indexed = total_months % 12
-            decimal_year = current_year + (current_month_0indexed / 12.0)
-            time_coords.append(decimal_year)
+
+        base_yr, base_mo, base_dy = None, None, None
+
+        for idx, t in enumerate(raw_times):
+            # Convert numpy bytes/objects safely to standard string format
+            if isinstance(t, bytes):
+                t_str = t.decode('utf-8').strip()
+            else:
+                t_str = str(t).strip()
+
+            # Expecting MPAS historical timestamp format containing 'YYYY-MM-DD'
+            # If your string timeline contains full date structures, extract positions:
+            try:
+                # Splits '0004-06-01_00:00:00' down to components
+                date_part = t_str.split('_')[0] if '_' in t_str else t_str
+                parts = date_part.split('-')
+
+                yr = int(parts[0])
+                mo = int(parts[1])
+                dy = int(parts[2])
+
+                if base_yr is None:
+                    base_yr, base_mo, base_dy = yr, mo, dy
+
+                # Calculate absolute fractional year distance relative to base step
+                delta_years = (yr - base_yr) + ((mo - base_mo) / 12.0) + ((dy - base_dy) / 365.25)
+                time_coords.append(delta_years)
+
+            except (ValueError, IndexError):
+                # Fallback safeguard if reindex filled the slot with a NaN label string
+                # We map the timeline step based strictly on file resolution indexes
+                if base_yr is None:
+                    # Default fallback initialization if first step happens to be blank
+                    base_yr, base_mo, base_dy = 0, 1, 1
+                time_coords.append(idx / 12.0)
+
+        time_coords = np.array(time_coords)
+        # ----------------------------------------------------------------------
 
         # Plot each of the three global variables in their respective subplot row
         for idx, var_name in enumerate(vars_global):
@@ -159,14 +183,11 @@ for cfg in valid_files:
 for idx, var_name in enumerate(vars_global):
     ax = axes[idx]
 
-    #display_title = f"{var_name} (Scaled)" if var_name == 'CFLNumberGlobal' else var_name
-
-    #ax.set_title(display_title, fontsize=12, fontweight='bold', loc='left')
-    ax.set_ylabel(ylabels_global, fontsize=10)
+    ax.set_ylabel(ylabels_global[idx], fontsize=10)
 
     # Only label the bottom panel's x-axis to prevent overlapping layout clutter
     if idx == len(vars_global) - 1:
-        ax.set_xlabel("Adjusted Model Year", fontsize=10)
+        ax.set_xlabel("Years Since Beginning of Simulation", fontsize=10)
 
     # Only apply scalar formatting if the axis is actually numeric
     try:
@@ -175,12 +196,12 @@ for idx, var_name in enumerate(vars_global):
         pass
 
     # --- Draw the vertical marker lines ---
-    #for x_pos, line_color in zip(vline_positions, vline_colors):
-    #    ax.axvline(x=x_pos, color=line_color, linestyle=':', linewidth=1.2, alpha=0.7, zorder=1)
+    for x_pos, line_color in zip(vline_positions, vline_colors):
+        ax.axvline(x=x_pos, color=line_color, linestyle=':', linewidth=1.2, alpha=0.7, zorder=1)
 
 fig.suptitle("Global Simulation Statistics Comparison (Spin6 runs)", fontsize=16, fontweight='normal', y=0.98)
 
-# Centralized legend adjusted across the top frame (since there are fewer entries, ncol=len entries fits well)
+# Centralized legend adjusted across the top frame
 if legend_handles:
     fig.legend(legend_handles, legend_labels, loc='upper center',
                bbox_to_anchor=(0.5, 0.95), ncol=len(legend_handles), frameon=True, fontsize=10)
