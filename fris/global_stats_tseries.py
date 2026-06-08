@@ -82,7 +82,6 @@ for Fnum, cases in simulations.items():
 
         # --- Step 3: Parse metrics sequentially ---
         for idx, file_path in enumerate(file_list):
-            # Print update every 10 files to keep log cleaner since daily files are numerous
             if (idx + 1) % 10 == 0 or idx == 0 or (idx + 1) == len(file_list):
                 print(f"[{idx + 1}/{len(file_list)}] Parsing: {file_path.split('/')[-1]}")
 
@@ -94,10 +93,28 @@ for Fnum, cases in simulations.items():
                     if varname in ds:
                         file_metrics[varname] = ds[varname]
                     else:
-                        # Fallback case if variable naming contains prefixes in the AM module
                         alt_name = f"globalStats_{varname}"
                         if alt_name in ds:
                             file_metrics[varname] = ds[alt_name]
+
+                # --- Extract config_dt and match its length ---
+                # Check if it's stored as a global attribute or a variable/namelist group
+                dt_val = None
+                if 'config_dt' in ds.attrs:
+                    dt_val = ds.attrs['config_dt']
+                elif 'config_dt' in ds:
+                    dt_val = ds['config_dt'].values
+
+                if dt_val is not None:
+                    # Use CFLNumberGlobal (or whatever variable loaded successfully) to match length
+                    ref_var = list(file_metrics.values())[0] if file_metrics else None
+
+                    if ref_var is not None:
+                        # If dt_val is a string (e.g., '00:10:00'), you might want to convert it.
+                        # Assuming it's a numeric value (like seconds) or a timedelta object:
+                        file_metrics['config_dt'] = xr.full_like(ref_var, dt_val, dtype=type(dt_val))
+                else:
+                    print(f"WARNING: 'config_dt' not found in {file_path.split('/')[-1]}")
 
                 if file_metrics:
                     daily_ds = xr.Dataset(file_metrics)
