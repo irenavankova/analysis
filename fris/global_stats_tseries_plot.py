@@ -7,13 +7,11 @@ import matplotlib.pyplot as plt
 # ==============================================================================
 # USER CONFIGURATION: Explicitly specify your files, labels, and start targets
 # ==============================================================================
-# Directory where all your netCDF files are located
-#data_dir = '/Users/ivankova/Desktop/Fris_hr/Fris_derived/nc_files/bulk_seaice_tseries_V1'
-data_dir = '/Users/ivankova/Desktop/Fris_hr/Fris_derived/nc_files/global_stats/par1'
+data_dir = '/Users/ivankova/Desktop/Fris_hr/Fris_derived/nc_files/global_stats/par4dt'
 opt_save = 0
 
-# Variables to plot in the 2 subplots
-vars_global = ['CFLNumberGlobal', 'kineticEnergyCellMax']
+# Variables to plot in the 3 subplots
+vars_global = ['CFLNumberGlobal', 'kineticEnergyCellMax', 'config_dt']
 
 # Centralized line and time property definitions
 Lwides1 = 1.0
@@ -172,15 +170,15 @@ for cfg in files_config:
 if not valid_files:
     raise FileNotFoundError("Error: None of the explicitly specified NetCDF files were found.")
 
-print(f"\nGenerating 2-panel global stats plot...")
+print(f"\nGenerating 3-panel global stats plot...")
 
-# Create 1 row with 2 subplots (one for each variable in vars_global)
-fig, axes = plt.subplots(nrows=1, ncols=2, figsize=(15, 5), dpi=150, sharex=True)
+# Expanded figsize from (15, 5) to (20, 5) to neatly fit the 3rd panel
+fig, axes = plt.subplots(nrows=1, ncols=3, figsize=(20, 5), dpi=150, sharex=True)
 
 legend_handles = []
 legend_labels = []
 
-# Loop over each valid netCDF file and plot data on both axes
+# Loop over each valid netCDF file and plot data on all axes
 for cfg in valid_files:
     with xr.open_dataset(cfg['path']) as ds:
 
@@ -197,7 +195,7 @@ for cfg in valid_files:
             decimal_year = current_year + (current_month_0indexed / 12.0)
             time_coords.append(decimal_year)
 
-        # Plot each of the two global variables in their respective subplot
+        # Plot each of the three global variables in their respective subplot
         for idx, var_name in enumerate(vars_global):
             if var_name not in ds.data_vars:
                 continue
@@ -221,9 +219,14 @@ for cfg in valid_files:
 for idx, var_name in enumerate(vars_global):
     ax = axes[idx]
     ax.set_title(var_name, fontsize=12, fontweight='bold', loc='left')
-    ax.ticklabel_format(style='plain', useOffset=False, axis='y')
     ax.set_xlabel("Adjusted Model Year", fontsize=10)
     ax.set_ylabel(var_name, fontsize=10)
+
+    # Only apply scalar formatting if the axis is actually numeric
+    try:
+        ax.ticklabel_format(style='plain', useOffset=False, axis='y')
+    except AttributeError:
+        print(f"--> Note: Skipping scalar tick formatting for '{var_name}' (it contains categorical/string data).")
 
     # --- Draw the vertical marker lines ---
     for x_pos, line_color in zip(vline_positions, vline_colors):

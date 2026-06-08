@@ -27,6 +27,45 @@ simulations = {
     '1': [('Spin6', 'p1'), ('Spin1', 'p1'), ('Spin1', 'p2'), ('Spin1', 'p3')]
 }
 
+
+def parse_dt_to_seconds(dt_val):
+    """Converts a config_dt value (string, byte, or number) to float seconds."""
+    if dt_val is None:
+        return None
+
+    # Decode if it's a byte string
+    if isinstance(dt_val, bytes):
+        dt_val = dt_val.decode('utf-8')
+
+    if isinstance(dt_val, str):
+        dt_val = dt_val.strip().strip("'\"")
+        # Handle hh:mm:ss format (e.g. "00:10:00")
+        if ':' in dt_val:
+            try:
+                parts = dt_val.split(':')
+                if len(parts) == 3:
+                    h, m, s = map(float, parts)
+                    return h * 3600.0 + m * 60.0 + s
+                elif len(parts) == 2:
+                    m, s = map(float, parts)
+                    return m * 60.0 + s
+            except ValueError:
+                pass
+
+        # If it's a plain numeric string (e.g. "600")
+        try:
+            return float(dt_val)
+        except ValueError:
+            print(f"WARNING: Could not parse string dt value: {dt_val}")
+            return 0.0
+
+    # If it's already a numeric type or a numpy/xarray scalar
+    try:
+        return float(dt_val)
+    except (TypeError, ValueError):
+        return 0.0
+
+
 for Fnum, cases in simulations.items():
     dx = f'F{Fnum}'
 
@@ -97,22 +136,21 @@ for Fnum, cases in simulations.items():
                         if alt_name in ds:
                             file_metrics[varname] = ds[alt_name]
 
-                # --- Extract config_dt and match its length ---
-                # Check if it's stored as a global attribute or a variable/namelist group
-                dt_val = None
+                # --- Extract config_dt and process it into a float ---
+                raw_dt = None
                 if 'config_dt' in ds.attrs:
-                    dt_val = ds.attrs['config_dt']
+                    raw_dt = ds.attrs['config_dt']
                 elif 'config_dt' in ds:
-                    dt_val = ds['config_dt'].values
+                    raw_dt = ds['config_dt'].values
 
-                if dt_val is not None:
-                    # Use CFLNumberGlobal (or whatever variable loaded successfully) to match length
+                # Parse raw string/byte format down to total numeric float seconds
+                dt_seconds = parse_dt_to_seconds(raw_dt)
+
+                if dt_seconds is not None:
                     ref_var = list(file_metrics.values())[0] if file_metrics else None
-
                     if ref_var is not None:
-                        # If dt_val is a string (e.g., '00:10:00'), you might want to convert it.
-                        # Assuming it's a numeric value (like seconds) or a timedelta object:
-                        file_metrics['config_dt'] = xr.full_like(ref_var, dt_val, dtype=type(dt_val))
+                        # Force creation of a clean float64 array matching the length of other fields
+                        file_metrics['config_dt'] = xr.full_like(ref_var, dt_seconds, dtype=np.float64)
                 else:
                     print(f"WARNING: 'config_dt' not found in {file_path.split('/')[-1]}")
 
