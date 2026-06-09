@@ -27,7 +27,6 @@ simulations = {
     '1': [('Spin6', 'p1'), ('Spin1', 'p1'), ('Spin1', 'p2'), ('Spin1', 'p3')]
 }
 
-
 def parse_dt_to_seconds(dt_val):
     """Converts a config_dt value (string, byte, or number) to float seconds."""
     if dt_val is None:
