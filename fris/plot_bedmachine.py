@@ -5,7 +5,6 @@ import numpy as np
 import xarray as xr
 import matplotlib.pyplot as plt
 from pyproj import Transformer
-from scipy.signal import medfilt2d  # Added for medfilt2 equivalent
 
 # -------------------------------------------------------------------------
 # 1. Configuration & Setup
@@ -14,17 +13,22 @@ transect_name = 'ronnecenter'  # Change this for each new track
 
 fnameB = '/Users/ivankova/Desktop/Fris_hr/Fris_ncfiles/BedMachineAntarctica-v3.nc'
 save_dir = '/Users/ivankova/Desktop/Fris_hr/Fris_derived/pts_4_analysis/'
-n = 5                                # Downsampling factor (reduced since region is smaller)
-mkm = 1000.0                         # Meters to kilometers conversion
+n = 5  # Downsampling factor
+mkm = 1000.0  # Meters to kilometers conversion
 vmin = -1500
 
 if not os.path.exists(save_dir):
     os.makedirs(save_dir)
 
-# Coordinate transformer for Polar Stereo (m) -> Lon/Lat (degrees)
-crs_polar = "+proj=stere +lat_0=-90 +lat_ts=-71 +lon_0=0 +k=1 +x_0=0 +y_0=0 +datum=WGS84 +units=m +no_defs"
-crs_wgs84 = "EPSG:4326"
-transformer = Transformer.from_crs(crs_polar, crs_wgs84, always_xy=True)
+# Define the expected output file path
+out_path = os.path.join(save_dir, f"{transect_name}.nc")
+file_exists = os.path.exists(out_path)
+
+# Coordinate transformer (only needed if we are generating new points)
+if not file_exists:
+    crs_polar = "+proj=stere +lat_0=-90 +lat_ts=-71 +lon_0=0 +k=1 +x_0=0 +y_0=0 +datum=WGS84 +units=m +no_defs"
+    crs_wgs84 = "EPSG:4326"
+    transformer = Transformer.from_crs(crs_polar, crs_wgs84, always_xy=True)
 
 # -------------------------------------------------------------------------
 # 2. Load BedMachine & Subset to FRIS
@@ -32,13 +36,9 @@ transformer = Transformer.from_crs(crs_polar, crs_wgs84, always_xy=True)
 print("Loading BedMachine...")
 ds = xr.open_dataset(fnameB)
 
-# BedMachine Antarctica Y coordinates go from positive to negative (descending).
-# Therefore, slice must go from LARGER to SMALLER number.
 ds_fris = ds.sel(
-    #x=slice(-1.6e6, -0.5e6),
-    #y=slice(11e5, 1e5)        # Swapped: 11e5 first, then 1e5
     x=slice(-2.3e6, -0),
-    y=slice(20e5, 1e5)        # Swapped: 11e5 first, then 1e5
+    y=slice(20e5, 1e5)
 )
 
 # Apply the downsampling factor to the subsetted region
@@ -49,101 +49,95 @@ x_km = ds_sub['x'] / mkm
 y_km = ds_sub['y'] / mkm
 
 print("Loading values...")
-# Extract required fields as numpy arrays
-#surface = ds_sub['surface'].values
-#thickness = ds_sub['thickness'].values
-bed = ds_sub['bed'].values
-#mask_sub = ds_sub['mask'].values
-
-# Calculate raw water column thickness
-#wct_raw = (surface - thickness) - bed
-
-print("Loading values...")
-var2plot = bed
+var2plot = ds_sub['bed'].values
 
 # -------------------------------------------------------------------------
-# 3. Plot & Interactive Selection (ginput)
+# 3. Setup Plotting Environment
 # -------------------------------------------------------------------------
-plt.ion()
+if not file_exists:
+    plt.ion()  # Interactive mode ON if we need to click points
+else:
+    plt.ioff()  # Interactive mode OFF if we are just loading
+
 fig, ax = plt.subplots(figsize=(11, 10))
-
-print("Plotting FRIS regional map...")
-
-# Create 2D coordinate grids matching the shape of wct_sub
 X_grid, Y_grid = np.meshgrid(x_km, y_km)
 
-# Plot using the 2D grids (use shading='nearest' to avoid boundary size issues)
+# Plot background bed data
 pcm = ax.pcolormesh(X_grid, Y_grid, var2plot, cmap='pink', vmin=vmin, vmax=0, shading='nearest')
 fig.colorbar(pcm, ax=ax, label='Water Column Thickness [m]')
 
-# Update the contour line to use the 2D grid as well
-#ax.contour(X_grid, Y_grid, mask_sub, levels=[1, 2], colors='w', linewidths=0.75)
-
-ax.set_title(f"FRIS Region - {transect_name}\nLEFT CLICK to add points. Press ENTER/RETURN when finished.")
 ax.set_xlabel("X coordinate [km]")
 ax.set_ylabel("Y coordinate [km]")
-plt.draw()
 
-# Call ginput
-print("\n--> CLICK ON THE MAP NOW. Press ENTER when done.")
-clicked_points = plt.ginput(n=-1, timeout=0)
+# -------------------------------------------------------------------------
+# 4. Conditional Logic: Load File OR Interactive Selection
+# -------------------------------------------------------------------------
+if file_exists:
+    # --- ROUTINE A: LOAD EXISTING FILE ---
+    print(f"\n[FOUND] Existing file detected: {out_path}")
+    print("Loading coordinates from file...")
 
-if not clicked_points:
-    print("No points selected. Exiting script.")
-    plt.close(fig)
-    exit()
+    ds_points = xr.open_dataset(out_path)
+    click_x_km = ds_points['x'].values / mkm
+    click_y_km = ds_points['y'].values / mkm
 
-# Extract clicked x and y (currently in km)
-clicked_points = np.array(clicked_points)
-click_x_km = clicked_points[:, 0]
-click_y_km = clicked_points[:, 1]
+    ax.set_title(f"FRIS Region - {transect_name}\nLoaded from {transect_name}.nc")
+    ax.plot(click_x_km, click_y_km, 'g-o', linewidth=2, label=f"{transect_name} (Loaded)")
 
-# Show your track on the map as a confirmation visual
-ax.plot(click_x_km, click_y_km, 'r-o', linewidth=2, label=transect_name)
+else:
+    # --- ROUTINE B: INTERACTIVE SELECTION (ginput) ---
+    print(f"\n[NOT FOUND] No file at: {out_path}")
+    print("--> CLICK ON THE MAP NOW. Press ENTER when done.")
+
+    ax.set_title(f"FRIS Region - {transect_name}\nLEFT CLICK to add points. Press ENTER/RETURN when finished.")
+    plt.draw()
+
+    clicked_points = plt.ginput(n=-1, timeout=0)
+
+    if not clicked_points:
+        print("No points selected. Exiting script.")
+        plt.close(fig)
+        exit()
+
+    clicked_points = np.array(clicked_points)
+    click_x_km = clicked_points[:, 0]
+    click_y_km = clicked_points[:, 1]
+
+    ax.plot(click_x_km, click_y_km, 'r-o', linewidth=2, label=f"{transect_name} (New)")
+
+    # Process coordinates and save to NetCDF (Only if newly created)
+    x_meters = click_x_km * mkm
+    y_meters = click_y_km * mkm
+    longitude, latitude = transformer.transform(x_meters, y_meters)
+    nPoints = len(latitude)
+
+    dataset_out = xr.Dataset(
+        data_vars=dict(
+            x=(["nPoints"], x_meters),
+            y=(["nPoints"], y_meters),
+            longitude=(["nPoints"], longitude),
+            latitude=(["nPoints"], latitude)
+        ),
+        coords=dict(nPoints=np.arange(nPoints)),
+        attrs=dict(
+            description='Manually drawn FRIS transect via Python ginput',
+            transect_name=transect_name
+        ),
+    )
+    dataset_out.to_netcdf(out_path)
+    print(f"Successfully saved coordinates to: {out_path}")
+
+# -------------------------------------------------------------------------
+# 5. Finalize and Save Plot Image
+# -------------------------------------------------------------------------
 ax.legend()
 plt.draw()
-print(f"Captured {len(clicked_points)} points.")
 
-# --- ADDED: Save the plot to the same directory as the input .nc file ---
 plot_save_path = os.path.join(save_dir, f"{transect_name}_plot.png")
 fig.savefig(plot_save_path, bbox_inches='tight', dpi=300)
 print(f"Successfully saved plot to: {plot_save_path}")
-# -------------------------------------------------------------------------
 
-# -------------------------------------------------------------------------
-# 4. Process Coordinates & Save Directly to NetCDF
-# -------------------------------------------------------------------------
-# Convert the clicked km coordinates back to meters for pyproj
-x_meters = click_x_km * mkm
-y_meters = click_y_km * mkm
-
-# Transform polar stereographic meters back to standard Lat/Lon
-longitude, latitude = transformer.transform(x_meters, y_meters)
-
-nPoints = len(latitude)
-
-# Bundle everything cleanly inside an xarray Dataset
-dataset_out = xr.Dataset(
-    data_vars=dict(
-        x=(["nPoints"], x_meters),
-        y=(["nPoints"], y_meters),
-        longitude=(["nPoints"], longitude),
-        latitude=(["nPoints"], latitude)
-    ),
-    coords=dict(
-        nPoints=np.arange(nPoints)
-    ),
-    attrs=dict(
-        description='Manually drawn FRIS transect via Python ginput',
-        transect_name=transect_name
-    ),
-)
-
-# Save the final NetCDF
-out_path = os.path.join(save_dir, f"{transect_name}.nc")
-dataset_out.to_netcdf(out_path)
-print(f"\nSuccessfully saved coordinates to: {out_path}")
-
-# Keep plot open for a moment to review before script terminates
-plt.ioff()
+# Keep plot window open for review
+if not file_exists:
+    plt.ioff()
 plt.show()

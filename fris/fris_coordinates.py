@@ -169,7 +169,7 @@ if __name__ == "__main__":
     fnum = 8
     fris_loc = '/Users/ivankova/Desktop/Fris_hr'
     mesh_file = f'{fris_loc}/Fris_ncfiles/F{fnum}/ncfiles/F{fnum}mesh.nc'
-    transect_nc = '/Users/ivankova/Desktop/Fris_hr/Fris_derived/pts_4_analysis/shelfbreak.nc'
+    transect_nc = '/Users/ivankova/Desktop/Fris_hr/Fris_derived/pts_4_analysis/shelf.nc'
 
     # 2. Open MPAS Mesh
     dsMesh = xr.open_dataset(mesh_file)

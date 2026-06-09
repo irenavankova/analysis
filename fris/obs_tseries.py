@@ -7,7 +7,7 @@ import numpy as np
 # Import the coordinates directly from your existing script
 from fris_coordinates import sites_config, find_nearest_mpas_cells, load_transect_as_sites
 
-opt_sites = 'filchdepr'
+opt_sites = 'shelf'
 loc_transects = '/global/homes/v/vankova/data_analysis/files'
 out_prl = f'/global/homes/v/vankova/data_analysis/my_scripts/nc_files/pts_{opt_sites}'
 
@@ -43,6 +43,9 @@ elif opt_sites == 'ronnecenter':
 elif opt_sites == 'berknerwest':
     transect_nc = f'{loc_transects}/{opt_sites}.nc'
     sites_extract = load_transect_as_sites(transect_nc, name_prefix="BW", site_type="cherry")
+elif opt_sites == 'shelf':
+    transect_nc = f'{loc_transects}/{opt_sites}.nc'
+    sites_extract = load_transect_as_sites(transect_nc, name_prefix="CS", site_type = "cherry")
 
 
 simulations = {
