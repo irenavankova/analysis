@@ -190,12 +190,20 @@ if __name__ == "__main__":
             'opt_proj': 'sps'
         }
 
-    simulations = {
-        '8': [('Spin6', 'p1')],
-        '4': [('Spin6', 'p1')],
-        '2': [('Spin6', 'p1')],
-        '1': [('Spin6', 'p1')]
-    }
+    if PLOT_VARIABLE == 'GMkappa':
+        simulations = {
+            '8': [('Spin1', 'p1')],
+            '4': [('Spin1', 'p1')],
+            '2': [('Spin1', 'p1'), ('Spin1', 'p2')],
+            '1': [('Spin1', 'p1'), ('Spin1', 'p2'), ('Spin1', 'p3')]
+        }
+    else:
+        simulations = {
+            '8': [('Spin6', 'p1')],
+            '4': [('Spin6', 'p1')],
+            '2': [('Spin6', 'p1')],
+            '1': [('Spin6', 'p1')]
+        }
 
     for Fnum, cases in simulations.items():
         dx = f'F{Fnum}'
