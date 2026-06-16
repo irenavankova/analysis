@@ -108,7 +108,7 @@ def process_single_file(file_path, idx, total_files, dx, sec, subsec_str, max_le
     ax.gridlines(draw_labels=True)
     ax.set_facecolor('lightgray')
 
-    fig.colorbar(collection, fraction=0.1, shrink=0.5, label=var_config['cb_label'])
+    fig.colorbar(collection, fraction=0.1, shrink=1.0, label=var_config['cb_label'])
     ax.set_title(f"{var_config['title_prefix']} - {dx} {sec} {subsec_str} ({date_str})", fontsize=12, pad=10)
 
     # Output file matches variable file_prefix definition
