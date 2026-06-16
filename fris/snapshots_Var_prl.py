@@ -34,10 +34,25 @@ def process_single_file(file_path, idx, total_files, dx, sec, subsec_str, max_le
     print(f"[{os.getpid()}] Processing {idx + 1}/{total_files}: {base_filename}")
 
     var_name = var_config['name']
+    opt_proj = var_config['opt_proj']
 
     with xr.open_dataset(file_path) as ds:
-        # Check if requested variable exists in dataset
-        if var_name in ds:
+        # Check if calculating the custom composite GMkappa variable
+        if var_name == 'GMkappa':
+            required_vars = ['timeMonthly_avg_gmBolusKappa', 'timeMonthly_avg_gmHorizontalTaper',
+                             'timeMonthly_avg_gmKappaScaling']
+            if all(v in ds for v in required_vars):
+                # Pull top layer (index 0) for gmKappaScaling due to vertical scaling requirement
+                scaling_top = ds['timeMonthly_avg_gmKappaScaling'].isel(Time=0, nVertLevelsP1=0).values
+                bolus = ds['timeMonthly_avg_gmBolusKappa'].isel(Time=0).values
+                taper = ds['timeMonthly_avg_gmHorizontalTaper'].isel(Time=0).values
+
+                data_raw = (bolus * taper * scaling_top) / 1800.0
+            else:
+                missing = [v for v in required_vars if v not in ds]
+                return f"Error: Missing variables {missing} for GMkappa calculation in {base_filename}"
+        # Check if requested standard variable exists in dataset
+        elif var_name in ds:
             data_raw = ds[var_name].isel(Time=0).values
         else:
             return f"Error: Variable '{var_name}' missing in {base_filename}"
@@ -60,7 +75,11 @@ def process_single_file(file_path, idx, total_files, dx, sec, subsec_str, max_le
         plot_data = np.where(iis == 0, np.nan, plot_data)
 
     # Plot generation
-    projection = ccrs.PlateCarree()
+    if opt_proj == 'll':
+        projection = ccrs.PlateCarree()
+    elif opt_proj == 'sps':
+        projection = ccrs.SouthPolarStereo(central_longitude=-75)
+
     fig, ax = plt.subplots(figsize=(10, 9), constrained_layout=True, subplot_kw={"projection": projection})
 
     descriptor = mosaic.Descriptor(dsMesh_trimmed, projection=projection)
@@ -80,7 +99,11 @@ def process_single_file(file_path, idx, total_files, dx, sec, subsec_str, max_le
             levels=var_config['contours'], colors='black', linewidths=1.5, transform=ccrs.PlateCarree()
         )
 
-    ax.set_extent([-80, -25, -84, -70], ccrs.PlateCarree())
+    if opt_proj == 'll':
+        ax.set_extent([-80, -25, -84, -70], ccrs.PlateCarree())
+    elif opt_proj == 'sps':
+        ax.set_extent([-80, 0, -84, -64], ccrs.PlateCarree())
+
     ax.set_aspect('auto')
     ax.gridlines(draw_labels=True)
     ax.set_facecolor('lightgray')
@@ -115,7 +138,7 @@ if __name__ == "__main__":
     # Switch out, edit configurations, or loop over multiple dictionaries here.
     # -----------------------------------------------------------------
 
-    PLOT_VARIABLE = 'MLD'  # Options: 'area' or 'volume'
+    PLOT_VARIABLE = 'GMkappa'  # Options: 'Tbot', 'ColSpeed', 'MLD', or 'GMkappa'
 
     if PLOT_VARIABLE == 'Tbot':
         VAR_CONFIG = {
@@ -126,7 +149,8 @@ if __name__ == "__main__":
             'cmap': 'cmo.thermal',
             'cb_label': 'Sea Floor Temperature [°C]',
             'title_prefix': 'Bottom Temperature & -1.9°C Contour',
-            'file_prefix': 'Tbot'  # Used for naming the output file and directories
+            'file_prefix': 'Tbot' , # Used for naming the output file and directories
+            'opt_proj': 'll'
         }
     elif PLOT_VARIABLE == 'ColSpeed':
         VAR_CONFIG = {
@@ -137,7 +161,9 @@ if __name__ == "__main__":
             'cmap': 'cmo.speed',
             'cb_label': 'Column Integrated Speed [m/s]',
             'title_prefix': 'Column Integrated Speed',
-            'file_prefix': 'ColSpeed'
+            'file_prefix': 'ColSpeed',
+            'opt_proj': 'll'
+
         }
     elif PLOT_VARIABLE == 'MLD':
         VAR_CONFIG = {
@@ -148,7 +174,20 @@ if __name__ == "__main__":
             'cmap': 'cmo.deep',
             'cb_label': 'Mixed Layer Depth [m]',
             'title_prefix': 'MLD',
-            'file_prefix': 'MLD'
+            'file_prefix': 'MLD',
+            'opt_proj': 'll'
+        }
+    elif PLOT_VARIABLE == 'GMkappa':
+        VAR_CONFIG = {
+            'name': 'GMkappa',
+            'vmin': 0.0,
+            'vmax': 1.0,  # Adjust limits based on your expected normalized values
+            'contours': [],
+            'cmap': 'CMRmap',
+            'cb_label': 'GM Kappa / max(GM Kappa)',
+            'title_prefix': 'GM Kappa',
+            'file_prefix': 'GMkappa',
+            'opt_proj': 'sps'
         }
 
     simulations = {
