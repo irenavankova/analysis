@@ -14,7 +14,7 @@ TARGET_PROPERTIES = ['temperature', 'salinity', 'Nsquare', 'rho']
 
 # Specify a list of time-series site configuration groups to process sequential loops for
 TARGET_TS_NAMES = ['pts_berknerwest', 'pts_ronnedepr', 'pts_filchdepr', 'pts_ronnecenter', 'pts_shelfbreak', 'obs']
-
+#TARGET_TS_NAMES = ['pts_shelf']
 # Shading Toggle Switch: True will plot the time-series standard deviation bounds, False will hide it.
 PLOT_STD_SHADING = True
 
@@ -164,108 +164,127 @@ for ts_name in TARGET_TS_NAMES:
                     f"⚠️ Warning: No valid sites found under group {ts_name} for {target_prop} in season {season_id}. Skipping.")
                 continue
 
-            ncols = 4
-            nrows = int(np.ceil(num_sites / ncols))
+            # Split sites into chunks of 16 maximum per figure
+            max_subplots = 16
+            site_chunks = [valid_sites[i:i + max_subplots] for i in range(0, num_sites, max_subplots)]
+            num_chunks = len(site_chunks)
 
-            fig, axes = plt.subplots(nrows=nrows, ncols=ncols, figsize=(5 * ncols, 5 * nrows),
-                                     sharey=False)
-            axes = axes.flatten()
+            for chunk_idx, chunk_sites in enumerate(site_chunks):
+                chunk_num_sites = len(chunk_sites)
+                ncols = 4
+                nrows = int(np.ceil(chunk_num_sites / ncols))
 
-            # Track global x bounds within this dynamic configuration loop
-            x_min_fig = float('inf')
-            x_max_fig = float('-inf')
-            active_axes = []
+                fig, axes = plt.subplots(nrows=nrows, ncols=ncols, figsize=(5 * ncols, 5 * nrows),
+                                         sharey=False)
 
-            for s_idx, site_name in enumerate(valid_sites):
-                ax = axes[s_idx]
-                has_data = False
-
-                z_min_site = float('inf')
-                z_max_site = float('-inf')
-
-                for res in resolutions:
-                    if res not in seasonal_datasets:
-                        continue
-
-                    ds_res = seasonal_datasets[res]
-                    if site_name not in ds_res['site'].values:
-                        continue
-
-                    ds_site = ds_res.sel(site=site_name)
-
-                    # Build Vertical Grid Mesh using the first timestep of the filtered seasonal collection
-                    ssh_t0 = float(
-                        ds_site['timeMonthly_avg_ssh'].isel(Time=0).values) if 'timeMonthly_avg_ssh' in ds_site else 0.0
-                    thick_t0 = ds_site['timeMonthly_avg_layerThickness'].isel(Time=0).values
-                    valid_layers_mask = ~np.isnan(thick_t0)
-                    thick_valid = thick_t0[valid_layers_mask]
-
-                    if len(thick_valid) == 0:
-                        continue
-
-                    z_edges = ssh_t0 - np.insert(np.cumsum(thick_valid), 0, 0.0)
-                    z_centers = (z_edges[:-1] + z_edges[1:]) / 2.0
-
-                    data_matrix = get_field_data(ds_site, nc_var, valid_layers_mask)
-                    if data_matrix is None or data_matrix.size == 0:
-                        continue
-
-                    # Compute profile mean across Time dimension axis (restricted to chosen season)
-                    mean_profile = np.nanmean(data_matrix, axis=1)
-
-                    # Render mean profiles
-                    ax.plot(mean_profile, z_centers, label=res, color=res_colors[res], linewidth=1.8, zorder=3)
-
-                    # Check option switch to render standard deviation horizontal shading bounding region
-                    if PLOT_STD_SHADING:
-                        std_profile = np.nanstd(data_matrix, axis=1)
-                        ax.fill_betweenx(z_centers, mean_profile - std_profile, mean_profile + std_profile,
-                                         color=res_colors[res], alpha=0.15, zorder=2)
-
-                    z_min_site = min(z_min_site, np.min(z_centers))
-                    z_max_site = max(z_max_site, np.max(z_centers))
-                    has_data = True
-
-                if has_data:
-                    ax.grid(True, linestyle=':', alpha=0.6)
-                    ax.set_ylim(z_min_site, z_max_site)
-
-                    if s_idx % ncols == 0:
-                        ax.set_ylabel('Elevation z (m)', fontsize=11)
-                    if s_idx >= (nrows - 1) * ncols:
-                        ax.set_xlabel(meta['label'], fontsize=11)
-
-                    if meta['xlim'] is not None:
-                        x_min_fig, x_max_fig = meta['xlim']
-                    else:
-                        ax.relim()
-                        ax.autoscale_view(scaley=False)
-                        current_xmin, current_xmax = ax.get_xlim()
-                        x_min_fig = min(x_min_fig, current_xmin)
-                        x_max_fig = max(x_max_fig, current_xmax)
-
-                    active_axes.append(ax)
+                # Ensure axes is always a flat array even if nrows=1 or chunk_num_sites=1
+                if chunk_num_sites == 1:
+                    axes = np.array([axes])
                 else:
-                    ax.text(0.5, 0.5, "No data available", ha='center', va='center', transform=ax.transAxes,
-                            color='grey')
+                    axes = axes.flatten()
 
-            # --- Uniform X-Limit Synchronizer ---
-            if active_axes and x_min_fig < x_max_fig:
-                for ax in active_axes:
-                    ax.set_xlim(x_min_fig, x_max_fig)
+                # Track global x bounds within this dynamic chunk loop
+                x_min_fig = float('inf')
+                x_max_fig = float('-inf')
+                active_axes = []
 
-            # Hide excess empty subplot frames
-            for empty_idx in range(num_sites, len(axes)):
-                fig.delaxes(axes[empty_idx])
+                for s_idx, site_name in enumerate(chunk_sites):
+                    ax = axes[s_idx]
+                    has_data = False
 
-            axes[0].legend(title="Resolutions", loc='best')
-            plt.tight_layout()
+                    z_min_site = float('inf')
+                    z_max_site = float('-inf')
 
-            # Append the season tracking identifier to the final filename structured block
-            out_img_name = os.path.join(output_dir, f'Profiles_Spin6_Yrs2-4_{meta["suffix"]}_{season_id}.png')
-            plt.savefig(out_img_name, dpi=200, bbox_inches='tight')
-            plt.close()
-            print(f" -> Plot completely rendered and saved to: {out_img_name}")
+                    # Set site name as title with identical font properties to axis labels
+                    ax.set_title(site_name, fontsize=11, fontweight='normal')
+
+                    for res in resolutions:
+                        if res not in seasonal_datasets:
+                            continue
+
+                        ds_res = seasonal_datasets[res]
+                        if site_name not in ds_res['site'].values:
+                            continue
+
+                        ds_site = ds_res.sel(site=site_name)
+
+                        # Build Vertical Grid Mesh using the first timestep of the filtered seasonal collection
+                        ssh_t0 = float(
+                            ds_site['timeMonthly_avg_ssh'].isel(
+                                Time=0).values) if 'timeMonthly_avg_ssh' in ds_site else 0.0
+                        thick_t0 = ds_site['timeMonthly_avg_layerThickness'].isel(Time=0).values
+                        valid_layers_mask = ~np.isnan(thick_t0)
+                        thick_valid = thick_t0[valid_layers_mask]
+
+                        if len(thick_valid) == 0:
+                            continue
+
+                        z_edges = ssh_t0 - np.insert(np.cumsum(thick_valid), 0, 0.0)
+                        z_centers = (z_edges[:-1] + z_edges[1:]) / 2.0
+
+                        data_matrix = get_field_data(ds_site, nc_var, valid_layers_mask)
+                        if data_matrix is None or data_matrix.size == 0:
+                            continue
+
+                        # Compute profile mean across Time dimension axis (restricted to chosen season)
+                        mean_profile = np.nanmean(data_matrix, axis=1)
+
+                        # Render mean profiles
+                        ax.plot(mean_profile, z_centers, label=res, color=res_colors[res], linewidth=1.8, zorder=3)
+
+                        # Check option switch to render standard deviation horizontal shading bounding region
+                        if PLOT_STD_SHADING:
+                            std_profile = np.nanstd(data_matrix, axis=1)
+                            ax.fill_betweenx(z_centers, mean_profile - std_profile, mean_profile + std_profile,
+                                             color=res_colors[res], alpha=0.15, zorder=2)
+
+                        z_min_site = min(z_min_site, np.min(z_centers))
+                        z_max_site = max(z_max_site, np.max(z_centers))
+                        has_data = True
+
+                    if has_data:
+                        ax.grid(True, linestyle=':', alpha=0.6)
+                        ax.set_ylim(z_min_site, z_max_site)
+
+                        if s_idx % ncols == 0:
+                            ax.set_ylabel('Elevation z (m)', fontsize=11)
+                        if s_idx >= (nrows - 1) * ncols:
+                            ax.set_xlabel(meta['label'], fontsize=11)
+
+                        if meta['xlim'] is not None:
+                            x_min_fig, x_max_fig = meta['xlim']
+                        else:
+                            ax.relim()
+                            ax.autoscale_view(scaley=False)
+                            current_xmin, current_xmax = ax.get_xlim()
+                            x_min_fig = min(x_min_fig, current_xmin)
+                            x_max_fig = max(x_max_fig, current_xmax)
+
+                        active_axes.append(ax)
+                    else:
+                        ax.text(0.5, 0.5, "No data available", ha='center', va='center', transform=ax.transAxes,
+                                color='grey')
+
+                # --- Uniform X-Limit Synchronizer ---
+                if active_axes and x_min_fig < x_max_fig:
+                    for ax in active_axes:
+                        ax.set_xlim(x_min_fig, x_max_fig)
+
+                # Hide excess empty subplot frames in the current chunk
+                for empty_idx in range(chunk_num_sites, len(axes)):
+                    fig.delaxes(axes[empty_idx])
+
+                axes[0].legend(title="Resolutions", loc='best')
+                plt.tight_layout()
+
+                # Build filename string, appending partial labels if data spans across multiple figures
+                part_suffix = f'_part{chunk_idx + 1}' if num_chunks > 1 else ''
+                out_img_name = os.path.join(output_dir,
+                                            f'Profiles_Spin6_Yrs2-4_{meta["suffix"]}_{season_id}{part_suffix}.png')
+
+                plt.savefig(out_img_name, dpi=200, bbox_inches='tight')
+                plt.close()
+                print(f" -> Plot completely rendered and saved to: {out_img_name}")
 
     # Memory cleanup for loop dataset handles before advancing key groups
     for res, open_ds in combined_datasets.items():

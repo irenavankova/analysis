@@ -9,7 +9,7 @@ from pyproj import Transformer
 # -------------------------------------------------------------------------
 # 1. Configuration & Setup
 # -------------------------------------------------------------------------
-transect_name = 'ronnecenter'  # Change this for each new track
+transect_name = 'shelfbreak'  # Change this for each new track
 
 fnameB = '/Users/ivankova/Desktop/Fris_hr/Fris_ncfiles/BedMachineAntarctica-v3.nc'
 save_dir = '/Users/ivankova/Desktop/Fris_hr/Fris_derived/pts_4_analysis/'
@@ -59,7 +59,7 @@ if not file_exists:
 else:
     plt.ioff()  # Interactive mode OFF if we are just loading
 
-fig, ax = plt.subplots(figsize=(11, 10))
+fig, ax = plt.subplots(figsize=(14, 8))
 X_grid, Y_grid = np.meshgrid(x_km, y_km)
 
 # Plot background bed data
@@ -126,6 +126,23 @@ else:
     )
     dataset_out.to_netcdf(out_path)
     print(f"Successfully saved coordinates to: {out_path}")
+
+# -------------------------------------------------------------------------
+# NEW: Add Site Labels to the Plot
+# -------------------------------------------------------------------------
+# Adjust the offset values to shift the text safely away from the dot
+xy_offset = 15  # km distance
+
+for i, (x, y) in enumerate(zip(click_x_km, click_y_km)):
+    ax.text(
+        x + xy_offset,
+        y + xy_offset,
+        f"{i+1}",
+        fontsize=8,
+        fontweight='bold',
+        color='white',
+        bbox=dict(facecolor='none', alpha=0.6, edgecolor='none', pad=1) # Makes labels readable over dark/pink spots
+    )
 
 # -------------------------------------------------------------------------
 # 5. Finalize and Save Plot Image

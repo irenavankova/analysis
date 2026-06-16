@@ -17,7 +17,7 @@ from matplotlib import colors
 fnum = 2
 opt_noGL = 0
 fy = '2-4'
-opt_save = 1
+opt_save = 0
 
 # ADDED 'SpeedSurf' alongside 'SpeedBot' to variables to plot
 variables_to_plot = ['SpeedSurf']
@@ -225,7 +225,9 @@ for var2plot in variables_to_plot:
         descriptor,
         plot_data,
         norm=norm,
-        cmap=varcmap
+        cmap=varcmap,
+        edgecolors = 'none',
+        linewidth=0.0
     )
 
     if var2plot == 'Sbot':
