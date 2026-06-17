@@ -228,7 +228,7 @@ if __name__ == "__main__":
 
         # Combine strings of cases included for directory/plot titles (e.g. Spin1p1_Spin1p2)
         combined_cases_str = "_".join(cases_processed)
-        out_plot_dir = f'{fris_loc}/snapshots_{VAR_CONFIG["file_prefix"]}/{dx}_{combined_cases_str}'
+        out_plot_dir = f'{fris_loc}/snapshots_{VAR_CONFIG["file_prefix"]}_annual/{dx}_{combined_cases_str}'
         os.makedirs(out_plot_dir, mode=0o755, exist_ok=True)
 
         # Plot the consolidated map structure
