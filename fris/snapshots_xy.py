@@ -14,7 +14,7 @@ import mosaic
 import matplotlib.path as mpath
 from matplotlib import colors
 
-fnum = 2
+fnum = 1
 opt_noGL = 0
 fy = '2-4'
 opt_save = 0
@@ -226,8 +226,8 @@ for var2plot in variables_to_plot:
         plot_data,
         norm=norm,
         cmap=varcmap,
-        edgecolors = 'none',
-        linewidth=0.0
+        #edgecolors = 'face',
+        antialiased=False
     )
 
     if var2plot == 'Sbot':
@@ -281,7 +281,7 @@ for var2plot in variables_to_plot:
                 print(f"WARNING: No data points fell within the spatial mask window for {var2plot}.")
         # -------------------------------------------------------------------------
     # -------------------------------------------------------------------------
-
+    mosaic.coastlines(ax, descriptor)
     ax.set_extent([-80, -25, -84, -70], ccrs.PlateCarree())
 
     ax.set_aspect('auto')

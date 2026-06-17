@@ -88,7 +88,9 @@ def process_single_file(file_path, idx, total_files, dx, sec, subsec_str, max_le
     collection = mosaic.polypcolor(
         ax, descriptor, plot_data,
         norm=colors.Normalize(vmin=var_config['vmin'], vmax=var_config['vmax']),
-        cmap=var_config['cmap']
+        cmap=var_config['cmap'],
+        edgecolors='face',
+        antialiased=False
     )
 
     # Overlay Contour Lines dynamically if specified

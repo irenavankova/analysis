@@ -10,7 +10,7 @@ from matplotlib import colors
 # --- Configurations ---
 opt_save = 1
 fris_loc = '/Users/ivankova/Desktop/Fris_hr'
-fnum = 1
+fnum = 2
 mesh_file = f'{fris_loc}/Fris_ncfiles/F{fnum}/ncfiles/F{fnum}mesh.nc'
 
 # --- Load Mesh Dataset ---
@@ -52,10 +52,10 @@ collection = mosaic.polypcolor(
     plot_data,
     norm=norm,
     cmap=varcmap,
-    edgecolors='none',
-    linewidth=0.0
+    edgecolors='face',
+    antialiased=False
 )
-
+#mosaic.coastlines(ax, descriptor)
 # --- Map Formatting ---
 ax.set_extent([-80, 0, -84, -64], ccrs.PlateCarree())
 #ax.set_extent([-180, 180, -90, -60], ccrs.PlateCarree())
