@@ -105,6 +105,7 @@ if __name__ == "__main__":
         'cmap': 'CMRmap_r',
         'cb_label': r'$\kappa_{GM}$ / max($\kappa_{GM}$)',
         'title_prefix': r'Normalized $\kappa_{GM}$',
+        'file_prefix': 'GMkappa',
         'opt_proj': 'sps'
     }
 
