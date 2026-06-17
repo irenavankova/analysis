@@ -45,7 +45,7 @@ def generate_annual_plot(plot_data, target_year, dx, cases_str, max_level_cell, 
     else:
         projection = ccrs.PlateCarree()
 
-    fig, ax = plt.subplots(figsize=(10, 9), constrained_layout=True, subplot_kw={"projection": projection})
+    fig, ax = plt.subplots(figsize=(5, 4.5), constrained_layout=True, subplot_kw={"projection": projection})
 
     descriptor = mosaic.Descriptor(dsMesh_trimmed, projection=projection)
 
@@ -73,9 +73,8 @@ def generate_annual_plot(plot_data, target_year, dx, cases_str, max_level_cell, 
     ax.gridlines(draw_labels=True)
     ax.set_facecolor('lightgray')
 
-    fig.colorbar(collection, fraction=0.1, shrink=1.0, label=var_config['cb_label'])
-    ax.set_title(f"{var_config['title_prefix']} (Annual Avg Year {target_year:04d}) - {dx} {cases_str}", fontsize=12,
-                 pad=10)
+    fig.colorbar(collection, fraction=0.1, shrink=1.0, label=var_config['cb_label'], extend='both')
+    #ax.set_title(f"{var_config['title_prefix']} (Annual Avg Year {target_year:04d}) - {dx} {cases_str}", fontsize=12, pad=10)
 
     # Output file configuration
     date_str = f"Year{target_year:04d}_AnnualAvg"
@@ -105,7 +104,7 @@ if __name__ == "__main__":
         'contours': [],
         'cmap': 'CMRmap_r',
         'cb_label': r'$\kappa_{GM}$ / max($\kappa_{GM}$)',
-        'title_prefix': r'Annual Average of normalized $\kappa_{GM}$',
+        'title_prefix': r'Normalized $\kappa_{GM}$',
         'opt_proj': 'sps'
     }
 
