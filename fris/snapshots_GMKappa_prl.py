@@ -104,9 +104,8 @@ if __name__ == "__main__":
         'vmax': 1.0,
         'contours': [],
         'cmap': 'CMRmap_r',
-        'cb_label': 'GM Kappa / max(GM Kappa)',
-        'title_prefix': 'GM Kappa Annual Average',
-        'file_prefix': 'GMkappa_Annual',
+        'cb_label': r'$\kappa_{GM}$ / max($\kappa_{GM}$)',
+        'title_prefix': r'Annual Average of normalized $\kappa_{GM}$',
         'opt_proj': 'sps'
     }
 
@@ -149,8 +148,8 @@ if __name__ == "__main__":
             iam = gmask_reg.get_mask(iceshelves, mesh_file, opt_noGL=0, opt_wct=1)
             iis = iam[0, :]
 
-        # Gather files for Year 5 across ALL folders/sub-sequences for this resolution
-        year_file_list = []
+        # Dictionary to drop duplicate months and strictly keep the last chronologically discovered one
+        unique_months_dict = {}
         cases_processed = []
 
         for sec, subsec in cases:
@@ -178,20 +177,32 @@ if __name__ == "__main__":
 
             # Search strictly for files matching the requested target year (e.g., .0005-*-*.nc)
             file_pattern = f"{fpath}/{run_name}.mpaso.hist.am.timeSeriesStatsMonthly.{TARGET_YEAR:04d}-*-*.nc"
-            found_files = glob.glob(file_pattern)
-            year_file_list.extend(found_files)
+            found_files = sorted(glob.glob(file_pattern))
 
-        # Sort files to ensure chronological processing
-        year_file_list = sorted(list(set(year_file_list)))
+            for file_path in found_files:
+                # Extract date sub-string, e.g. "0005-05-01" from file name
+                base_name = os.path.basename(file_path)
+                try:
+                    date_part = base_name.split('.')[-2]  # Outputs '0005-05-01'
+                    month_key = "-".join(date_part.split('-')[1:])  # Outputs '05-01'
+
+                    # By assigning this sequentially, newer sub-sequence paths (like p3 over p2)
+                    # automatically overwrite older duplicates, safely leaving the last file.
+                    unique_months_dict[month_key] = file_path
+                except IndexError:
+                    print(f"--> Warning: Could not parse date format from filename: {base_name}. Skipping file.")
+
+        # Re-sort remaining unique files by key name to maintain chronological sequence (Jan -> Dec)
+        year_file_list = [unique_months_dict[k] for k in sorted(unique_months_dict.keys())]
 
         if not year_file_list:
             print(f"--> Warning: No files found matching Year {TARGET_YEAR:04d} for {dx}. Skipping.")
             continue
 
-        print(f"Files selected for Year {TARGET_YEAR:04d} Annual Average ({dx}):")
+        print(f"Files selected for Year {TARGET_YEAR:04d} Annual Average ({dx}) [Duplicates Removed]:")
         for f in year_file_list:
             print(f"  - {os.path.basename(f)}")
-        print(f"Total files found: {len(year_file_list)}")
+        print(f"Total unique files found: {len(year_file_list)}")
 
         # Accumulator array list for calculation
         monthly_gm_kappa_arrays = []
@@ -219,8 +230,8 @@ if __name__ == "__main__":
         if num_valid_months != 12:
             raise ValueError(
                 f"CRITICAL ERROR: Annual average calculation failed for resolution {dx}. "
-                f"Expected exactly 12 valid monthly files for Year {TARGET_YEAR:04d}, "
-                f"but found and processed {num_valid_months} files."
+                f"Expected exactly 12 unique valid monthly files for Year {TARGET_YEAR:04d}, "
+                f"but found and processed {num_valid_months} unique files."
             )
 
         # Perform the actual annual mean average calculations across months
@@ -228,7 +239,7 @@ if __name__ == "__main__":
 
         # Combine strings of cases included for directory/plot titles (e.g. Spin1p1_Spin1p2)
         combined_cases_str = "_".join(cases_processed)
-        out_plot_dir = f'{fris_loc}/snapshots_{VAR_CONFIG["file_prefix"]}_annual/{dx}_{combined_cases_str}'
+        out_plot_dir = f'{fris_loc}/snapshots_{VAR_CONFIG["file_prefix"]}/{dx}_{combined_cases_str}'
         os.makedirs(out_plot_dir, mode=0o755, exist_ok=True)
 
         # Plot the consolidated map structure
