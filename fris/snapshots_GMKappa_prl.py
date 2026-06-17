@@ -53,7 +53,9 @@ def generate_annual_plot(plot_data, target_year, dx, cases_str, max_level_cell, 
     collection = mosaic.polypcolor(
         ax, descriptor, spatial_data,
         norm=colors.Normalize(vmin=var_config['vmin'], vmax=var_config['vmax']),
-        cmap=var_config['cmap']
+        cmap=var_config['cmap'],
+        edgecolors = 'none',
+        linewidth = 0.0
     )
 
     # Overlay Contour Lines dynamically if specified
