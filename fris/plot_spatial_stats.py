@@ -107,7 +107,7 @@ def generate_spatial_plot(plot_data, date_str, stat_type, dx, sec, subsec_str, l
 if __name__ == "__main__":
     NUM_WORKERS = int(os.environ.get("SLURM_CPUS_PER_TASK", 32))
 
-    fris_loc = '/pscratch/sd/v/vankova/fris_analysis/fris_plots'
+    fris_loc = '/pscratch/sd/v/vankova/fris_analysis/fris_plots/spatial_stats'
     opt_region = False
     iceshelves = ["Shelf"]
 
@@ -189,13 +189,25 @@ if __name__ == "__main__":
     elif PLOT_VARIABLE == 'Melt':
         VAR_CONFIG = {
             'name': 'timeMonthly_avg_landIceFreshwaterFlux',
-            'vmin': 0.0,
-            'vmax': 20.0,      # Adjust based on expected maximum values
+            'vmin': -3.0,
+            'vmax': 3.0,      # Adjust based on expected maximum values
             'contours': [],
             'cmap': 'cmo.inflection',
-            'cb_label': 'Melt rate [m/a]',
-            'title_prefix': 'Land Ice Freshwater Flux (Melt Rate)',
+            'cb_label': 'Melt rate interfacial [m/a]',
+            'title_prefix': 'Melt rate Interfacial',
             'file_prefix': 'Melt',
+            'opt_proj': 'll'
+        }
+    elif PLOT_VARIABLE == 'MeltTotal':
+        VAR_CONFIG = {
+            'name': 'timeMonthly_avg_landIceFreshwaterFluxTotal',
+            'vmin': -3.0,
+            'vmax': 3.0,      # Adjust based on expected maximum values
+            'contours': [],
+            'cmap': 'cmo.inflection',
+            'cb_label': 'Melt rate total [m/a]',
+            'title_prefix': 'Melt rate total',
+            'file_prefix': 'MeltTot',
             'opt_proj': 'll'
         }
     elif PLOT_VARIABLE == 'Ustar':
@@ -332,7 +344,7 @@ if __name__ == "__main__":
                     continue
 
                 # --- Apply conversions based on the current field parameter ---
-                if var_name == 'timeMonthly_avg_landIceFreshwaterFlux':
+                if var_name == 'timeMonthly_avg_landIceFreshwaterFlux' or var_name == 'timeMonthly_avg_landIceFreshwaterFluxTotal':
                     sec_per_year = 365.25 * 24 * 3600  # ~31,557,600 seconds
                     rho_fw = 1000.0                   # Freshwater density (kg/m^3)
                     ts_data = ts_data * sec_per_year / rho_fw
