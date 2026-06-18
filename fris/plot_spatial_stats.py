@@ -4,8 +4,6 @@ import glob
 import os
 import numpy as np
 import xarray as xr
-import multiprocessing as mp
-from functools import partial
 
 import matplotlib
 matplotlib.use('Agg')  # Force non-interactive backend (crucial for clusters)
@@ -19,7 +17,7 @@ from matplotlib import colors
 # =========================================================================
 # 1. Plotting Function for Statistical Fields
 # =========================================================================
-def generate_spatial_plot(plot_data, date_str, stat_type, dx, sec, subsec_str, lon, lat,
+def generate_spatial_plot(plot_data, date_str, stat_type, dx, cases_str, max_level_cell, opt_region, iis, lon, lat,
                           out_plot_dir, dsMesh_trimmed, var_config):
     """
     Generates a plot for a computed statistical field.
@@ -31,6 +29,22 @@ def generate_spatial_plot(plot_data, date_str, stat_type, dx, sec, subsec_str, l
         projection = ccrs.PlateCarree()
     elif opt_proj == 'sps':
         projection = ccrs.SouthPolarStereo(central_longitude=-75)
+    else:
+        projection = ccrs.PlateCarree()
+
+    # Determine dimensions to selectively handle 3D vs 2D arrays
+    if plot_data.ndim == 2:  # Shape: (nVertLevels, nCells) or (nCells, nVertLevels)
+        num_cells = plot_data.shape[1] if plot_data.shape[0] != max_level_cell.shape[0] else plot_data.shape[0]
+        if plot_data.shape[0] == max_level_cell.shape[0]:
+            spatial_data = plot_data[np.arange(num_cells), max_level_cell]
+        else:
+            spatial_data = plot_data[max_level_cell, np.arange(num_cells)]
+        spatial_data = np.where(max_level_cell >= 0, spatial_data, np.nan)
+    else:  # Shape: (nCells,)
+        spatial_data = plot_data
+
+    if opt_region and iis is not None:
+        spatial_data = np.where(iis == 0, np.nan, spatial_data)
 
     fig, ax = plt.subplots(figsize=(10, 9), constrained_layout=True, subplot_kw={"projection": projection})
     descriptor = mosaic.Descriptor(dsMesh_trimmed, projection=projection)
@@ -66,7 +80,7 @@ def generate_spatial_plot(plot_data, date_str, stat_type, dx, sec, subsec_str, l
 
     # Render spatial grid cells
     collection = mosaic.polypcolor(
-        ax, descriptor, plot_data,
+        ax, descriptor, spatial_data,
         norm=colors.Normalize(vmin=vmin, vmax=vmax),
         cmap=cmap,
         edgecolors='face',
@@ -74,10 +88,10 @@ def generate_spatial_plot(plot_data, date_str, stat_type, dx, sec, subsec_str, l
     )
 
     # Overlay Contour Lines if plotting Mean
-    valid_mask = ~np.isnan(plot_data)
+    valid_mask = ~np.isnan(spatial_data)
     if draw_contours and var_config['contours'] and np.any(valid_mask):
         ax.tricontour(
-            lon[valid_mask], lat[valid_mask], plot_data[valid_mask],
+            lon[valid_mask], lat[valid_mask], spatial_data[valid_mask],
             levels=var_config['contours'], colors='black', linewidths=1.5, transform=ccrs.PlateCarree()
         )
 
@@ -90,34 +104,35 @@ def generate_spatial_plot(plot_data, date_str, stat_type, dx, sec, subsec_str, l
     ax.gridlines(draw_labels=True)
     ax.set_facecolor('lightgray')
 
-    fig.colorbar(collection, fraction=0.1, shrink=1.0, label=cb_label)
-    ax.set_title(f"{var_config['title_prefix']} - {title_suffix}\n{dx} {sec} {subsec_str}", fontsize=12, pad=10)
+    fig.colorbar(collection, fraction=0.1, shrink=1.0, label=cb_label, extend='both')
+    ax.set_title(f"{var_config['title_prefix']} - {title_suffix}\n{dx} {cases_str}", fontsize=12, pad=10)
 
     # Output path construction
-    output_png_path = f'{out_plot_dir}/{var_config["file_prefix"]}_{dx}_{sec}{subsec_str}_{file_suffix}.png'
+    output_png_path = f'{out_plot_dir}/{var_config["file_prefix"]}_{dx}_{cases_str}_{file_suffix}.png'
     plt.savefig(output_png_path, bbox_inches='tight', dpi=200)
     plt.close(fig)
 
-    print(f"[{stat_type}] Saved image to: {output_png_path}")
+    print(f"--> [{stat_type}] Saved image to: {output_png_path}")
 
 
 # =========================================================================
 # 2. Main Logic Flow
 # =========================================================================
 if __name__ == "__main__":
-    NUM_WORKERS = int(os.environ.get("SLURM_CPUS_PER_TASK", 32))
 
     fris_loc = '/pscratch/sd/v/vankova/fris_analysis/fris_plots/spatial_stats'
     opt_region = False
     iceshelves = ["Shelf"]
 
     # -----------------------------------------------------------------
-    # SPECIFY TARGET YEARS FOR STATISTICS
+    # SPECIFY TARGET SIMULATION TYPE AND YEARS
     # -----------------------------------------------------------------
     RUN_TYPE = 'Spin6'
-    TARGET_YEARS = ['0002', '0003', '0004']  # Example: Spin6 Years 2-4
+    TARGET_YEARS = ['0002', '0003', '0004']  # For Spin6 Years 2-4
+    # RUN_TYPE = 'Spin1'
+    # TARGET_YEARS = ['0005']                 # For Spin1 Year 5
 
-    # Options: 'Tbot', 'ColSpeed', 'MLD', 'GMkappa', 'Melt', 'Ustar', or 'BLTemp'
+    # Variable Options: 'Tbot', 'ColSpeed', 'MLD', 'GMkappa', 'Melt', 'MeltTotal', 'Ustar', or 'BLTemp'
     PLOT_VARIABLE = 'Melt'
 
     if RUN_TYPE == 'Spin1':
@@ -180,9 +195,9 @@ if __name__ == "__main__":
             'vmin': 0.0,
             'vmax': 1.0,
             'contours': [],
-            'cmap': 'CMRmap',
-            'cb_label': 'GM Kappa / max(GM Kappa)',
-            'title_prefix': 'GM Kappa',
+            'cmap': 'CMRmap_r',
+            'cb_label': r'$\kappa_{GM}$ / max($\kappa_{GM}$)',
+            'title_prefix': r'Normalized $\kappa_{GM}$',
             'file_prefix': 'GMkappa',
             'opt_proj': 'sps'
         }
@@ -190,7 +205,7 @@ if __name__ == "__main__":
         VAR_CONFIG = {
             'name': 'timeMonthly_avg_landIceFreshwaterFlux',
             'vmin': -3.0,
-            'vmax': 3.0,      # Adjust based on expected maximum values
+            'vmax': 3.0,
             'contours': [],
             'cmap': 'cmo.inflection',
             'cb_label': 'Melt rate interfacial [m/a]',
@@ -202,7 +217,7 @@ if __name__ == "__main__":
         VAR_CONFIG = {
             'name': 'timeMonthly_avg_landIceFreshwaterFluxTotal',
             'vmin': -3.0,
-            'vmax': 3.0,      # Adjust based on expected maximum values
+            'vmax': 3.0,
             'contours': [],
             'cmap': 'cmo.inflection',
             'cb_label': 'Melt rate total [m/a]',
@@ -213,8 +228,8 @@ if __name__ == "__main__":
     elif PLOT_VARIABLE == 'Ustar':
         VAR_CONFIG = {
             'name': 'timeMonthly_avg_landIceFrictionVelocity',
-            'vmin': 0.0,
-            'vmax': 10.0,     # Adjust based on expected maximum values
+            'vmin': 0.4,
+            'vmax': 1.2,
             'contours': [],
             'cmap': 'cmo.speed',
             'cb_label': 'Ustar [cm/s]',
@@ -226,7 +241,7 @@ if __name__ == "__main__":
         VAR_CONFIG = {
             'name': 'timeMonthly_avg_landIceBoundaryLayerTracers_landIceBoundaryLayerTemperature',
             'vmin': -2.5,
-            'vmax': 1.0,      # Adjust based on expected temperature bounds
+            'vmax': 1.0,
             'contours': [],
             'cmap': 'cmo.thermal',
             'cb_label': 'BL temperature [°C]',
@@ -240,12 +255,16 @@ if __name__ == "__main__":
     # -----------------------------------------------------------------
     for Fnum, cases in simulations.items():
         dx = f'F{Fnum}'
+        print(f"=========================================================================")
+        print(f" Processing Resolution: {dx}")
+        print(f"=========================================================================")
+
         run_name_mask = f"20240227.GMPAS-JRA1p5-DIB-PISMF.TL319_FRISwISC0{Fnum}to60E3r1.spinY6_scr5.chicoma-cpu"
         fpath_mask = f'/pscratch/sd/v/vankova/lanl/FRIS_Irena/FRIS_spinY6/{run_name_mask}/run'
         mesh_file = f'{fpath_mask}/{run_name_mask}.mpaso.rst.0002-01-01_00000.nc'
 
         if not os.path.exists(mesh_file):
-            print(f"--> Warning: Mesh file missing for {dx}: {mesh_file}.")
+            print(f"--> Warning: Mesh file missing for {dx}: {mesh_file}. Skipping resolution.")
             continue
 
         with xr.open_dataset(mesh_file) as dsMesh:
@@ -264,8 +283,13 @@ if __name__ == "__main__":
             iam = gmask_reg.get_mask(iceshelves, mesh_file, opt_noGL=0, opt_wct=1)
             iis = iam[0, :]
 
+        # Dictionary structures to collect unique files chronologically across cases
+        unique_months_dict = {}
+        cases_processed = []
+
         for sec, subsec in cases:
             subsec_str = subsec if sec == 'Spin1' else ''
+            cases_processed.append(f"{sec}{subsec_str}")
 
             if sec == 'Spin6':
                 run_name = f"20240227.GMPAS-JRA1p5-DIB-PISMF.TL319_FRISwISC0{Fnum}to60E3r1.spinY6_scr5.chicoma-cpu"
@@ -286,121 +310,126 @@ if __name__ == "__main__":
                         run_name = "20240201.GMPAS-JRA1p5-DIB-PISMF-TMIX.TL319_FRISwISC01to60E3r1.spinupY5.chicoma-cpu"
                 fpath = f'/pscratch/sd/v/vankova/lanl/FRIS_Irena/FRIS_spinY1/{run_name}/run'
 
-            out_plot_dir = f'{fris_loc}/statistics_{VAR_CONFIG["file_prefix"]}/{dx}_{sec}{subsec_str}'
-            os.makedirs(out_plot_dir, mode=0o755, exist_ok=True)
-
-            file_pattern = f"{fpath}/{run_name}.mpaso.hist.am.timeSeriesStatsMonthly.*.nc"
-            all_files = sorted(glob.glob(file_pattern))
-
-            # --- Filter target years and deduplicate monthly tracks ---
-            unique_months_dict = {}
-            for fp in all_files:
+            # Loop over all requested target year strings to capture the files
+            for yr_str in TARGET_YEARS:
                 try:
-                    date_part = os.path.basename(fp).split('.')[-2]
-                    ymd = date_part.split('_')[0]
-                    file_year, file_month, _ = ymd.split('-')
+                    yr_int = int(yr_str)
+                    file_pattern = f"{fpath}/{run_name}.mpaso.hist.am.timeSeriesStatsMonthly.{yr_int:04d}-*-*.nc"
+                    found_files = sorted(glob.glob(file_pattern))
 
-                    if file_year in TARGET_YEARS:
-                        unique_months_dict[(file_year, file_month)] = fp
+                    for file_path in found_files:
+                        base_name = os.path.basename(file_path)
+                        # Extract exact date string e.g., '0002-05-01' from filename
+                        date_part = base_name.split('.')[-2]
+                        # Sequential subcase iterations (p1 -> p2 -> p3) will cleanly overwrite
+                        # previous file paths with the same year-month identifier
+                        unique_months_dict[date_part] = file_path
                 except (IndexError, ValueError):
                     continue
 
-            filtered_files = [unique_months_dict[k] for k in sorted(unique_months_dict.keys())]
+        # Re-sort remaining unique items chronologically to construct our file tracking array
+        year_file_list = [unique_months_dict[k] for k in sorted(unique_months_dict.keys())]
 
-            # --- Strict File Count Verification Check ---
-            expected_count = 12 * len(TARGET_YEARS)
-            actual_count = len(filtered_files)
+        if not year_file_list:
+            print(f"--> Warning: No files found matching target years {TARGET_YEARS} for {dx}. Skipping.")
+            continue
 
-            if actual_count != expected_count:
-                raise ValueError(
-                    f"\n[ERROR] File count mismatch for {dx}_{sec}{subsec_str}!\n"
-                    f"Expected exactly {expected_count} files ({len(TARGET_YEARS)} years * 12 months), "
-                    f"but found {actual_count} files.\n"
-                    f"Target Years: {TARGET_YEARS}\n"
-                )
+        # --- STRICT MULTIYEAR FILE COUNT VALIDATION CHECK ---
+        expected_count = 12 * len(TARGET_YEARS)
+        num_valid_months = len(year_file_list)
+        if num_valid_months != expected_count:
+            raise ValueError(
+                f"CRITICAL ERROR: Statistics calculation failed for resolution {dx}. "
+                f"Expected exactly {expected_count} unique valid monthly files for Years {TARGET_YEARS}, "
+                f"but found and processed {num_valid_months} unique files."
+            )
 
-            print(f"\nProcessing time statistics over years {TARGET_YEARS} using exactly {len(filtered_files)} files...")
+        print(f"Files selected for Years {TARGET_YEARS} Processing ({dx}) [Duplicates Removed]:")
+        for f in year_file_list:
+            print(f"  - {os.path.basename(f)}")
 
-            var_name = VAR_CONFIG['name']
+        monthly_data_arrays = []
+        var_name = VAR_CONFIG['name']
+        skip_case = False
 
-            # --- Open and Process Timeseries Statistics ---
-            with xr.open_mfdataset(filtered_files, chunks={'Time': 1}, combine='nested', concat_dim='Time') as ds:
+        # Sequential file-opening block loads arrays completely to pure NumPy space, bypassing Dask errors
+        for file_path in year_file_list:
+            with xr.open_dataset(file_path) as ds:
                 if var_name == 'GMkappa':
                     required_vars = ['timeMonthly_avg_gmBolusKappa', 'timeMonthly_avg_gmHorizontalTaper',
                                      'timeMonthly_avg_gmKappaScaling']
                     if all(v in ds for v in required_vars):
-                        scaling_top = ds['timeMonthly_avg_gmKappaScaling'].isel(nVertLevelsP1=0)
-                        bolus = ds['timeMonthly_avg_gmBolusKappa']
-                        taper = ds['timeMonthly_avg_gmHorizontalTaper']
+                        scaling_top = ds['timeMonthly_avg_gmKappaScaling'].isel(Time=0, nVertLevelsP1=0).values
+                        bolus = ds['timeMonthly_avg_gmBolusKappa'].isel(Time=0).values
+                        taper = ds['timeMonthly_avg_gmHorizontalTaper'].isel(Time=0).values
 
-                        ts_data = (bolus * taper * scaling_top) / 1800.0
+                        data_month = (bolus * taper * scaling_top) / 1800.0
+                        monthly_data_arrays.append(data_month)
                     else:
-                        print(f"Error: Missing variables for GMkappa calculations.")
-                        continue
+                        missing = [v for v in required_vars if v not in ds]
+                        print(f"--> Error: Missing variables {missing} in {os.path.basename(file_path)}. Skipping.")
+                        skip_case = True
+                        break
                 elif var_name in ds:
-                    ts_data = ds[var_name]
+                    data_month = ds[var_name].isel(Time=0).values
+
+                    # Apply physical conversions based on the active field parameters
+                    if var_name in ['timeMonthly_avg_landIceFreshwaterFlux', 'timeMonthly_avg_landIceFreshwaterFluxTotal']:
+                        sec_per_year = 365.25 * 24 * 3600  # ~31,557,600 seconds
+                        rho_fw = 1000.0                   # Freshwater density (kg/m^3)
+                        data_month = data_month * sec_per_year / rho_fw
+                    elif var_name == 'timeMonthly_avg_landIceFrictionVelocity':
+                        m2cm = 100
+                        data_month = data_month * m2cm
+
+                    monthly_data_arrays.append(data_month)
                 else:
-                    print(f"Error: Variable '{var_name}' missing in dataset.")
-                    continue
+                    print(f"--> Error: Variable '{var_name}' missing in dataset {os.path.basename(file_path)}.")
+                    skip_case = True
+                    break
 
-                # --- Apply conversions based on the current field parameter ---
-                if var_name == 'timeMonthly_avg_landIceFreshwaterFlux' or var_name == 'timeMonthly_avg_landIceFreshwaterFluxTotal':
-                    sec_per_year = 365.25 * 24 * 3600  # ~31,557,600 seconds
-                    rho_fw = 1000.0                   # Freshwater density (kg/m^3)
-                    ts_data = ts_data * sec_per_year / rho_fw
+        if skip_case or not monthly_data_arrays:
+            continue
 
-                elif var_name == 'timeMonthly_avg_landIceFrictionVelocity':
-                    m2cm = 100
-                    ts_data = ts_data * m2cm
+        # Convert to a single numpy array with shape (Time, spatial_dims...)
+        data_all = np.array(monthly_data_arrays)
 
-                # Compute core statistical operations over the 'Time' dimension
-                raw_mean = ts_data.mean(dim='Time').values
-                raw_std = ts_data.std(dim='Time').values
+        # Compute core statistical operations over the 'Time' dimension (axis=0)
+        raw_mean = np.mean(data_all, axis=0)
+        raw_std = np.std(data_all, axis=0)
 
-                # 1. Median Absolute Deviation calculation: median(|x - median(x)|)
-                ts_median = ts_data.median(dim='Time')
-                raw_mad = np.abs(ts_data - ts_median).median(dim='Time').values
+        # 1. Median Absolute Deviation calculation: median(|x - median(x)|)
+        data_median = np.median(data_all, axis=0)
+        raw_mad = np.median(np.abs(data_all - data_median[np.newaxis, ...]), axis=0)
 
-                # 2. Standard Deviation of Differenced Data (diff over Time axis)
-                raw_std_diff = ts_data.diff(dim='Time').std(dim='Time').values
+        # 2. Standard Deviation of Differenced Data (diff over Time axis)
+        data_diff = np.diff(data_all, axis=0)
+        raw_std_diff = np.std(data_diff, axis=0)
 
-            # Process 3D structural slices down to bottom 2D topologies across statistics
-            stats_to_plot = [
-                ('Avg', raw_mean),
-                ('StdDev', raw_std),
-                ('MAD', raw_mad),
-                ('StdDevDiff', raw_std_diff)
-            ]
-            processed_fields = {}
+        stats_to_plot = [
+            ('Avg', raw_mean),
+            ('StdDev', raw_std),
+            ('MAD', raw_mad),
+            ('StdDevDiff', raw_std_diff)
+        ]
 
-            for label, data_raw in stats_to_plot:
-                if data_raw.ndim == 2:
-                    num_cells = data_raw.shape[1] if data_raw.shape[0] != max_level_cell.shape[0] else data_raw.shape[0]
-                    if data_raw.shape[0] == max_level_cell.shape[0]:
-                        plot_data = data_raw[np.arange(num_cells), max_level_cell]
-                    else:
-                        plot_data = data_raw[max_level_cell, np.arange(num_cells)]
-                    plot_data = np.where(max_level_cell >= 0, plot_data, np.nan)
-                else:
-                    plot_data = data_raw
+        combined_cases_str = "_".join(cases_processed)
+        out_plot_dir = f'{fris_loc}/statistics_{VAR_CONFIG["file_prefix"]}/{dx}_{combined_cases_str}'
+        os.makedirs(out_plot_dir, mode=0o755, exist_ok=True)
 
-                if opt_region:
-                    plot_data = np.where(iis == 0, np.nan, plot_data)
+        # Define historical tag markers for output titles and filenames
+        if len(TARGET_YEARS) == 1:
+            date_tag = f"Year{int(TARGET_YEARS[0]):04d}"
+        else:
+            date_tag = f"Years{int(TARGET_YEARS[0]):04d}-{int(TARGET_YEARS[-1]):04d}"
 
-                processed_fields[label] = plot_data
+        # --- Generate the 4 Statistical Plots ---
+        for metric, field_data in stats_to_plot:
+            generate_spatial_plot(
+                plot_data=field_data, date_str=date_tag, stat_type=metric,
+                dx=dx, cases_str=combined_cases_str, max_level_cell=max_level_cell,
+                opt_region=opt_region, iis=iis, lon=lon, lat=lat,
+                out_plot_dir=out_plot_dir, dsMesh_trimmed=dsMesh_trimmed, var_config=VAR_CONFIG
+            )
 
-            # Define historical tag markers for output filenames
-            if len(TARGET_YEARS) == 1:
-                date_tag = f"year_{TARGET_YEARS[0]}"
-            else:
-                date_tag = f"years_{TARGET_YEARS[0]}-{TARGET_YEARS[-1]}"
-
-            # --- Generate the 4 Spatial Plots ---
-            for metric in ['Avg', 'StdDev', 'MAD', 'StdDevDiff']:
-                generate_spatial_plot(
-                    plot_data=processed_fields[metric], date_str=date_tag, stat_type=metric,
-                    dx=dx, sec=sec, subsec_str=subsec_str, lon=lon, lat=lat,
-                    out_plot_dir=out_plot_dir, dsMesh_trimmed=dsMesh_trimmed, var_config=VAR_CONFIG
-                )
-
-            print(f"Completed rendering all statistical fields for: {dx}_{sec}{subsec_str}.\n")
+        print(f"Completed rendering all statistical fields for: {dx}_{combined_cases_str}.\n")
