@@ -330,7 +330,7 @@ def get_variable_config(variable_name):
 # =========================================================================
 if __name__ == "__main__":
 
-    fris_loc = '/pscratch/sd/v/vankova/fris_analysis/fris_plots/spatial_stats'
+    fris_loc = '/pscratch/sd/v/vankova/fris_analysis/fris_plots/spatial_stats_si'
     opt_region = False
     iceshelves = ["Shelf"]
 
