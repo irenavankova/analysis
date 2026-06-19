@@ -29,10 +29,13 @@ def generate_spatial_plot(plot_data, date_str, stat_type, dx, cases_str, max_lev
 
     if opt_proj == 'll':
         projection = ccrs.PlateCarree()
+        fig_size = (5, 4)
     elif opt_proj == 'fris':
         projection = ccrs.PlateCarree()
+        fig_size = (5, 4)
     elif opt_proj == 'sps':
         projection = ccrs.SouthPolarStereo(central_longitude=-75)
+        fig_size = (5, 4.5)
     else:
         projection = ccrs.PlateCarree()
 
@@ -50,7 +53,7 @@ def generate_spatial_plot(plot_data, date_str, stat_type, dx, cases_str, max_lev
     if opt_region and iis is not None:
         spatial_data = np.where(iis == 0, np.nan, spatial_data)
 
-    fig, ax = plt.subplots(figsize=(10, 9), constrained_layout=True, subplot_kw={"projection": projection})
+    fig, ax = plt.subplots(figsize=fig_size, constrained_layout=True, subplot_kw={"projection": projection})
     descriptor = mosaic.Descriptor(dsMesh_trimmed, projection=projection)
 
     # Dynamic styling configurations based on statistical metric
@@ -96,7 +99,8 @@ def generate_spatial_plot(plot_data, date_str, stat_type, dx, cases_str, max_lev
         ax, descriptor, spatial_data,
         norm=colors.Normalize(vmin=vmin, vmax=vmax),
         cmap=cmap,
-        edgecolors='face',
+        linewidth=0.0,
+        #edgecolors='face',
         antialiased=False
     )
 
@@ -109,7 +113,7 @@ def generate_spatial_plot(plot_data, date_str, stat_type, dx, cases_str, max_lev
         )
 
     if opt_proj == 'll':
-        ax.set_extent([-85, -25, -84, -70], ccrs.PlateCarree())
+        ax.set_extent([-85, -20, -84, -72], ccrs.PlateCarree())
     if opt_proj == 'fris':
         ax.set_extent([-85, -25, -84, -74], ccrs.PlateCarree())
     elif opt_proj == 'sps':
@@ -120,7 +124,7 @@ def generate_spatial_plot(plot_data, date_str, stat_type, dx, cases_str, max_lev
     ax.set_facecolor('lightgray')
 
     fig.colorbar(collection, fraction=0.1, shrink=1.0, label=cb_label, extend='both')
-    ax.set_title(f"{var_config['title_prefix']} - {title_suffix}\n{dx} {cases_str}", fontsize=12, pad=10)
+    #ax.set_title(f"{var_config['title_prefix']} - {title_suffix}\n{dx} {cases_str}", fontsize=12, pad=10)
 
     # Output path construction
     output_png_path = f'{out_plot_dir}/{var_config["file_prefix"]}_{dx}_{cases_str}_{file_suffix}.png'

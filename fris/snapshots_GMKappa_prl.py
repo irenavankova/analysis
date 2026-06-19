@@ -54,7 +54,8 @@ def generate_annual_plot(plot_data, target_year, dx, cases_str, max_level_cell, 
         ax, descriptor, spatial_data,
         norm=colors.Normalize(vmin=var_config['vmin'], vmax=var_config['vmax']),
         cmap=var_config['cmap'],
-        edgecolors='face',
+        linewidth=0.0,
+        #edgecolors='face',
         antialiased=False
     )
 
