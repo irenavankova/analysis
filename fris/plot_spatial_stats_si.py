@@ -301,25 +301,25 @@ def get_variable_config(variable_name):
         return {
             'vmin': 0.0, 'vmax': 1.0, 'contours': [], 'cmap': 'cmo.ice',
             'cb_label': 'Ice Concentration [Fraction]', 'title_prefix': 'Sea Ice Concentration',
-            'file_prefix': 'ice_concentration', 'opt_proj': 'wed', 'vmax_scale_factor': 0.25
+            'file_prefix': 'ice_concentration', 'opt_proj': 'wed', 'vmax_scale_factor': 0.5
         }
     elif variable_name == 'ice_thickness':
         return {
             'vmin': 0.0, 'vmax': 4.0, 'contours': [], 'cmap': 'cmo.ice',
             'cb_label': 'Ice Thickness [m]', 'title_prefix': 'Sea Ice Thickness',
-            'file_prefix': 'ice_thickness', 'opt_proj': 'wed', 'vmax_scale_factor': 0.25
+            'file_prefix': 'ice_thickness', 'opt_proj': 'wed', 'vmax_scale_factor': 0.5
         }
     elif variable_name == 'ice_production':
         return {
-            'vmin': -5.0, 'vmax': 5.0, 'contours': [], 'cmap': 'RdBu_r',
+            'vmin': 0.0, 'vmax': 8.0, 'contours': [], 'cmap': 'cmo.amp',
             'cb_label': 'Ice Production Rate [m/yr]', 'title_prefix': 'Total Sea Ice Production',
-            'file_prefix': 'ice_production', 'opt_proj': 'wed', 'vmax_scale_factor': 0.25
+            'file_prefix': 'ice_production', 'opt_proj': 'wed', 'vmax_scale_factor': 1.0
         }
     elif variable_name == 'ice_melting':
         return {
             'vmin': 0.0, 'vmax': 5.0, 'contours': [], 'cmap': 'cmo.amp',
             'cb_label': 'Ice Melting Rate [m/yr]', 'title_prefix': 'Total Sea Ice Melting',
-            'file_prefix': 'ice_melting', 'opt_proj': 'wed', 'vmax_scale_factor': 0.25
+            'file_prefix': 'ice_melting', 'opt_proj': 'wed', 'vmax_scale_factor': 1.0
         }
     else:
         raise ValueError(f"Unknown sea ice variable configuration requested: {variable_name}")
