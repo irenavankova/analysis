@@ -272,7 +272,7 @@ if __name__ == "__main__":
         print(f"=========================================================================")
 
         run_name_mask = f"20240227.GMPAS-JRA1p5-DIB-PISMF.TL319_FRISwISC0{Fnum}to60E3r1.spinY6_scr5.chicoma-cpu"
-        fpath_mask = f'/pscratch/sd/v/vankova/fris_analysis/fris_plots/spatial_stats'
+        fpath_mask = f'/pscratch/sd/v/vankova/lanl/FRIS_Irena/FRIS_spinY6/{run_name_mask}/run'
         mesh_file = f'{fpath_mask}/{run_name_mask}.mpaso.rst.0002-01-01_00000.nc'
 
         if not os.path.exists(mesh_file):
