@@ -70,9 +70,10 @@ def generate_spatial_plot(plot_data, date_str, stat_type, dx, cases_str, max_lev
             title_suffix = f"Mean-Weighted Std Dev ({date_str})"
             file_suffix = f"StdDevWeighted_{date_str}"
         else:
-            # Scale colorbar from 0 up to 50% of the standard variable range to capture fine fluctuations.
+            # Scale colorbar from 0 up to variable-specific range fraction to capture fine fluctuations.
             range_span = abs(var_config['vmax'] - var_config['vmin'])
-            vmin, vmax = 0.0, range_span * 0.5
+            scale_factor = var_config.get('vmax_scale_factor', 0.25)
+            vmin, vmax = 0.0, range_span * scale_factor
             cmap = 'CMRmap_r'
 
             if stat_type == 'StdDev':
@@ -149,7 +150,7 @@ def process_single_resolution(args):
     dx = f'F{Fnum}'
 
     print(f"=========================================================================\n"
-          f" Starting Resolution: {dx}\n"
+          f" Starting Execution: {dx} | Variable: {PLOT_VARIABLE}\n"
           f"=========================================================================")
 
     run_name_mask = f"20240227.GMPAS-JRA1p5-DIB-PISMF.TL319_FRISwISC0{Fnum}to60E3r1.spinY6_scr5.chicoma-cpu"
@@ -230,7 +231,7 @@ def process_single_resolution(args):
             f"but found and processed {num_valid_months} unique files."
         )
 
-    print(f"Files selected for Years {TARGET_YEARS} Processing ({dx}) [Duplicates Removed]:")
+    print(f"[{dx} | {PLOT_VARIABLE}] Files selected for Years {TARGET_YEARS} Processing:")
     for f in year_file_list:
         print(f"  - {os.path.basename(f)}")
 
@@ -363,7 +364,93 @@ def process_single_resolution(args):
             out_plot_dir=out_plot_dir, dsMesh_trimmed=dsMesh_trimmed, var_config=VAR_CONFIG
         )
 
-    print(f"Finished processing and rendering all fields for: {dx}_{combined_cases_str}.\n")
+    print(f"Finished processing and rendering all fields for: {dx}_{combined_cases_str} ({PLOT_VARIABLE}).\n")
+
+
+# =========================================================================
+# Helper function to dynamically retrieve configurations
+# =========================================================================
+def get_variable_config(variable_name):
+    """Returns runtime mapping parameters based on global options string."""
+    if variable_name == 'Tbot':
+        return {
+            'name': 'timeMonthly_avg_activeTracers_temperature',
+            'vmin': -2.6, 'vmax': -1.6, 'contours': [], 'cmap': 'cmo.thermal',
+            'cb_label': 'Sea Floor Temperature [°C]', 'title_prefix': 'Bottom Temperature',
+            'file_prefix': 'Tbot', 'opt_proj': 'wed', 'vmax_scale_factor': 0.25
+        }
+    elif variable_name == 'Sbot':
+        return {
+            'name': 'timeMonthly_avg_activeTracers_salinity',
+            'vmin': 34.2, 'vmax': 35.0, 'contours': [], 'cmap': 'cmo.haline',
+            'cb_label': 'Sea Floor Salinity [°C]', 'title_prefix': 'Bottom Salinity',
+            'file_prefix': 'Sbot', 'opt_proj': 'wed', 'vmax_scale_factor': 0.25
+        }
+    elif variable_name == 'Tint':
+        return {
+            'name': 'timeMonthly_avg_activeTracers_temperature',
+            'vmin': -2.5, 'vmax': 0.0, 'contours': [], 'cmap': 'cmo.thermal',
+            'cb_label': 'Depth Averaged Temperature [°C]', 'title_prefix': 'Depth Averaged Temperature',
+            'file_prefix': 'Tint', 'opt_proj': 'wed', 'vmax_scale_factor': 0.25
+        }
+    elif variable_name == 'Sint':
+        return {
+            'name': 'timeMonthly_avg_activeTracers_salinity',
+            'vmin': 34.2, 'vmax': 35.0, 'contours': [], 'cmap': 'cmo.haline',
+            'cb_label': 'Depth Averaged Salinity [g/kg]', 'title_prefix': 'Depth Averaged Salinity',
+            'file_prefix': 'Sint', 'opt_proj': 'wed', 'vmax_scale_factor': 0.25
+        }
+    elif variable_name == 'ColSpeed':
+        return {
+            'name': 'timeMonthly_avg_columnIntegratedSpeed',
+            'vmin': 0.0, 'vmax': 0.3, 'contours': [], 'cmap': 'cmo.speed',
+            'cb_label': 'Column Integrated Speed [m/s]', 'title_prefix': 'Column Integrated Speed',
+            'file_prefix': 'ColSpeed', 'opt_proj': 'wed', 'vmax_scale_factor': 0.25
+        }
+    elif variable_name == 'MLD':
+        return {
+            'name': 'timeMonthly_avg_dThreshMLD',
+            'vmin': 0, 'vmax': 500, 'contours': [], 'cmap': 'cmo.deep',
+            'cb_label': 'Mixed Layer Depth [m]', 'title_prefix': 'MLD',
+            'file_prefix': 'MLD', 'opt_proj': 'wed', 'vmax_scale_factor': 0.25
+        }
+    elif variable_name == 'GMkappa':
+        return {
+            'name': 'GMkappa',
+            'vmin': 0.0, 'vmax': 1.0, 'contours': [], 'cmap': 'CMRmap_r',
+            'cb_label': r'$\kappa_{GM}$ / max($\kappa_{GM}$)', 'title_prefix': r'Normalized $\kappa_{GM}$',
+            'file_prefix': 'GMkappa', 'opt_proj': 'sps', 'vmax_scale_factor': 0.25
+        }
+    elif variable_name == 'Melt':
+        return {
+            'name': 'timeMonthly_avg_landIceFreshwaterFlux',
+            'vmin': -3.0, 'vmax': 3.0, 'contours': [], 'cmap': 'RdBu_r',
+            'cb_label': 'Melt rate interfacial [m/a]', 'title_prefix': 'Melt rate Interfacial',
+            'file_prefix': 'Melt', 'opt_proj': 'fris', 'vmax_scale_factor': 0.25
+        }
+    elif variable_name == 'MeltTotal':
+        return {
+            'name': 'timeMonthly_avg_landIceFreshwaterFluxTotal',
+            'vmin': -3.0, 'vmax': 3.0, 'contours': [], 'cmap': 'RdBu_r',
+            'cb_label': 'Melt rate total [m/a]', 'title_prefix': 'Melt rate total',
+            'file_prefix': 'MeltTot', 'opt_proj': 'fris', 'vmax_scale_factor': 0.25
+        }
+    elif variable_name == 'Ustar':
+        return {
+            'name': 'timeMonthly_avg_landIceFrictionVelocity',
+            'vmin': 0.4, 'vmax': 1.2, 'contours': [], 'cmap': 'cmo.speed',
+            'cb_label': 'Ustar [cm/s]', 'title_prefix': 'Land Ice Friction Velocity (Ustar)',
+            'file_prefix': 'Ustar', 'opt_proj': 'fris', 'vmax_scale_factor': 0.25
+        }
+    elif variable_name == 'Tstar':
+        return {
+            'name': 'Tstar',
+            'vmin': -1.0, 'vmax': 1.0, 'contours': [], 'cmap': 'cmo.thermal',
+            'cb_label': 'Boundary-Interface Temp Difference [°C]', 'title_prefix': 'Tstar Temperature Difference',
+            'file_prefix': 'Tstar', 'opt_proj': 'fris', 'vmax_scale_factor': 0.25
+        }
+    else:
+        raise ValueError(f"Unknown variable configuration requested: {variable_name}")
 
 
 # =========================================================================
@@ -379,10 +466,10 @@ if __name__ == "__main__":
     # SPECIFY TARGET SIMULATION TYPE AND YEARS
     # -----------------------------------------------------------------
     RUN_TYPE = 'Spin6'
-    TARGET_YEARS = ['0002', '0003', '0004']  # For Spin6 Years 2-4
+    TARGET_YEARS = ['0002', '0003', '0004']
 
-    # Variable Options: 'Tbot', 'Sbot', 'Tint', 'Sint', 'ColSpeed', 'MLD', 'GMkappa', 'Melt', 'MeltTotal', 'Ustar', or 'Tstar'
-    PLOT_VARIABLE = 'Tstar'
+    # Array of target parameters to map out in parallel
+    PLOT_VARIABLES = ['Sbot', 'Sint', 'Tbot', 'Tint']
 
     if RUN_TYPE == 'Spin1':
         simulations = {
@@ -400,154 +487,23 @@ if __name__ == "__main__":
         }
 
     # -----------------------------------------------------------------
-    # VARIABLE CONFIGURATIONS
+    # PARALLEL TASKS GENERATION
     # -----------------------------------------------------------------
-    if PLOT_VARIABLE == 'Tbot':
-        VAR_CONFIG = {
-            'name': 'timeMonthly_avg_activeTracers_temperature',
-            'vmin': -2.6,
-            'vmax': -1.8,
-            'contours': [],
-            'cmap': 'cmo.thermal',
-            'cb_label': 'Sea Floor Temperature [°C]',
-            'title_prefix': 'Bottom Temperature',
-            'file_prefix': 'Tbot',
-            'opt_proj': 'wed'
-        }
-    elif PLOT_VARIABLE == 'Sbot':
-        VAR_CONFIG = {
-            'name': 'timeMonthly_avg_activeTracers_salinity',
-            'vmin': 34.0,
-            'vmax': 35.0,
-            'contours': [],
-            'cmap': 'cmo.haline',
-            'cb_label': 'Sea Floor Salinity [°C]',
-            'title_prefix': 'Bottom Salinity',
-            'file_prefix': 'Sbot',
-            'opt_proj': 'wed'
-        }
-    elif PLOT_VARIABLE == 'Tint':
-        VAR_CONFIG = {
-            'name': 'timeMonthly_avg_activeTracers_temperature',
-            'vmin': -2.5,
-            'vmax': 1.0,
-            'contours': [],
-            'cmap': 'cmo.thermal',
-            'cb_label': 'Depth Averaged Temperature [°C]',
-            'title_prefix': 'Depth Averaged Temperature',
-            'file_prefix': 'Tint',
-            'opt_proj': 'wed'
-        }
-    elif PLOT_VARIABLE == 'Sint':
-        VAR_CONFIG = {
-            'name': 'timeMonthly_avg_activeTracers_salinity',
-            'vmin': 34.0,
-            'vmax': 35.0,
-            'contours': [],
-            'cmap': 'cmo.haline',
-            'cb_label': 'Depth Averaged Salinity [g/kg]',
-            'title_prefix': 'Depth Averaged Salinity',
-            'file_prefix': 'Sint',
-            'opt_proj': 'wed'
-        }
-    elif PLOT_VARIABLE == 'ColSpeed':
-        VAR_CONFIG = {
-            'name': 'timeMonthly_avg_columnIntegratedSpeed',
-            'vmin': 0.0,
-            'vmax': 0.3,
-            'contours': [],
-            'cmap': 'cmo.speed',
-            'cb_label': 'Column Integrated Speed [m/s]',
-            'title_prefix': 'Column Integrated Speed',
-            'file_prefix': 'ColSpeed',
-            'opt_proj': 'wed'
-        }
-    elif PLOT_VARIABLE == 'MLD':
-        VAR_CONFIG = {
-            'name': 'timeMonthly_avg_dThreshMLD',
-            'vmin': 0,
-            'vmax': 500,
-            'contours': [],
-            'cmap': 'cmo.deep',
-            'cb_label': 'Mixed Layer Depth [m]',
-            'title_prefix': 'MLD',
-            'file_prefix': 'MLD',
-            'opt_proj': 'wed'
-        }
-    elif PLOT_VARIABLE == 'GMkappa':
-        VAR_CONFIG = {
-            'name': 'GMkappa',
-            'vmin': 0.0,
-            'vmax': 1.0,
-            'contours': [],
-            'cmap': 'CMRmap_r',
-            'cb_label': r'$\kappa_{GM}$ / max($\kappa_{GM}$)',
-            'title_prefix': r'Normalized $\kappa_{GM}$',
-            'file_prefix': 'GMkappa',
-            'opt_proj': 'sps'
-        }
-    elif PLOT_VARIABLE == 'Melt':
-        VAR_CONFIG = {
-            'name': 'timeMonthly_avg_landIceFreshwaterFlux',
-            'vmin': -3.0,
-            'vmax': 3.0,
-            'contours': [],
-            'cmap': 'RdBu_r',
-            'cb_label': 'Melt rate interfacial [m/a]',
-            'title_prefix': 'Melt rate Interfacial',
-            'file_prefix': 'Melt',
-            'opt_proj': 'fris'
-        }
-    elif PLOT_VARIABLE == 'MeltTotal':
-        VAR_CONFIG = {
-            'name': 'timeMonthly_avg_landIceFreshwaterFluxTotal',
-            'vmin': -3.0,
-            'vmax': 3.0,
-            'contours': [],
-            'cmap': 'RdBu_r',
-            'cb_label': 'Melt rate total [m/a]',
-            'title_prefix': 'Melt rate total',
-            'file_prefix': 'MeltTot',
-            'opt_proj': 'fris'
-        }
-    elif PLOT_VARIABLE == 'Ustar':
-        VAR_CONFIG = {
-            'name': 'timeMonthly_avg_landIceFrictionVelocity',
-            'vmin': 0.4,
-            'vmax': 1.2,
-            'contours': [],
-            'cmap': 'cmo.speed',
-            'cb_label': 'Ustar [cm/s]',
-            'title_prefix': 'Land Ice Friction Velocity (Ustar)',
-            'file_prefix': 'Ustar',
-            'opt_proj': 'fris'
-        }
-    elif PLOT_VARIABLE == 'Tstar':
-        VAR_CONFIG = {
-            'name': 'Tstar',
-            'vmin': -1.0,
-            'vmax': 1.0,
-            'contours': [],
-            'cmap': 'cmo.thermal',
-            'cb_label': 'Boundary-Interface Temp Difference [°C]',
-            'title_prefix': 'Tstar Temperature Difference',
-            'file_prefix': 'Tstar',
-            'opt_proj': 'fris'
-        }
+    # Multi-dimensional bundling: Cross-product of simulations (resolutions) * chosen plot variables
+    tasks = []
+    for var in PLOT_VARIABLES:
+        var_config = get_variable_config(var)
+        for Fnum, cases in simulations.items():
+            tasks.append(
+                (Fnum, cases, var_config, RUN_TYPE, TARGET_YEARS, fris_loc, opt_region, iceshelves, var)
+            )
 
-    # -----------------------------------------------------------------
-    # PARALLEL EXECUTION SETTINGS
-    # -----------------------------------------------------------------
-    tasks = [
-        (Fnum, cases, VAR_CONFIG, RUN_TYPE, TARGET_YEARS, fris_loc, opt_region, iceshelves, PLOT_VARIABLE)
-        for Fnum, cases in simulations.items()
-    ]
+    # Scale allocation max pool caps based on work list volume (usually 4 to 16 combinations)
+    num_processes = min(len(tasks), 16)
 
-    num_processes = min(len(tasks), 4)
-
-    print(f"Spawning an isolated execution pool of {num_processes} parallel processes...")
+    print(f"Spawning an isolated execution pool of {num_processes} parallel processes to process {len(tasks)} tasks...")
 
     with Pool(processes=num_processes) as pool:
         pool.map(process_single_resolution, tasks)
 
-    print("All spatial resolution pools completed processing successfully.")
+    print("All spatial resolution pools and multi-variable configurations completed successfully.")
