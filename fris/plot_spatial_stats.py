@@ -31,8 +31,9 @@ def generate_spatial_plot(plot_data, date_str, stat_type, dx, cases_str, max_lev
         projection = ccrs.PlateCarree()
         fig_size = (5, 4)
     elif opt_proj == 'fris':
-        projection = ccrs.PlateCarree()
-        fig_size = (6, 4)
+        #projection = ccrs.PlateCarree()
+        projection = ccrs.SouthPolarStereo(central_longitude=-75)
+        fig_size = (6, 4.5)
     elif opt_proj == 'sps':
         projection = ccrs.SouthPolarStereo(central_longitude=-75)
         fig_size = (6, 4.5)
@@ -120,7 +121,8 @@ def generate_spatial_plot(plot_data, date_str, stat_type, dx, cases_str, max_lev
     if opt_proj == 'll':
         ax.set_extent([-85, -20, -84, -72], ccrs.PlateCarree())
     elif opt_proj == 'fris':
-        ax.set_extent([-85, -25, -84, -74], ccrs.PlateCarree())
+        #ax.set_extent([-85, -25, -84, -74], ccrs.PlateCarree())
+        ax.set_extent([-82, -25, -81, -74], ccrs.PlateCarree())
     elif opt_proj == 'wed':
         ax.set_extent([-82, -25, -81, -72], ccrs.PlateCarree())
     elif opt_proj == 'sps':
@@ -445,9 +447,9 @@ def get_variable_config(variable_name):
     elif variable_name == 'Tstar':
         return {
             'name': 'Tstar',
-            'vmin': -1.0, 'vmax': 1.0, 'contours': [], 'cmap': 'cmo.thermal',
+            'vmin': 0.0, 'vmax': 1.0, 'contours': [], 'cmap': 'hot_r',
             'cb_label': 'Boundary-Interface Temp Difference [°C]', 'title_prefix': 'Tstar Temperature Difference',
-            'file_prefix': 'Tstar', 'opt_proj': 'fris', 'vmax_scale_factor': 0.25
+            'file_prefix': 'Tstar', 'opt_proj': 'fris', 'vmax_scale_factor': 0.1
         }
     else:
         raise ValueError(f"Unknown variable configuration requested: {variable_name}")
@@ -469,7 +471,8 @@ if __name__ == "__main__":
     TARGET_YEARS = ['0002', '0003', '0004']
 
     # Array of target parameters to map out in parallel
-    PLOT_VARIABLES = ['Sbot', 'Sint', 'Tbot', 'Tint']
+    PLOT_VARIABLES = ['ColSpeed', 'MLD', 'Tstar', 'Ustar', 'MeltTotal', 'Melt']
+    # PLOT_VARIABLES = ['Sbot', 'Sint', 'Tbot', 'Tint']
 
     if RUN_TYPE == 'Spin1':
         simulations = {
