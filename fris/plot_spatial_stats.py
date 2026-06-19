@@ -32,10 +32,13 @@ def generate_spatial_plot(plot_data, date_str, stat_type, dx, cases_str, max_lev
         fig_size = (5, 4)
     elif opt_proj == 'fris':
         projection = ccrs.PlateCarree()
-        fig_size = (5, 4)
+        fig_size = (6, 4)
     elif opt_proj == 'sps':
         projection = ccrs.SouthPolarStereo(central_longitude=-75)
-        fig_size = (5, 4.5)
+        fig_size = (6, 4.5)
+    elif opt_proj == 'wed':
+        projection = ccrs.SouthPolarStereo(central_longitude=-75)
+        fig_size = (6, 4.5)
     else:
         projection = ccrs.PlateCarree()
 
@@ -114,8 +117,10 @@ def generate_spatial_plot(plot_data, date_str, stat_type, dx, cases_str, max_lev
 
     if opt_proj == 'll':
         ax.set_extent([-85, -20, -84, -72], ccrs.PlateCarree())
-    if opt_proj == 'fris':
+    elif opt_proj == 'fris':
         ax.set_extent([-85, -25, -84, -74], ccrs.PlateCarree())
+    elif opt_proj == 'wed':
+        ax.set_extent([-82, -25, -81, -72], ccrs.PlateCarree())
     elif opt_proj == 'sps':
         ax.set_extent([-80, 0, -84, -64], ccrs.PlateCarree())
 
@@ -352,12 +357,24 @@ if __name__ == "__main__":
             'name': 'timeMonthly_avg_activeTracers_temperature',
             'vmin': -2.6,
             'vmax': -1.8,
-            'contours': [-1.9],
+            'contours': [],
             'cmap': 'cmo.thermal',
             'cb_label': 'Sea Floor Temperature [°C]',
-            'title_prefix': 'Bottom Temperature & -1.9°C Contour',
+            'title_prefix': 'Bottom Temperature',
             'file_prefix': 'Tbot',
-            'opt_proj': 'll'
+            'opt_proj': 'wed'
+        }
+    elif PLOT_VARIABLE == 'Sbot':
+        VAR_CONFIG = {
+            'name': 'timeMonthly_avg_activeTracers_salinity',
+            'vmin': 34.0,
+            'vmax': 35.0,
+            'contours': [],
+            'cmap': 'cmo.haline',
+            'cb_label': 'Sea Floor Salinity [°C]',
+            'title_prefix': 'Bottom Salinity',
+            'file_prefix': 'Tbot',
+            'opt_proj': 'wed'
         }
     elif PLOT_VARIABLE == 'ColSpeed':
         VAR_CONFIG = {
@@ -369,7 +386,7 @@ if __name__ == "__main__":
             'cb_label': 'Column Integrated Speed [m/s]',
             'title_prefix': 'Column Integrated Speed',
             'file_prefix': 'ColSpeed',
-            'opt_proj': 'll'
+            'opt_proj': 'wed'
         }
     elif PLOT_VARIABLE == 'MLD':
         VAR_CONFIG = {
@@ -381,7 +398,7 @@ if __name__ == "__main__":
             'cb_label': 'Mixed Layer Depth [m]',
             'title_prefix': 'MLD',
             'file_prefix': 'MLD',
-            'opt_proj': 'll'
+            'opt_proj': 'wed'
         }
     elif PLOT_VARIABLE == 'GMkappa':
         VAR_CONFIG = {
@@ -429,7 +446,7 @@ if __name__ == "__main__":
             'cb_label': 'Ustar [cm/s]',
             'title_prefix': 'Land Ice Friction Velocity (Ustar)',
             'file_prefix': 'Ustar',
-            'opt_proj': 'll'
+            'opt_proj': 'fris'
         }
     elif PLOT_VARIABLE == 'BLTemp':
         VAR_CONFIG = {
@@ -441,7 +458,7 @@ if __name__ == "__main__":
             'cb_label': 'BL temperature [°C]',
             'title_prefix': 'Boundary Layer Temperature',
             'file_prefix': 'BLTemp',
-            'opt_proj': 'll'
+            'opt_proj': 'fris'
         }
 
     # -----------------------------------------------------------------
