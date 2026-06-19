@@ -142,7 +142,7 @@ def process_single_resolution(args):
         return
 
     with xr.open_dataset(mesh_file) as dsMesh:
-        dsMesh_trimmed = dsMesh[['latCell', 'lonCell', 'landIceFloatingMask', 'areaCell',
+        dsMesh_trimmed = dsMesh[['latCell', 'lonCell', 'areaCell',
                                  'nEdges', 'nVertices', 'lonEdge', 'latEdge',
                                  'lonVertex', 'latVertex', 'cellsOnEdge', 'cellsOnVertex',
                                  'verticesOnEdge', 'verticesOnCell', 'edgesOnVertex']].load()
