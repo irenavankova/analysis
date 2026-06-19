@@ -103,8 +103,8 @@ def generate_spatial_plot(plot_data, date_str, stat_type, dx, cases_str, max_lev
         norm=colors.Normalize(vmin=vmin, vmax=vmax),
         cmap=cmap,
         linewidth=0.0,
-        #edgecolors='face',
-        antialiased=False
+        edgecolors='face'
+        #antialiased=False
     )
 
     # Overlay Contour Lines if plotting Mean

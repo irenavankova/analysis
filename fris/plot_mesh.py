@@ -53,8 +53,8 @@ collection = mosaic.polypcolor(
     norm=norm,
     cmap=varcmap,
     linewidth = 0.0,
-    #edgecolors='face',
-    antialiased=False
+    edgecolors='face'
+    #antialiased=False
 )
 #mosaic.coastlines(ax, descriptor)
 # --- Map Formatting ---
