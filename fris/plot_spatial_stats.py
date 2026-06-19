@@ -104,7 +104,7 @@ def generate_spatial_plot(plot_data, date_str, stat_type, dx, cases_str, max_lev
         cmap=cmap,
         linewidth=0.0,
         edgecolors='face'
-        #antialiased=False
+        # antialiased=False
     )
 
     # Overlay Contour Lines if plotting Mean
@@ -129,7 +129,7 @@ def generate_spatial_plot(plot_data, date_str, stat_type, dx, cases_str, max_lev
     ax.set_facecolor('lightgray')
 
     fig.colorbar(collection, fraction=0.1, shrink=1.0, label=cb_label, extend='both')
-    #ax.set_title(f"{var_config['title_prefix']} - {title_suffix}\n{dx} {cases_str}", fontsize=12, pad=10)
+    # ax.set_title(f"{var_config['title_prefix']} - {title_suffix}\n{dx} {cases_str}", fontsize=12, pad=10)
 
     # Output path construction
     output_png_path = f'{out_plot_dir}/{var_config["file_prefix"]}_{dx}_{cases_str}_{file_suffix}.png'
@@ -144,7 +144,7 @@ def generate_spatial_plot(plot_data, date_str, stat_type, dx, cases_str, max_lev
 # =========================================================================
 def process_single_resolution(args):
     """Processes a single spatial resolution key-value pair in a parallel worker."""
-    Fnum, cases, VAR_CONFIG, RUN_TYPE, TARGET_YEARS, fris_loc, opt_region, iceshelves = args
+    Fnum, cases, VAR_CONFIG, RUN_TYPE, TARGET_YEARS, fris_loc, opt_region, iceshelves, PLOT_VARIABLE = args
     dx = f'F{Fnum}'
 
     print(f"=========================================================================\n"
@@ -239,7 +239,37 @@ def process_single_resolution(args):
 
     for file_path in year_file_list:
         with xr.open_dataset(file_path) as ds:
-            if var_name == 'GMkappa':
+            if var_name in ['timeMonthly_avg_activeTracers_temperature', 'timeMonthly_avg_activeTracers_salinity']:
+                if var_name in ds:
+                    data_3d = ds[var_name].isel(Time=0).values
+                    num_cells = data_3d.shape[0]
+
+                    if PLOT_VARIABLE in ['Tint', 'Sint']:
+                        if 'timeMonthly_avg_layerThickness' in ds:
+                            h_3d = ds['timeMonthly_avg_layerThickness'].isel(Time=0).values
+                            # Compute total column thickness to safely normalize the weighted sum
+                            total_thickness = np.sum(h_3d, axis=1)
+
+                            # Thickness-weighted depth average: sum(tracer * h) / sum(h)
+                            # Using np.where to shield against division by zero in dry/uninitialized mesh coordinates
+                            weighted_sum = np.sum(data_3d * h_3d, axis=1)
+                            averaged_data = np.where(total_thickness > 0, weighted_sum / total_thickness, np.nan)
+                            monthly_data_arrays.append(averaged_data)
+                        else:
+                            print(
+                                f"--> Error: 'timeMonthly_avg_layerThickness' missing for integration in {os.path.basename(file_path)}.")
+                            skip_case = True
+                            break
+                    elif PLOT_VARIABLE in ['Tbot', 'Sbot']:
+                        # Bottom layer selection
+                        bottom_data = data_3d[np.arange(num_cells), max_level_cell]
+                        bottom_data = np.where(max_level_cell >= 0, bottom_data, np.nan)
+                        monthly_data_arrays.append(bottom_data)
+                else:
+                    print(f"--> Error: Variable '{var_name}' missing in dataset {os.path.basename(file_path)}.")
+                    skip_case = True
+                    break
+            elif var_name == 'GMkappa':
                 required_vars = ['timeMonthly_avg_gmBolusKappa', 'timeMonthly_avg_gmHorizontalTaper',
                                  'timeMonthly_avg_gmKappaScaling']
                 if all(v in ds for v in required_vars):
@@ -331,7 +361,7 @@ if __name__ == "__main__":
     RUN_TYPE = 'Spin6'
     TARGET_YEARS = ['0002', '0003', '0004']  # For Spin6 Years 2-4
 
-    # Variable Options: 'Tbot', 'ColSpeed', 'MLD', 'GMkappa', 'Melt', 'MeltTotal', 'Ustar', or 'BLTemp'
+    # Variable Options: 'Tbot', 'Sbot', 'Tint', 'Sint', 'ColSpeed', 'MLD', 'GMkappa', 'Melt', 'MeltTotal', 'Ustar', or 'BLTemp'
     PLOT_VARIABLE = 'Melt'
 
     if RUN_TYPE == 'Spin1':
@@ -373,7 +403,31 @@ if __name__ == "__main__":
             'cmap': 'cmo.haline',
             'cb_label': 'Sea Floor Salinity [°C]',
             'title_prefix': 'Bottom Salinity',
-            'file_prefix': 'Tbot',
+            'file_prefix': 'Sbot',
+            'opt_proj': 'wed'
+        }
+    elif PLOT_VARIABLE == 'Tint':
+        VAR_CONFIG = {
+            'name': 'timeMonthly_avg_activeTracers_temperature',
+            'vmin': -2.5,
+            'vmax': 1.0,
+            'contours': [],
+            'cmap': 'cmo.thermal',
+            'cb_label': 'Depth Averaged Temperature [°C]',
+            'title_prefix': 'Depth Averaged Temperature',
+            'file_prefix': 'Tint',
+            'opt_proj': 'wed'
+        }
+    elif PLOT_VARIABLE == 'Sint':
+        VAR_CONFIG = {
+            'name': 'timeMonthly_avg_activeTracers_salinity',
+            'vmin': 34.0,
+            'vmax': 35.0,
+            'contours': [],
+            'cmap': 'cmo.haline',
+            'cb_label': 'Depth Averaged Salinity [g/kg]',
+            'title_prefix': 'Depth Averaged Salinity',
+            'file_prefix': 'Sint',
             'opt_proj': 'wed'
         }
     elif PLOT_VARIABLE == 'ColSpeed':
@@ -464,13 +518,11 @@ if __name__ == "__main__":
     # -----------------------------------------------------------------
     # PARALLEL EXECUTION SETTINGS
     # -----------------------------------------------------------------
-    # Bundle all necessary loop runtime parameters into an iterable list of tuples
     tasks = [
-        (Fnum, cases, VAR_CONFIG, RUN_TYPE, TARGET_YEARS, fris_loc, opt_region, iceshelves)
+        (Fnum, cases, VAR_CONFIG, RUN_TYPE, TARGET_YEARS, fris_loc, opt_region, iceshelves, PLOT_VARIABLE)
         for Fnum, cases in simulations.items()
     ]
 
-    # Determine pool size based on the number of resolutions defined (usually 4)
     num_processes = min(len(tasks), 4)
 
     print(f"Spawning an isolated execution pool of {num_processes} parallel processes...")
