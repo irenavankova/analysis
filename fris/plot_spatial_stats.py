@@ -248,13 +248,19 @@ def process_single_resolution(args):
                     if PLOT_VARIABLE in ['Tint', 'Sint']:
                         if 'timeMonthly_avg_layerThickness' in ds:
                             h_3d = ds['timeMonthly_avg_layerThickness'].isel(Time=0).values
-                            # Compute total column thickness to safely normalize the weighted sum
-                            total_thickness = np.sum(h_3d, axis=1)
 
-                            # Thickness-weighted depth average: sum(tracer * h) / sum(h)
-                            # Using np.where to shield against division by zero in dry/uninitialized mesh coordinates
-                            weighted_sum = np.sum(data_3d * h_3d, axis=1)
-                            averaged_data = np.where(total_thickness > 0, weighted_sum / total_thickness, np.nan)
+                            num_levels = data_3d.shape[1]
+                            level_indices = np.arange(num_levels)[None, :]
+                            valid_vertical_mask = level_indices <= max_level_cell[:, None]
+
+                            h_masked = np.where(valid_vertical_mask, h_3d, 0.0)
+                            data_masked = np.where(valid_vertical_mask, data_3d, 0.0)
+
+                            total_thickness = np.sum(h_masked, axis=1)
+                            weighted_sum = np.sum(data_masked * h_masked, axis=1)
+
+                            averaged_data = np.where((total_thickness > 0) & (max_level_cell >= 0),
+                                                     weighted_sum / total_thickness, np.nan)
                             monthly_data_arrays.append(averaged_data)
                         else:
                             print(
@@ -268,6 +274,19 @@ def process_single_resolution(args):
                         monthly_data_arrays.append(bottom_data)
                 else:
                     print(f"--> Error: Variable '{var_name}' missing in dataset {os.path.basename(file_path)}.")
+                    skip_case = True
+                    break
+            elif var_name == 'Tstar':
+                req_tstar = ['timeMonthly_avg_landIceBoundaryLayerTracers_landIceBoundaryLayerTemperature',
+                             'timeMonthly_avg_landIceInterfaceTracers_landIceInterfaceTemperature']
+                if all(v in ds for v in req_tstar):
+                    tcb = ds['timeMonthly_avg_landIceBoundaryLayerTracers_landIceBoundaryLayerTemperature'].isel(
+                        Time=0).values
+                    tci = ds['timeMonthly_avg_landIceInterfaceTracers_landIceInterfaceTemperature'].isel(Time=0).values
+                    monthly_data_arrays.append(tcb - tci)
+                else:
+                    missing = [v for v in req_tstar if v not in ds]
+                    print(f"--> Error: Missing variables {missing} for Tstar in {os.path.basename(file_path)}.")
                     skip_case = True
                     break
             elif var_name == 'GMkappa':
@@ -362,8 +381,8 @@ if __name__ == "__main__":
     RUN_TYPE = 'Spin6'
     TARGET_YEARS = ['0002', '0003', '0004']  # For Spin6 Years 2-4
 
-    # Variable Options: 'Tbot', 'Sbot', 'Tint', 'Sint', 'ColSpeed', 'MLD', 'GMkappa', 'Melt', 'MeltTotal', 'Ustar', or 'BLTemp'
-    PLOT_VARIABLE = 'Melt'
+    # Variable Options: 'Tbot', 'Sbot', 'Tint', 'Sint', 'ColSpeed', 'MLD', 'GMkappa', 'Melt', 'MeltTotal', 'Ustar', or 'Tstar'
+    PLOT_VARIABLE = 'Tstar'
 
     if RUN_TYPE == 'Spin1':
         simulations = {
@@ -503,16 +522,16 @@ if __name__ == "__main__":
             'file_prefix': 'Ustar',
             'opt_proj': 'fris'
         }
-    elif PLOT_VARIABLE == 'BLTemp':
+    elif PLOT_VARIABLE == 'Tstar':
         VAR_CONFIG = {
-            'name': 'timeMonthly_avg_landIceBoundaryLayerTracers_landIceBoundaryLayerTemperature',
-            'vmin': -2.5,
+            'name': 'Tstar',
+            'vmin': -1.0,
             'vmax': 1.0,
             'contours': [],
             'cmap': 'cmo.thermal',
-            'cb_label': 'BL temperature [°C]',
-            'title_prefix': 'Boundary Layer Temperature',
-            'file_prefix': 'BLTemp',
+            'cb_label': 'Boundary-Interface Temp Difference [°C]',
+            'title_prefix': 'Tstar Temperature Difference',
+            'file_prefix': 'Tstar',
             'opt_proj': 'fris'
         }
 
