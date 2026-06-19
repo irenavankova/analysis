@@ -71,7 +71,8 @@ def generate_spatial_plot(plot_data, date_str, stat_type, dx, cases_str, max_lev
             file_suffix = f"StdDevWeighted_{date_str}"
         else:
             # Scale colorbar from 0 up to 50% of the standard variable range to capture fine fluctuations.
-            vmin, vmax = 0.0, var_config['vmax'] * 0.5
+            range_span = abs(var_config['vmax'] - var_config['vmin'])
+            vmin, vmax = 0.0, range_span * 0.5
             cmap = 'CMRmap_r'
 
             if stat_type == 'StdDev':
