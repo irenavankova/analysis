@@ -4,6 +4,7 @@ import glob
 import os
 import numpy as np
 import xarray as xr
+from multiprocessing import Pool
 
 import matplotlib
 
@@ -130,7 +131,184 @@ def generate_spatial_plot(plot_data, date_str, stat_type, dx, cases_str, max_lev
 
 
 # =========================================================================
-# 2. Main Logic Flow
+# 2. Worker Function for a Single Resolution
+# =========================================================================
+def process_single_resolution(args):
+    """Processes a single spatial resolution key-value pair in a parallel worker."""
+    Fnum, cases, VAR_CONFIG, RUN_TYPE, TARGET_YEARS, fris_loc, opt_region, iceshelves = args
+    dx = f'F{Fnum}'
+
+    print(f"=========================================================================\n"
+          f" Starting Resolution: {dx}\n"
+          f"=========================================================================")
+
+    run_name_mask = f"20240227.GMPAS-JRA1p5-DIB-PISMF.TL319_FRISwISC0{Fnum}to60E3r1.spinY6_scr5.chicoma-cpu"
+    fpath_mask = f'/pscratch/sd/v/vankova/lanl/FRIS_Irena/FRIS_spinY6/{run_name_mask}/run'
+    mesh_file = f'{fpath_mask}/{run_name_mask}.mpaso.rst.0002-01-01_00000.nc'
+
+    if not os.path.exists(mesh_file):
+        print(f"--> Warning: Mesh file missing for {dx}: {mesh_file}. Skipping resolution.")
+        return
+
+    with xr.open_dataset(mesh_file) as dsMesh:
+        dsMesh_trimmed = dsMesh[['latCell', 'lonCell', 'landIceFloatingMask', 'areaCell',
+                                 'maxLevelCell', 'nEdges', 'nVertices', 'lonEdge', 'latEdge',
+                                 'lonVertex', 'latVertex', 'cellsOnEdge', 'cellsOnVertex',
+                                 'verticesOnEdge', 'verticesOnCell', 'edgesOnVertex']].load()
+
+    lat = dsMesh_trimmed['latCell'].values * 180 / np.pi
+    lon = dsMesh_trimmed['lonCell'].values * 180 / np.pi
+    max_level_cell = dsMesh_trimmed['maxLevelCell'].values - 1
+
+    iis = None
+    if opt_region:
+        import gmask_reg
+        iam = gmask_reg.get_mask(iceshelves, mesh_file, opt_noGL=0, opt_wct=1)
+        iis = iam[0, :]
+
+    unique_months_dict = {}
+    cases_processed = []
+
+    for sec, subsec in cases:
+        subsec_str = subsec if sec == 'Spin1' else ''
+        cases_processed.append(f"{sec}{subsec_str}")
+
+        if sec == 'Spin6':
+            run_name = f"20240227.GMPAS-JRA1p5-DIB-PISMF.TL319_FRISwISC0{Fnum}to60E3r1.spinY6_scr5.chicoma-cpu"
+            fpath = f'/pscratch/sd/v/vankova/lanl/FRIS_Irena/FRIS_spinY6/{run_name}/run'
+        elif sec == 'Spin1':
+            if Fnum == '8':
+                run_name = "20231114.GMPAS-JRA1p5-DIB-PISMF-TMIX.TL319_FRISwISC08to60E3r1.spinup.chicoma-cpu"
+            elif Fnum == '4':
+                run_name = "20231108.GMPAS-JRA1p5-DIB-PISMF-TMIX.TL319_FRISwISC04to60E3r1.spinup.chicoma-cpu"
+            elif Fnum == '2':
+                run_name = "20231118.GMPAS-JRA1p5-DIB-PISMF-TMIX.TL319_FRISwISC02to60E3r1.spinup.chicoma-cpu" if subsec == 'p1' else "20231208.GMPAS-JRA1p5-DIB-PISMF-TMIX.TL319_FRISwISC02to60E3r1.spinup.anvil"
+            elif Fnum == '1':
+                if subsec == 'p1':
+                    run_name = "20231118.GMPAS-JRA1p5-DIB-PISMF-TMIX.TL319_FRISwISC01to60E3r1.spinup.chicoma-cpu"
+                elif subsec == 'p2':
+                    run_name = "20231209.GMPAS-JRA1p5-DIB-PISMF-TMIX.TL319_FRISwISC01to60E3r1.spinup.anvil"
+                else:
+                    run_name = "20240201.GMPAS-JRA1p5-DIB-PISMF-TMIX.TL319_FRISwISC01to60E3r1.spinupY5.chicoma-cpu"
+            fpath = f'/pscratch/sd/v/vankova/lanl/FRIS_Irena/FRIS_spinY1/{run_name}/run'
+
+        for yr_str in TARGET_YEARS:
+            try:
+                yr_int = int(yr_str)
+                file_pattern = f"{fpath}/{run_name}.mpaso.hist.am.timeSeriesStatsMonthly.{yr_int:04d}-*-*.nc"
+                found_files = sorted(glob.glob(file_pattern))
+
+                for file_path in found_files:
+                    base_name = os.path.basename(file_path)
+                    date_part = base_name.split('.')[-2]
+                    unique_months_dict[date_part] = file_path
+            except (IndexError, ValueError):
+                continue
+
+    year_file_list = [unique_months_dict[k] for k in sorted(unique_months_dict.keys())]
+
+    if not year_file_list:
+        print(f"--> Warning: No files found matching target years {TARGET_YEARS} for {dx}. Skipping.")
+        return
+
+    expected_count = 12 * len(TARGET_YEARS)
+    num_valid_months = len(year_file_list)
+    if num_valid_months != expected_count:
+        raise ValueError(
+            f"CRITICAL ERROR: Statistics calculation failed for resolution {dx}. "
+            f"Expected exactly {expected_count} unique valid monthly files for Years {TARGET_YEARS}, "
+            f"but found and processed {num_valid_months} unique files."
+        )
+
+    print(f"Files selected for Years {TARGET_YEARS} Processing ({dx}) [Duplicates Removed]:")
+    for f in year_file_list:
+        print(f"  - {os.path.basename(f)}")
+
+    monthly_data_arrays = []
+    var_name = VAR_CONFIG['name']
+    skip_case = False
+
+    for file_path in year_file_list:
+        with xr.open_dataset(file_path) as ds:
+            if var_name == 'GMkappa':
+                required_vars = ['timeMonthly_avg_gmBolusKappa', 'timeMonthly_avg_gmHorizontalTaper',
+                                 'timeMonthly_avg_gmKappaScaling']
+                if all(v in ds for v in required_vars):
+                    scaling_top = ds['timeMonthly_avg_gmKappaScaling'].isel(Time=0, nVertLevelsP1=0).values
+                    bolus = ds['timeMonthly_avg_gmBolusKappa'].isel(Time=0).values
+                    taper = ds['timeMonthly_avg_gmHorizontalTaper'].isel(Time=0).values
+
+                    data_month = (bolus * taper * scaling_top) / 1800.0
+                    monthly_data_arrays.append(data_month)
+                else:
+                    missing = [v for v in required_vars if v not in ds]
+                    print(f"--> Error: Missing variables {missing} in {os.path.basename(file_path)}. Skipping.")
+                    skip_case = True
+                    break
+            elif var_name in ds:
+                data_month = ds[var_name].isel(Time=0).values
+
+                if var_name in ['timeMonthly_avg_landIceFreshwaterFlux',
+                                'timeMonthly_avg_landIceFreshwaterFluxTotal']:
+                    sec_per_year = 365.25 * 24 * 3600
+                    rho_fw = 1000.0
+                    data_month = data_month * sec_per_year / rho_fw
+                elif var_name == 'timeMonthly_avg_landIceFrictionVelocity':
+                    m2cm = 100
+                    data_month = data_month * m2cm
+
+                monthly_data_arrays.append(data_month)
+            else:
+                print(f"--> Error: Variable '{var_name}' missing in dataset {os.path.basename(file_path)}.")
+                skip_case = True
+                break
+
+    if skip_case or not monthly_data_arrays:
+        return
+
+    data_all = np.array(monthly_data_arrays)
+
+    raw_mean = np.mean(data_all, axis=0)
+    raw_std = np.std(data_all, axis=0)
+
+    data_median = np.median(data_all, axis=0)
+    raw_mad = np.median(np.abs(data_all - data_median[np.newaxis, ...]), axis=0)
+
+    data_diff = np.diff(data_all, axis=0)
+    raw_std_diff = np.std(data_diff, axis=0)
+
+    raw_std_weighted = np.where(raw_mean != 0, raw_std / raw_mean, np.nan)
+
+    stats_to_plot = [
+        ('Avg', raw_mean),
+        ('StdDev', raw_std),
+        ('MAD', raw_mad),
+        ('StdDevDiff', raw_std_diff),
+        ('StdDevWeighted', raw_std_weighted)
+    ]
+
+    combined_cases_str = "_".join(cases_processed)
+    out_plot_dir = f'{fris_loc}/statistics_{VAR_CONFIG["file_prefix"]}/{dx}_{combined_cases_str}'
+    os.makedirs(out_plot_dir, mode=0o755, exist_ok=True)
+
+    if len(TARGET_YEARS) == 1:
+        date_tag = f"Year{int(TARGET_YEARS[0]):04d}"
+    else:
+        date_tag = f"Years{int(TARGET_YEARS[0]):04d}-{int(TARGET_YEARS[-1]):04d}"
+
+    for metric, field_data in stats_to_plot:
+        generate_spatial_plot(
+            plot_data=field_data, date_str=date_tag, stat_type=metric,
+            dx=dx, cases_str=combined_cases_str, max_level_cell=max_level_cell,
+            opt_region=opt_region, iis=iis, lon=lon, lat=lat,
+            out_plot_dir=out_plot_dir, dsMesh_trimmed=dsMesh_trimmed, var_config=VAR_CONFIG
+        )
+
+    print(f"Finished processing and rendering all fields for: {dx}_{combined_cases_str}.\n")
+
+
+# =========================================================================
+# 3. Main Execution Block
 # =========================================================================
 if __name__ == "__main__":
 
@@ -263,181 +441,20 @@ if __name__ == "__main__":
         }
 
     # -----------------------------------------------------------------
-    # CORE PROCESSING LOOP
+    # PARALLEL EXECUTION SETTINGS
     # -----------------------------------------------------------------
-    for Fnum, cases in simulations.items():
-        dx = f'F{Fnum}'
-        print(f"=========================================================================")
-        print(f" Processing Resolution: {dx}")
-        print(f"=========================================================================")
+    # Bundle all necessary loop runtime parameters into an iterable list of tuples
+    tasks = [
+        (Fnum, cases, VAR_CONFIG, RUN_TYPE, TARGET_YEARS, fris_loc, opt_region, iceshelves)
+        for Fnum, cases in simulations.items()
+    ]
 
-        run_name_mask = f"20240227.GMPAS-JRA1p5-DIB-PISMF.TL319_FRISwISC0{Fnum}to60E3r1.spinY6_scr5.chicoma-cpu"
-        fpath_mask = f'/pscratch/sd/v/vankova/lanl/FRIS_Irena/FRIS_spinY6/{run_name_mask}/run'
-        mesh_file = f'{fpath_mask}/{run_name_mask}.mpaso.rst.0002-01-01_00000.nc'
+    # Determine pool size based on the number of resolutions defined (usually 4)
+    num_processes = min(len(tasks), 4)
 
-        if not os.path.exists(mesh_file):
-            print(f"--> Warning: Mesh file missing for {dx}: {mesh_file}. Skipping resolution.")
-            continue
+    print(f"Spawning an isolated execution pool of {num_processes} parallel processes...")
 
-        with xr.open_dataset(mesh_file) as dsMesh:
-            dsMesh_trimmed = dsMesh[['latCell', 'lonCell', 'landIceFloatingMask', 'areaCell',
-                                     'maxLevelCell', 'nEdges', 'nVertices', 'lonEdge', 'latEdge',
-                                     'lonVertex', 'latVertex', 'cellsOnEdge', 'cellsOnVertex',
-                                     'verticesOnEdge', 'verticesOnCell', 'edgesOnVertex']].load()
+    with Pool(processes=num_processes) as pool:
+        pool.map(process_single_resolution, tasks)
 
-        lat = dsMesh_trimmed['latCell'].values * 180 / np.pi
-        lon = dsMesh_trimmed['lonCell'].values * 180 / np.pi
-        max_level_cell = dsMesh_trimmed['maxLevelCell'].values - 1
-
-        iis = None
-        if opt_region:
-            import gmask_reg
-
-            iam = gmask_reg.get_mask(iceshelves, mesh_file, opt_noGL=0, opt_wct=1)
-            iis = iam[0, :]
-
-        unique_months_dict = {}
-        cases_processed = []
-
-        for sec, subsec in cases:
-            subsec_str = subsec if sec == 'Spin1' else ''
-            cases_processed.append(f"{sec}{subsec_str}")
-
-            if sec == 'Spin6':
-                run_name = f"20240227.GMPAS-JRA1p5-DIB-PISMF.TL319_FRISwISC0{Fnum}to60E3r1.spinY6_scr5.chicoma-cpu"
-                fpath = f'/pscratch/sd/v/vankova/lanl/FRIS_Irena/FRIS_spinY6/{run_name}/run'
-            elif sec == 'Spin1':
-                if Fnum == '8':
-                    run_name = "20231114.GMPAS-JRA1p5-DIB-PISMF-TMIX.TL319_FRISwISC08to60E3r1.spinup.chicoma-cpu"
-                elif Fnum == '4':
-                    run_name = "20231108.GMPAS-JRA1p5-DIB-PISMF-TMIX.TL319_FRISwISC04to60E3r1.spinup.chicoma-cpu"
-                elif Fnum == '2':
-                    run_name = "20231118.GMPAS-JRA1p5-DIB-PISMF-TMIX.TL319_FRISwISC02to60E3r1.spinup.chicoma-cpu" if subsec == 'p1' else "20231208.GMPAS-JRA1p5-DIB-PISMF-TMIX.TL319_FRISwISC02to60E3r1.spinup.anvil"
-                elif Fnum == '1':
-                    if subsec == 'p1':
-                        run_name = "20231118.GMPAS-JRA1p5-DIB-PISMF-TMIX.TL319_FRISwISC01to60E3r1.spinup.chicoma-cpu"
-                    elif subsec == 'p2':
-                        run_name = "20231209.GMPAS-JRA1p5-DIB-PISMF-TMIX.TL319_FRISwISC01to60E3r1.spinup.anvil"
-                    else:
-                        run_name = "20240201.GMPAS-JRA1p5-DIB-PISMF-TMIX.TL319_FRISwISC01to60E3r1.spinupY5.chicoma-cpu"
-                fpath = f'/pscratch/sd/v/vankova/lanl/FRIS_Irena/FRIS_spinY1/{run_name}/run'
-
-            for yr_str in TARGET_YEARS:
-                try:
-                    yr_int = int(yr_str)
-                    file_pattern = f"{fpath}/{run_name}.mpaso.hist.am.timeSeriesStatsMonthly.{yr_int:04d}-*-*.nc"
-                    found_files = sorted(glob.glob(file_pattern))
-
-                    for file_path in found_files:
-                        base_name = os.path.basename(file_path)
-                        date_part = base_name.split('.')[-2]
-                        unique_months_dict[date_part] = file_path
-                except (IndexError, ValueError):
-                    continue
-
-        year_file_list = [unique_months_dict[k] for k in sorted(unique_months_dict.keys())]
-
-        if not year_file_list:
-            print(f"--> Warning: No files found matching target years {TARGET_YEARS} for {dx}. Skipping.")
-            continue
-
-        expected_count = 12 * len(TARGET_YEARS)
-        num_valid_months = len(year_file_list)
-        if num_valid_months != expected_count:
-            raise ValueError(
-                f"CRITICAL ERROR: Statistics calculation failed for resolution {dx}. "
-                f"Expected exactly {expected_count} unique valid monthly files for Years {TARGET_YEARS}, "
-                f"but found and processed {num_valid_months} unique files."
-            )
-
-        print(f"Files selected for Years {TARGET_YEARS} Processing ({dx}) [Duplicates Removed]:")
-        for f in year_file_list:
-            print(f"  - {os.path.basename(f)}")
-
-        monthly_data_arrays = []
-        var_name = VAR_CONFIG['name']
-        skip_case = False
-
-        for file_path in year_file_list:
-            with xr.open_dataset(file_path) as ds:
-                if var_name == 'GMkappa':
-                    required_vars = ['timeMonthly_avg_gmBolusKappa', 'timeMonthly_avg_gmHorizontalTaper',
-                                     'timeMonthly_avg_gmKappaScaling']
-                    if all(v in ds for v in required_vars):
-                        scaling_top = ds['timeMonthly_avg_gmKappaScaling'].isel(Time=0, nVertLevelsP1=0).values
-                        bolus = ds['timeMonthly_avg_gmBolusKappa'].isel(Time=0).values
-                        taper = ds['timeMonthly_avg_gmHorizontalTaper'].isel(Time=0).values
-
-                        data_month = (bolus * taper * scaling_top) / 1800.0
-                        monthly_data_arrays.append(data_month)
-                    else:
-                        missing = [v for v in required_vars if v not in ds]
-                        print(f"--> Error: Missing variables {missing} in {os.path.basename(file_path)}. Skipping.")
-                        skip_case = True
-                        break
-                elif var_name in ds:
-                    data_month = ds[var_name].isel(Time=0).values
-
-                    if var_name in ['timeMonthly_avg_landIceFreshwaterFlux',
-                                    'timeMonthly_avg_landIceFreshwaterFluxTotal']:
-                        sec_per_year = 365.25 * 24 * 3600
-                        rho_fw = 1000.0
-                        data_month = data_month * sec_per_year / rho_fw
-                    elif var_name == 'timeMonthly_avg_landIceFrictionVelocity':
-                        m2cm = 100
-                        data_month = data_month * m2cm
-
-                    monthly_data_arrays.append(data_month)
-                else:
-                    print(f"--> Error: Variable '{var_name}' missing in dataset {os.path.basename(file_path)}.")
-                    skip_case = True
-                    break
-
-        if skip_case or not monthly_data_arrays:
-            continue
-
-        data_all = np.array(monthly_data_arrays)
-
-        # Compute core statistical operations over the 'Time' dimension (axis=0)
-        raw_mean = np.mean(data_all, axis=0)
-        raw_std = np.std(data_all, axis=0)
-
-        # 1. Median Absolute Deviation calculation: median(|x - median(x)|)
-        data_median = np.median(data_all, axis=0)
-        raw_mad = np.median(np.abs(data_all - data_median[np.newaxis, ...]), axis=0)
-
-        # 2. Standard Deviation of Differenced Data (diff over Time axis)
-        data_diff = np.diff(data_all, axis=0)
-        raw_std_diff = np.std(data_diff, axis=0)
-
-        # 3. Mean-Weighted Standard Deviation (Coefficient of Variation)
-        # Avoid zero division warnings or exceptions in uninstantiated cells
-        raw_std_weighted = np.where(raw_mean != 0, raw_std / raw_mean, np.nan)
-
-        stats_to_plot = [
-            ('Avg', raw_mean),
-            ('StdDev', raw_std),
-            ('MAD', raw_mad),
-            ('StdDevDiff', raw_std_diff),
-            ('StdDevWeighted', raw_std_weighted)
-        ]
-
-        combined_cases_str = "_".join(cases_processed)
-        out_plot_dir = f'{fris_loc}/statistics_{VAR_CONFIG["file_prefix"]}/{dx}_{combined_cases_str}'
-        os.makedirs(out_plot_dir, mode=0o755, exist_ok=True)
-
-        if len(TARGET_YEARS) == 1:
-            date_tag = f"Year{int(TARGET_YEARS[0]):04d}"
-        else:
-            date_tag = f"Years{int(TARGET_YEARS[0]):04d}-{int(TARGET_YEARS[-1]):04d}"
-
-        # --- Generate the 5 Statistical Plots ---
-        for metric, field_data in stats_to_plot:
-            generate_spatial_plot(
-                plot_data=field_data, date_str=date_tag, stat_type=metric,
-                dx=dx, cases_str=combined_cases_str, max_level_cell=max_level_cell,
-                opt_region=opt_region, iis=iis, lon=lon, lat=lat,
-                out_plot_dir=out_plot_dir, dsMesh_trimmed=dsMesh_trimmed, var_config=VAR_CONFIG
-            )
-
-        print(f"Completed rendering all statistical fields for: {dx}_{combined_cases_str}.\n")
+    print("All spatial resolution pools completed processing successfully.")
