@@ -30,18 +30,9 @@ def generate_spatial_plot(plot_data, date_str, stat_type, dx, cases_str, max_lev
     if opt_proj == 'll':
         projection = ccrs.PlateCarree()
         fig_size = (5, 4)
-    elif opt_proj == 'fris':
-        #projection = ccrs.PlateCarree()
-        projection = ccrs.SouthPolarStereo(central_longitude=-75)
-        fig_size = (6, 4.5)
-    elif opt_proj == 'sps':
-        projection = ccrs.SouthPolarStereo(central_longitude=-75)
-        fig_size = (6, 4.5)
-    elif opt_proj == 'wed':
-        projection = ccrs.SouthPolarStereo(central_longitude=-75)
-        fig_size = (6, 4.5)
     else:
-        projection = ccrs.PlateCarree()
+        projection = ccrs.SouthPolarStereo(central_longitude=-75)
+        fig_size = (6, 4.5)
 
     # Determine dimensions to selectively handle 3D vs 2D arrays
     if plot_data.ndim == 2:  # Shape: (nVertLevels, nCells) or (nCells, nVertLevels)
@@ -127,6 +118,8 @@ def generate_spatial_plot(plot_data, date_str, stat_type, dx, cases_str, max_lev
         ax.set_extent([-82, -25, -81, -72], ccrs.PlateCarree())
     elif opt_proj == 'sps':
         ax.set_extent([-80, 0, -84, -64], ccrs.PlateCarree())
+    elif opt_proj == 'ross':
+        ax.set_extent([165, 210, -86, -72], ccrs.PlateCarree()) #Ross with shelf
 
     ax.set_aspect('auto')
     ax.gridlines(draw_labels=True)
@@ -372,80 +365,82 @@ def process_single_resolution(args):
 # =========================================================================
 # Helper function to dynamically retrieve configurations
 # =========================================================================
-def get_variable_config(variable_name):
+def get_variable_config(variable_name, PLOT_ROSS=False):
     """Returns runtime mapping parameters based on global options string."""
+
+    # 1. Assign the dictionary to a local variable instead of returning immediately
     if variable_name == 'Tbot':
-        return {
+        config = {
             'name': 'timeMonthly_avg_activeTracers_temperature',
             'vmin': -2.6, 'vmax': -1.6, 'contours': [], 'cmap': 'cmo.thermal',
             'cb_label': 'Sea Floor Temperature [°C]', 'title_prefix': 'Bottom Temperature',
             'file_prefix': 'Tbot', 'opt_proj': 'wed', 'vmax_scale_factor': 0.25
         }
     elif variable_name == 'Sbot':
-        return {
+        config = {
             'name': 'timeMonthly_avg_activeTracers_salinity',
             'vmin': 34.2, 'vmax': 35.0, 'contours': [], 'cmap': 'cmo.haline',
             'cb_label': 'Sea Floor Salinity [°C]', 'title_prefix': 'Bottom Salinity',
             'file_prefix': 'Sbot', 'opt_proj': 'wed', 'vmax_scale_factor': 0.25
         }
     elif variable_name == 'Tint':
-        return {
+        config = {
             'name': 'timeMonthly_avg_activeTracers_temperature',
             'vmin': -2.5, 'vmax': 0.0, 'contours': [], 'cmap': 'cmo.thermal',
             'cb_label': 'Depth Averaged Temperature [°C]', 'title_prefix': 'Depth Averaged Temperature',
             'file_prefix': 'Tint', 'opt_proj': 'wed', 'vmax_scale_factor': 0.25
         }
     elif variable_name == 'Sint':
-        return {
+        config = {
             'name': 'timeMonthly_avg_activeTracers_salinity',
             'vmin': 34.2, 'vmax': 35.0, 'contours': [], 'cmap': 'cmo.haline',
             'cb_label': 'Depth Averaged Salinity [g/kg]', 'title_prefix': 'Depth Averaged Salinity',
             'file_prefix': 'Sint', 'opt_proj': 'wed', 'vmax_scale_factor': 0.25
         }
     elif variable_name == 'ColSpeed':
-        return {
+        config = {
             'name': 'timeMonthly_avg_columnIntegratedSpeed',
             'vmin': 0.0, 'vmax': 0.3, 'contours': [], 'cmap': 'cmo.speed',
             'cb_label': 'Column Integrated Speed [m/s]', 'title_prefix': 'Column Integrated Speed',
             'file_prefix': 'ColSpeed', 'opt_proj': 'wed', 'vmax_scale_factor': 0.25
         }
     elif variable_name == 'MLD':
-        return {
+        config = {
             'name': 'timeMonthly_avg_dThreshMLD',
             'vmin': 0, 'vmax': 500, 'contours': [], 'cmap': 'cmo.deep',
             'cb_label': 'Mixed Layer Depth [m]', 'title_prefix': 'MLD',
             'file_prefix': 'MLD', 'opt_proj': 'wed', 'vmax_scale_factor': 0.25
         }
     elif variable_name == 'GMkappa':
-        return {
+        config = {
             'name': 'GMkappa',
             'vmin': 0.0, 'vmax': 1.0, 'contours': [], 'cmap': 'CMRmap_r',
             'cb_label': r'$\kappa_{GM}$ / max($\kappa_{GM}$)', 'title_prefix': r'Normalized $\kappa_{GM}$',
             'file_prefix': 'GMkappa', 'opt_proj': 'sps', 'vmax_scale_factor': 0.25
         }
     elif variable_name == 'Melt':
-        return {
+        config = {
             'name': 'timeMonthly_avg_landIceFreshwaterFlux',
             'vmin': -3.0, 'vmax': 3.0, 'contours': [], 'cmap': 'RdBu_r',
             'cb_label': 'Melt rate interfacial [m/a]', 'title_prefix': 'Melt rate Interfacial',
             'file_prefix': 'Melt', 'opt_proj': 'fris', 'vmax_scale_factor': 0.25
         }
     elif variable_name == 'MeltTotal':
-        return {
+        config = {
             'name': 'timeMonthly_avg_landIceFreshwaterFluxTotal',
             'vmin': -3.0, 'vmax': 3.0, 'contours': [], 'cmap': 'RdBu_r',
             'cb_label': 'Melt rate total [m/a]', 'title_prefix': 'Melt rate total',
             'file_prefix': 'MeltTot', 'opt_proj': 'fris', 'vmax_scale_factor': 0.25
         }
     elif variable_name == 'Ustar':
-        return {
+        config = {
             'name': 'timeMonthly_avg_landIceFrictionVelocity',
             'vmin': 0.4, 'vmax': 1.2, 'contours': [], 'cmap': 'cmo.speed',
             'cb_label': 'Ustar [cm/s]', 'title_prefix': 'Land Ice Friction Velocity (Ustar)',
             'file_prefix': 'Ustar', 'opt_proj': 'fris', 'vmax_scale_factor': 0.25
         }
     elif variable_name == 'Tstar':
-        return {
+        config = {
             'name': 'Tstar',
             'vmin': 0.0, 'vmax': 1.0, 'contours': [], 'cmap': 'hot_r',
             'cb_label': 'Boundary-Interface Temp Difference [°C]', 'title_prefix': 'Tstar Temperature Difference',
@@ -453,6 +448,13 @@ def get_variable_config(variable_name):
         }
     else:
         raise ValueError(f"Unknown variable configuration requested: {variable_name}")
+
+    # 2. Check the flag and overwrite the value if true
+    if PLOT_ROSS:
+        config['opt_proj'] = 'ross'
+
+    return config
+
 
 
 # =========================================================================
@@ -471,8 +473,15 @@ if __name__ == "__main__":
     TARGET_YEARS = ['0002', '0003', '0004']
 
     # Array of target parameters to map out in parallel
-    PLOT_VARIABLES = ['ColSpeed', 'MLD', 'Tstar', 'Ustar', 'MeltTotal', 'Melt']
+    PLOT_VARIABLES = ['Sbot', 'Sint', 'Tbot', 'Tint', 'ColSpeed', 'MLD', 'Tstar', 'Ustar', 'MeltTotal', 'Melt']
+
+    #PLOT_VARIABLES = ['ColSpeed', 'MLD', 'Tstar', 'Ustar', 'MeltTotal', 'Melt']
     # PLOT_VARIABLES = ['Sbot', 'Sint', 'Tbot', 'Tint']
+
+    PLOT_ROSS = True
+
+    if PLOT_ROSS:
+        fris_loc = f'{fris_loc}/ross'
 
     if RUN_TYPE == 'Spin1':
         simulations = {
@@ -495,7 +504,7 @@ if __name__ == "__main__":
     # Multi-dimensional bundling: Cross-product of simulations (resolutions) * chosen plot variables
     tasks = []
     for var in PLOT_VARIABLES:
-        var_config = get_variable_config(var)
+        var_config = get_variable_config(var, PLOT_ROSS)
         for Fnum, cases in simulations.items():
             tasks.append(
                 (Fnum, cases, var_config, RUN_TYPE, TARGET_YEARS, fris_loc, opt_region, iceshelves, var)

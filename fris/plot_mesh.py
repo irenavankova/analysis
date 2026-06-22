@@ -58,9 +58,10 @@ collection = mosaic.polypcolor(
 )
 #mosaic.coastlines(ax, descriptor)
 # --- Map Formatting ---
-ax.set_extent([-80, 0, -84, -64], ccrs.PlateCarree()) #GOOD
+#ax.set_extent([-80, 0, -84, -64], ccrs.PlateCarree()) #Weddell - good for this routine
 #ax.set_extent([-82, -25, -81, -74], ccrs.PlateCarree()) #FRIS
-#ax.set_extent([-82, -25, -81, -72], ccrs.PlateCarree())
+#ax.set_extent([-82, -25, -81, -72], ccrs.PlateCarree()) #FRIS with shelf
+ax.set_extent([165, 210, -86, -72], ccrs.PlateCarree()) #Ross with shelf
 #ax.set_extent([-180, 180, -90, -60], ccrs.PlateCarree())
 ax.set_aspect('auto')
 ax.gridlines(draw_labels=True)
