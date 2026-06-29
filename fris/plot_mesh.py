@@ -8,7 +8,7 @@ import mosaic
 from matplotlib import colors
 
 # --- Configurations ---
-opt_save = 0
+opt_save = 1
 fris_loc = '/Users/ivankova/Desktop/Fris_hr'
 fnum = 8
 mesh_file = f'{fris_loc}/Fris_ncfiles/F{fnum}/ncfiles/F{fnum}mesh.nc'
@@ -52,16 +52,17 @@ collection = mosaic.polypcolor(
     plot_data,
     norm=norm,
     cmap=varcmap,
-    linewidth = 0.0,
-    edgecolors='face'
-    #antialiased=False
+    #linewidth = 0.0,
+    #edgecolors='face'
+    antialiased=False,
+    rasterized=True
 )
 #mosaic.coastlines(ax, descriptor)
 # --- Map Formatting ---
-#ax.set_extent([-80, 0, -84, -64], ccrs.PlateCarree()) #Weddell - good for this routine
+ax.set_extent([-80, 0, -84, -64], ccrs.PlateCarree()) #Weddell - good for this routine
 #ax.set_extent([-82, -25, -81, -74], ccrs.PlateCarree()) #FRIS
 #ax.set_extent([-82, -25, -81, -72], ccrs.PlateCarree()) #FRIS with shelf
-ax.set_extent([165, 210, -86, -72], ccrs.PlateCarree()) #Ross with shelf
+#ax.set_extent([165, 210, -86, -72], ccrs.PlateCarree()) #Ross with shelf
 #ax.set_extent([-180, 180, -90, -60], ccrs.PlateCarree())
 ax.set_aspect('auto')
 ax.gridlines(draw_labels=True)
@@ -74,6 +75,7 @@ cb.ax.set_ylim(v_min, v_max)
 
 # --- Save or Show ---
 if opt_save == 1:
-    plt.savefig(f'{fris_loc}/Fris_plots/mesh/sqrtAreaCell_F{fnum}.png', bbox_inches='tight', dpi=300)
+    plt.savefig(f'{fris_loc}/Fris_plots/mesh/sqrtAreaCell_F{fnum}.png', bbox_inches='tight', dpi=500)
+    #plt.savefig(f'{fris_loc}/Fris_plots/mesh/sqrtAreaCell_F{fnum}.pdf', bbox_inches='tight')
 else:
     plt.show()

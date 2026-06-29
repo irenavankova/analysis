@@ -54,7 +54,7 @@ def generate_annual_plot(plot_data, target_year, dx, cases_str, max_level_cell, 
         ax, descriptor, spatial_data,
         norm=colors.Normalize(vmin=var_config['vmin'], vmax=var_config['vmax']),
         cmap=var_config['cmap'],
-        linewidth=0.0,
+        #linewidth=0.0,
         #edgecolors='face',
         antialiased=False
     )
@@ -82,7 +82,7 @@ def generate_annual_plot(plot_data, target_year, dx, cases_str, max_level_cell, 
     # Output file configuration
     date_str = f"Year{target_year:04d}_AnnualAvg"
     output_png_path = f'{out_plot_dir}/{var_config["file_prefix"]}_{dx}_{cases_str}_{date_str}.png'
-    plt.savefig(output_png_path, bbox_inches='tight', dpi=200)
+    plt.savefig(output_png_path, bbox_inches='tight', dpi=500)
     plt.close(fig)
 
     print(f"--> Saved annual average image to: {output_png_path}\n")
