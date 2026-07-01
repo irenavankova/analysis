@@ -566,7 +566,8 @@ if __name__ == "__main__":
 
     # PLOT_VARIABLES = ['ColSpeed', 'MLD', 'Tstar', 'Ustar', 'MeltTotal', 'Melt']
     # PLOT_VARIABLES = ['Sbot', 'Sint', 'Tbot', 'Tint']
-    PLOT_VARIABLES = ['Ssurf', 'Tsurf', 'SurfSpeed', 'BotSpeed', 'DepthAvgSpeed']
+    # PLOT_VARIABLES = ['Ssurf', 'Tsurf', 'SurfSpeed', 'BotSpeed', 'DepthAvgSpeed']
+    PLOT_VARIABLES = ['Sbot', 'Sint', 'Tbot', 'Tint', 'MLD', 'Tstar', 'Ustar', 'MeltTotal', 'Melt', 'Tsurf']
 
     PLOT_ROSS = False
 
