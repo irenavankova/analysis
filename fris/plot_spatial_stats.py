@@ -96,9 +96,9 @@ def generate_spatial_plot(plot_data, date_str, stat_type, dx, cases_str, max_lev
         ax, descriptor, spatial_data,
         norm=colors.Normalize(vmin=vmin, vmax=vmax),
         cmap=cmap,
-        linewidth=0.0,
-        edgecolors='face'
-        # antialiased=False
+        #linewidth=0.0,
+        #edgecolors='face'
+        antialiased=False
     )
 
     # Overlay Contour Lines if plotting Mean
@@ -130,7 +130,7 @@ def generate_spatial_plot(plot_data, date_str, stat_type, dx, cases_str, max_lev
 
     # Output path construction
     output_png_path = f'{out_plot_dir}/{var_config["file_prefix"]}_{dx}_{cases_str}_{file_suffix}.png'
-    plt.savefig(output_png_path, bbox_inches='tight', dpi=200)
+    plt.savefig(output_png_path, bbox_inches='tight', dpi=500)
     plt.close(fig)
 
     print(f"--> [{stat_type}] Saved image to: {output_png_path}")
@@ -449,7 +449,7 @@ def get_variable_config(variable_name, PLOT_ROSS=False):
             'name': 'timeMonthly_avg_activeTracers_salinity',
             'vmin': 34.2, 'vmax': 35.0, 'contours': [], 'cmap': 'cmo.haline',
             'cb_label': 'Surface Layer Salinity [g/kg]', 'title_prefix': 'Surface Salinity',
-            'file_prefix': 'Ssurf', 'opt_proj': 'wed', 'vmax_scale_factor': 0.25
+            'file_prefix': 'Ssurf', 'opt_proj': 'wed', 'vmax_scale_factor': 1.0
         }
     elif variable_name == 'BotSpeed':
         config = {
