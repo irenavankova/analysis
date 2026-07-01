@@ -112,14 +112,14 @@ def generate_spatial_plot(plot_data, date_str, stat_type, dx, cases_str, max_lev
     if opt_proj == 'll':
         ax.set_extent([-85, -20, -84, -72], ccrs.PlateCarree())
     elif opt_proj == 'fris':
-        #ax.set_extent([-85, -25, -84, -74], ccrs.PlateCarree())
+        # ax.set_extent([-85, -25, -84, -74], ccrs.PlateCarree())
         ax.set_extent([-82, -25, -81, -74], ccrs.PlateCarree())
     elif opt_proj == 'wed':
         ax.set_extent([-82, -25, -81, -72], ccrs.PlateCarree())
     elif opt_proj == 'sps':
         ax.set_extent([-80, 0, -84, -64], ccrs.PlateCarree())
     elif opt_proj == 'ross':
-        ax.set_extent([165, 210, -86, -72], ccrs.PlateCarree()) #Ross with shelf
+        ax.set_extent([165, 210, -86, -72], ccrs.PlateCarree())  # Ross with shelf
 
     ax.set_aspect('auto')
     ax.gridlines(draw_labels=True)
@@ -268,8 +268,62 @@ def process_single_resolution(args):
                         bottom_data = data_3d[np.arange(num_cells), max_level_cell]
                         bottom_data = np.where(max_level_cell >= 0, bottom_data, np.nan)
                         monthly_data_arrays.append(bottom_data)
+                    elif PLOT_VARIABLE in ['Tsurf', 'Ssurf']:
+                        # Top layer selection (index 0)
+                        surf_data = data_3d[:, 0]
+                        surf_data = np.where(max_level_cell >= 0, surf_data, np.nan)
+                        monthly_data_arrays.append(surf_data)
                 else:
                     print(f"--> Error: Variable '{var_name}' missing in dataset {os.path.basename(file_path)}.")
+                    skip_case = True
+                    break
+            elif PLOT_VARIABLE in ['BotSpeed', 'SurfSpeed']:
+                if 'timeMonthly_avg_velocityZonal' in ds and 'timeMonthly_avg_velocityMeridional' in ds:
+                    u_3d = ds['timeMonthly_avg_velocityZonal'].isel(Time=0).values
+                    v_3d = ds['timeMonthly_avg_velocityMeridional'].isel(Time=0).values
+
+                    if PLOT_VARIABLE == 'BotSpeed':
+                        num_cells = u_3d.shape[0]
+                        u_target = u_3d[np.arange(num_cells), max_level_cell]
+                        v_target = v_3d[np.arange(num_cells), max_level_cell]
+                    else:  # SurfSpeed
+                        u_target = u_3d[:, 0]
+                        v_target = v_3d[:, 0]
+
+                    speed = np.sqrt(u_target ** 2 + v_target ** 2)
+                    speed = np.where(max_level_cell >= 0, speed, np.nan)
+                    monthly_data_arrays.append(speed)
+                else:
+                    print(
+                        f"--> Error: Zonal/Meridional velocity missing for {PLOT_VARIABLE} in {os.path.basename(file_path)}.")
+                    skip_case = True
+                    break
+            elif PLOT_VARIABLE == 'DepthAvgSpeed':
+                if all(v in ds for v in ['timeMonthly_avg_velocityZonal', 'timeMonthly_avg_velocityMeridional',
+                                         'timeMonthly_avg_layerThickness']):
+                    u_3d = ds['timeMonthly_avg_velocityZonal'].isel(Time=0).values
+                    v_3d = ds['timeMonthly_avg_velocityMeridional'].isel(Time=0).values
+                    h_3d = ds['timeMonthly_avg_layerThickness'].isel(Time=0).values
+
+                    num_levels = u_3d.shape[1]
+                    level_indices = np.arange(num_levels)[None, :]
+                    valid_vertical_mask = level_indices <= max_level_cell[:, None]
+
+                    h_masked = np.where(valid_vertical_mask, h_3d, 0.0)
+                    total_thickness = np.sum(h_masked, axis=1)
+
+                    u_masked = np.where(valid_vertical_mask, u_3d, 0.0)
+                    v_masked = np.where(valid_vertical_mask, v_3d, 0.0)
+
+                    u_avg = np.sum(u_masked * h_masked, axis=1) / np.where(total_thickness > 0, total_thickness, 1.0)
+                    v_avg = np.sum(v_masked * h_masked, axis=1) / np.where(total_thickness > 0, total_thickness, 1.0)
+
+                    speed_avg = np.sqrt(u_avg ** 2 + v_avg ** 2)
+                    speed_avg = np.where((total_thickness > 0) & (max_level_cell >= 0), speed_avg, np.nan)
+                    monthly_data_arrays.append(speed_avg)
+                else:
+                    print(
+                        f"--> Error: Missing velocity or thickness keys for DepthAvgSpeed in {os.path.basename(file_path)}.")
                     skip_case = True
                     break
             elif var_name == 'Tstar':
@@ -380,8 +434,43 @@ def get_variable_config(variable_name, PLOT_ROSS=False):
         config = {
             'name': 'timeMonthly_avg_activeTracers_salinity',
             'vmin': 34.2, 'vmax': 35.0, 'contours': [], 'cmap': 'cmo.haline',
-            'cb_label': 'Sea Floor Salinity [°C]', 'title_prefix': 'Bottom Salinity',
+            'cb_label': 'Sea Floor Salinity [g/kg]', 'title_prefix': 'Bottom Salinity',
             'file_prefix': 'Sbot', 'opt_proj': 'wed', 'vmax_scale_factor': 0.25
+        }
+    elif variable_name == 'Tsurf':
+        config = {
+            'name': 'timeMonthly_avg_activeTracers_temperature',
+            'vmin': -2.6, 'vmax': -1.6, 'contours': [], 'cmap': 'cmo.thermal',
+            'cb_label': 'Surface Layer Temperature [°C]', 'title_prefix': 'Surface Temperature',
+            'file_prefix': 'Tsurf', 'opt_proj': 'wed', 'vmax_scale_factor': 0.25
+        }
+    elif variable_name == 'Ssurf':
+        config = {
+            'name': 'timeMonthly_avg_activeTracers_salinity',
+            'vmin': 34.2, 'vmax': 35.0, 'contours': [], 'cmap': 'cmo.haline',
+            'cb_label': 'Surface Layer Salinity [g/kg]', 'title_prefix': 'Surface Salinity',
+            'file_prefix': 'Ssurf', 'opt_proj': 'wed', 'vmax_scale_factor': 0.25
+        }
+    elif variable_name == 'BotSpeed':
+        config = {
+            'name': 'BotSpeed',
+            'vmin': 0.0, 'vmax': 0.3, 'contours': [], 'cmap': 'cmo.speed',
+            'cb_label': 'Bottom Flow Speed [m/s]', 'title_prefix': 'Bottom Flow Speed',
+            'file_prefix': 'BotSpeed', 'opt_proj': 'wed', 'vmax_scale_factor': 0.25
+        }
+    elif variable_name == 'SurfSpeed':
+        config = {
+            'name': 'SurfSpeed',
+            'vmin': 0.0, 'vmax': 0.3, 'contours': [], 'cmap': 'cmo.speed',
+            'cb_label': 'Surface Flow Speed [m/s]', 'title_prefix': 'Surface Flow Speed',
+            'file_prefix': 'SurfSpeed', 'opt_proj': 'wed', 'vmax_scale_factor': 0.25
+        }
+    elif variable_name == 'DepthAvgSpeed':
+        config = {
+            'name': 'DepthAvgSpeed',
+            'vmin': 0.0, 'vmax': 0.3, 'contours': [], 'cmap': 'cmo.speed',
+            'cb_label': 'Depth Averaged Speed [m/s]', 'title_prefix': 'Depth Averaged Speed',
+            'file_prefix': 'DepthAvgSpeed', 'opt_proj': 'wed', 'vmax_scale_factor': 0.25
         }
     elif variable_name == 'Tint':
         config = {
@@ -456,7 +545,6 @@ def get_variable_config(variable_name, PLOT_ROSS=False):
     return config
 
 
-
 # =========================================================================
 # 3. Main Execution Block
 # =========================================================================
@@ -473,12 +561,14 @@ if __name__ == "__main__":
     TARGET_YEARS = ['0002', '0003', '0004']
 
     # Array of target parameters to map out in parallel
-    PLOT_VARIABLES = ['Sbot', 'Sint', 'Tbot', 'Tint', 'ColSpeed', 'MLD', 'Tstar', 'Ustar', 'MeltTotal', 'Melt']
+    # PLOT_VARIABLES = ['Sbot', 'Sint', 'Tbot', 'Tint', 'ColSpeed', 'MLD', 'Tstar', 'Ustar', 'MeltTotal', 'Melt', 'Tsurf',
+    #                  'Ssurf', 'BotSpeed', 'SurfSpeed', 'DepthAvgSpeed']
 
-    #PLOT_VARIABLES = ['ColSpeed', 'MLD', 'Tstar', 'Ustar', 'MeltTotal', 'Melt']
+    # PLOT_VARIABLES = ['ColSpeed', 'MLD', 'Tstar', 'Ustar', 'MeltTotal', 'Melt']
     # PLOT_VARIABLES = ['Sbot', 'Sint', 'Tbot', 'Tint']
+    PLOT_VARIABLES = ['Ssurf', 'Tsurf', 'SurfSpeed', 'BotSpeed', 'DepthAvgSpeed']
 
-    PLOT_ROSS = True
+    PLOT_ROSS = False
 
     if PLOT_ROSS:
         fris_loc = f'{fris_loc}/ross'
