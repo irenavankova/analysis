@@ -176,12 +176,16 @@ def process_single_resolution(args):
     cases_processed = []
 
     for sec, subsec in cases:
-        subsec_str = subsec if sec == 'Spin1' else ''
+        subsec_str = subsec if (sec == 'Spin1' or subsec != 'p1') else ''
         cases_processed.append(f"{sec}{subsec_str}")
 
         if sec == 'Spin6':
-            run_name = f"20240227.GMPAS-JRA1p5-DIB-PISMF.TL319_FRISwISC0{Fnum}to60E3r1.spinY6_scr5.chicoma-cpu"
-            fpath = f'/pscratch/sd/v/vankova/lanl/FRIS_Irena/FRIS_spinY6/{run_name}/run'
+            if Fnum == '8' and subsec == 'GMF1':
+                run_name = "20240503.GMPAS-JRA1p5-DIB-PISMF-DGMHT.TL319_FRISwISC08to60E3r1.spinY6_GMF1.chicoma-cpu"
+                fpath = f'/pscratch/sd/v/vankova/lanl/FRIS_Irena/FRIS_spinY6/{run_name}/run'
+            else:
+                run_name = f"20240227.GMPAS-JRA1p5-DIB-PISMF.TL319_FRISwISC0{Fnum}to60E3r1.spinY6_scr5.chicoma-cpu"
+                fpath = f'/pscratch/sd/v/vankova/lanl/FRIS_Irena/FRIS_spinY6/{run_name}/run'
         elif sec == 'Spin1':
             if Fnum == '8':
                 run_name = "20231114.GMPAS-JRA1p5-DIB-PISMF-TMIX.TL319_FRISwISC08to60E3r1.spinup.chicoma-cpu"
@@ -558,16 +562,16 @@ if __name__ == "__main__":
     # SPECIFY TARGET SIMULATION TYPE AND YEARS
     # -----------------------------------------------------------------
     RUN_TYPE = 'Spin6'
-    TARGET_YEARS = ['0002', '0003', '0004']
+    TARGET_YEARS = ['0002']
+    #TARGET_YEARS = ['0002', '0003', '0004']
 
     # Array of target parameters to map out in parallel
-    # PLOT_VARIABLES = ['Sbot', 'Sint', 'Tbot', 'Tint', 'ColSpeed', 'MLD', 'Tstar', 'Ustar', 'MeltTotal', 'Melt', 'Tsurf',
-    #                  'Ssurf', 'BotSpeed', 'SurfSpeed', 'DepthAvgSpeed']
+    PLOT_VARIABLES = ['Sbot', 'Sint', 'Tbot', 'Tint', 'MLD', 'Tstar', 'Ustar', 'MeltTotal', 'Melt', 'Tsurf', 'Ssurf', 'BotSpeed', 'SurfSpeed', 'DepthAvgSpeed']
 
     # PLOT_VARIABLES = ['ColSpeed', 'MLD', 'Tstar', 'Ustar', 'MeltTotal', 'Melt']
     # PLOT_VARIABLES = ['Sbot', 'Sint', 'Tbot', 'Tint']
     # PLOT_VARIABLES = ['Ssurf', 'Tsurf', 'SurfSpeed', 'BotSpeed', 'DepthAvgSpeed']
-    PLOT_VARIABLES = ['Sbot', 'Sint', 'Tbot', 'Tint', 'MLD', 'Tstar', 'Ustar', 'MeltTotal', 'Melt', 'Tsurf']
+    #PLOT_VARIABLES = ['Sbot', 'Sint', 'Tbot', 'Tint', 'MLD', 'Tstar', 'Ustar', 'MeltTotal', 'Melt', 'Tsurf']
 
     PLOT_ROSS = False
 
@@ -575,19 +579,20 @@ if __name__ == "__main__":
         fris_loc = f'{fris_loc}/ross'
 
     if RUN_TYPE == 'Spin1':
-        simulations = {
-            '8': [('Spin1', 'p1')],
-            '4': [('Spin1', 'p1')],
-            '2': [('Spin1', 'p1'), ('Spin1', 'p2')],
-            '1': [('Spin1', 'p1'), ('Spin1', 'p2'), ('Spin1', 'p3')]
-        }
+        simulations = [
+            ('8', [('Spin1', 'p1')]),
+            ('4', [('Spin1', 'p1')]),
+            ('2', [('Spin1', 'p1'), ('Spin1', 'p2')]),
+            ('1', [('Spin1', 'p1'), ('Spin1', 'p2'), ('Spin1', 'p3')])
+        ]
     elif RUN_TYPE == 'Spin6':
-        simulations = {
-            '8': [('Spin6', 'p1')],
-            '4': [('Spin6', 'p1')],
-            '2': [('Spin6', 'p1')],
-            '1': [('Spin6', 'p1')]
-        }
+        simulations = [
+            ('8', [('Spin6', 'p1')]),
+            ('8', [('Spin6', 'GMF1')]),
+            ('4', [('Spin6', 'p1')]),
+            ('2', [('Spin6', 'p1')]),
+            ('1', [('Spin6', 'p1')])
+        ]
 
     # -----------------------------------------------------------------
     # PARALLEL TASKS GENERATION
@@ -596,7 +601,7 @@ if __name__ == "__main__":
     tasks = []
     for var in PLOT_VARIABLES:
         var_config = get_variable_config(var, PLOT_ROSS)
-        for Fnum, cases in simulations.items():
+        for Fnum, cases in simulations:
             tasks.append(
                 (Fnum, cases, var_config, RUN_TYPE, TARGET_YEARS, fris_loc, opt_region, iceshelves, var)
             )
