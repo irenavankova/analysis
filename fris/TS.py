@@ -1,163 +1,269 @@
 #!/usr/bin/env python3
+import os
+import glob
 import numpy as np
-import xarray
-import numpy # for arrays!
-#import scipy.io  # load matfiles
+import xarray as xr
+from multiprocessing import Pool
+
+import matplotlib
+
+matplotlib.use('Agg')  # Force non-interactive backend for cluster environments
 import matplotlib.pyplot as plt
 import gsw
-import os
-
-#import sys
-#sys.path.append('../sgr/global')
 import gmask_reg
 
-region_name = "FRIS"
-opt_save = 1
-nsize = 0.1
-nsize_sis = 0.5
-nsize_obs = 0.1
 
-# MPAS Ocean outputs
+# =========================================================================
+# 1. Parallel Worker Function for a Single Simulation Configuration
+# =========================================================================
+def process_single_ts_task(args):
+    """Processes TS diagrams for all specified regions for a single simulation resolution."""
+    Fnum, cases, RUN_TYPE, TARGET_YEARS, regions_to_plot, dir_fig_save, TS_bg_config = args
+    dx = f'F{Fnum}'
 
-tsegment = ["clim_2005-2014_ts_1951-2014", "clim_2091-2100_ts_2015-2100", "clim_2091-2100_ts_2015-2100"]
-sims = ["hist", "fismf_701", "pismf"]
-appe = "_ssp_91_100"
-#sims = ["S12_control"]
+    # Resolve case string identifiers for filenames (Matches plot_spatial_stats.py logic)
+    cases_processed = []
+    for sec, subsec in cases:
+        subsec_str = subsec if (sec == 'Spin1' or subsec != 'p1') else ''
+        cases_processed.append(f"{sec}{subsec_str}")
+    combined_cases_str = "_".join(cases_processed)
 
-# Get region mask
-if region_name == "FRIS":
-    ttl = "Filchner-Ronne"
-    sis_ctd = ["Filchner_FNE1","Filchner_FNE3","Filchner_FSE1","Filchner_FSW1","Filchner_FSW2","Ronne_F1","Ronne_F2","Ronne_F3","Ronne_F4","Ronne_Site1","Ronne_Site2","Ronne_Site3","Ronne_Site4","Ronne_Site5"]
-    iceshelves = ["Filchner-Ronne_shelf","Filchner-Ronne"]
-    nshelf = 0
+    print(f"=========================================================================\n"
+          f" Starting Execution: {dx}_{combined_cases_str} | Regions: {regions_to_plot}\n"
+          f"=========================================================================")
+
+    # Path construction following plot_spatial_stats.py
+    run_name_mask = f"20240227.GMPAS-JRA1p5-DIB-PISMF.TL319_FRISwISC0{Fnum}to60E3r1.spinY6_scr5.chicoma-cpu"
+    fpath_mask = f'/pscratch/sd/v/vankova/lanl/FRIS_Irena/FRIS_spinY6/{run_name_mask}/run'
+    mesh_file = f'{fpath_mask}/{run_name_mask}.mpaso.rst.0002-01-01_00000.nc'
+
+    if not os.path.exists(mesh_file):
+        print(f"--> Warning: Mesh file missing for {dx}: {mesh_file}. Skipping task.")
+        return
+
+    # Retrieve Region Masks from gmask_reg.py for this specific mesh
+    iam = gmask_reg.get_mask(regions_to_plot, mesh_file, opt_noGL=0, opt_wct=1)
+
+    # Reconstruct base directories to gather monthly netCDF outputs (From plot_spatial_stats.py)
+    unique_months_dict = {}
+    for sec, subsec in cases:
+        if sec == 'Spin6':
+            if Fnum == '8' and subsec == 'GMF1':
+                run_name = "20240503.GMPAS-JRA1p5-DIB-PISMF-DGMHT.TL319_FRISwISC08to60E3r1.spinY6_GMF1.chicoma-cpu"
+                fpath = f'/pscratch/sd/v/vankova/lanl/FRIS_Irena/FRIS_spinY6/{run_name}/run'
+            else:
+                run_name = f"20240227.GMPAS-JRA1p5-DIB-PISMF.TL319_FRISwISC0{Fnum}to60E3r1.spinY6_scr5.chicoma-cpu"
+                fpath = f'/pscratch/sd/v/vankova/lanl/FRIS_Irena/FRIS_spinY6/{run_name}/run'
+        elif sec == 'Spin1':
+            if Fnum == '8':
+                run_name = "20231114.GMPAS-JRA1p5-DIB-PISMF-TMIX.TL319_FRISwISC08to60E3r1.spinup.chicoma-cpu"
+            elif Fnum == '4':
+                run_name = "20231108.GMPAS-JRA1p5-DIB-PISMF-TMIX.TL319_FRISwISC04to60E3r1.spinup.chicoma-cpu"
+            elif Fnum == '2':
+                run_name = "20231118.GMPAS-JRA1p5-DIB-PISMF-TMIX.TL319_FRISwISC02to60E3r1.spinup.chicoma-cpu" if subsec == 'p1' else "20231208.GMPAS-JRA1p5-DIB-PISMF-TMIX.TL319_FRISwISC02to60E3r1.spinup.anvil"
+            elif Fnum == '1':
+                if subsec == 'p1':
+                    run_name = "20231118.GMPAS-JRA1p5-DIB-PISMF-TMIX.TL319_FRISwISC01to60E3r1.spinup.chicoma-cpu"
+                elif subsec == 'p2':
+                    run_name = "20231209.GMPAS-JRA1p5-DIB-PISMF-TMIX.TL319_FRISwISC01to60E3r1.spinup.anvil"
+                else:
+                    run_name = "20240201.GMPAS-JRA1p5-DIB-PISMF-TMIX.TL319_FRISwISC01to60E3r1.spinupY5.chicoma-cpu"
+            fpath = f'/pscratch/sd/v/vankova/lanl/FRIS_Irena/FRIS_spinY1/{run_name}/run'
+
+        for yr_str in TARGET_YEARS:
+            try:
+                yr_int = int(yr_str)
+                file_pattern = f"{fpath}/{run_name}.mpaso.hist.am.timeSeriesStatsMonthly.{yr_int:04d}-*-*.nc"
+                found_files = sorted(glob.glob(file_pattern))
+                for file_path in found_files:
+                    date_part = os.path.basename(file_path).split('.')[-2]
+                    unique_months_dict[date_part] = file_path
+            except (IndexError, ValueError):
+                continue
+
+    year_file_list = [unique_months_dict[k] for k in sorted(unique_months_dict.keys())]
+
+    if not year_file_list:
+        print(f"--> Warning: No monthly files found matching target years {TARGET_YEARS} for {dx}. Skipping.")
+        return
+
+    # Load data arrays across months (Shape of each element is [nCells, nVertLevels])
+    temp_list, salt_list, thick_list = [], [], []
+    for file_path in year_file_list:
+        with xr.open_dataset(file_path) as ds:
+            temp_list.append(ds['timeMonthly_avg_activeTracers_temperature'].isel(Time=0).values)
+            salt_list.append(ds['timeMonthly_avg_activeTracers_salinity'].isel(Time=0).values)
+            thick_list.append(ds['timeMonthly_avg_layerThickness'].isel(Time=0).values)
+
+    # Calculate temporal mean over the selected months
+    PT_mean = np.mean(np.array(temp_list), axis=0)  # Shape: (nCells, nVertLevels)
+    PS_mean = np.mean(np.array(salt_list), axis=0)  # Shape: (nCells, nVertLevels)
+    H_mean = np.mean(np.array(thick_list), axis=0)  # Shape: (nCells, nVertLevels)
+
+    # Load cell grid geometry parameters
+    with xr.open_dataset(mesh_file) as dsM:
+        areaCell = dsM['areaCell'].values  # Shape: (nCells,)
+        maxLevelCell = dsM['maxLevelCell'].values - 1  # Shape: (nCells,)
+
+    # Unpack TS background parameters for mapping
+    y_lim = TS_bg_config['y_lim']
+    x_lim = TS_bg_config['x_lim']
+    PSbins = TS_bg_config['PSbins']
+    PSgrid = TS_bg_config['PSgrid']
+    PTgrid = TS_bg_config['PTgrid']
+    neutralDensity = TS_bg_config['neutralDensity']
+    contours = TS_bg_config['contours']
+    PTFreezing = TS_bg_config['PTFreezing']
+
+    years_str = f"Years_{TARGET_YEARS[0]}-{TARGET_YEARS[-1]}" if len(TARGET_YEARS) > 1 else f"Year_{TARGET_YEARS[0]}"
+
+    # Process and generate a plot for each region sequentially inside this worker thread
+    for r_idx, region_name in enumerate(regions_to_plot):
+        region_mask = iam[r_idx, :]  # Shape: (nCells,)
+
+        if not np.any(region_mask):
+            continue
+
+        # Extract only horizontal columns belonging to the current region mask
+        PT_reg = PT_mean[region_mask, :]  # Shape: (nCells_in_reg, nVertLevels)
+        PS_reg = PS_mean[region_mask, :]  # Shape: (nCells_in_reg, nVertLevels)
+        H_reg = H_mean[region_mask, :]  # Shape: (nCells_in_reg, nVertLevels)
+        areaCell_reg = areaCell[region_mask]  # Shape: (nCells_in_reg,)
+        maxLevel_reg = maxLevelCell[region_mask]  # Shape: (nCells_in_reg,)
+
+        # Calculate exact 3D grid volumes using broadcasting
+        volume_reg = H_reg * areaCell_reg[:, np.newaxis]
+
+        # Construct custom 2D vertical mask bounded by maxLevelCell per region column
+        num_cells_reg, num_levels = PT_reg.shape
+        level_indices = np.arange(num_levels)[np.newaxis, :]  # Shape: (1, nVertLevels)
+        valid_vertical_mask = level_indices <= maxLevel_reg[:, np.newaxis]  # Shape: (nCells_in_reg, nVertLevels)
+
+        # Flatten arrays safely using the 2D vertical indices mask
+        PT_flat = PT_reg[valid_vertical_mask]
+        PS_flat = PS_reg[valid_vertical_mask]
+        Vol_flat = volume_reg[valid_vertical_mask]
+
+        # Clean NaN data values
+        nan_mask = np.isnan(PT_flat) | np.isnan(PS_flat) | np.isnan(Vol_flat)
+        PT_flat = PT_flat[~nan_mask]
+        PS_flat = PS_flat[~nan_mask]
+        Vol_flat = Vol_flat[~nan_mask]
+
+        if len(PT_flat) == 0:
+            continue
+
+        # Volume-weighted core spatial mean calculation
+        PT_core_avg = np.dot(PT_flat, Vol_flat) / np.sum(Vol_flat)
+        PS_core_avg = np.dot(PS_flat, Vol_flat) / np.sum(Vol_flat)
+
+        # -----------------------------------------------------------------
+        # Render Figure (Explicit figure flushing to avoid memory leaks)
+        # -----------------------------------------------------------------
+        fig, ax = plt.subplots(figsize=(5, 5))
+
+        # Plot background potential density contours
+        CS = ax.contour(PSgrid, PTgrid, neutralDensity, contours, linestyles=':', linewidths=0.5, colors='k', zorder=2)
+        ax.clabel(CS, fontsize=8, inline=1, fmt='%4.2f')
+
+        # Surface Freezing line
+        ax.plot(PSbins, PTFreezing, linestyle='--', linewidth=1., color='g', label='Freezing Line')
+
+        # Scatter active regional property markers
+        ax.plot(PS_flat, PT_flat, color='royalblue', linestyle='None', marker='.', markersize=0.2, alpha=0.6)
+
+        # Core volume integrated centroid marker
+        ax.plot(PS_core_avg, PT_core_avg, color='maroon', linestyle='None', marker='s', markersize=6, mec='k',
+                label='Vol-Weighted Mean')
+
+        ax.set_ylim(y_lim)
+        ax.set_xlim(x_lim)
+        ax.set_xlabel('Salinity (PSU)', fontsize=12)
+        ax.set_ylabel('Potential Temperature ($^\circ$C)', fontsize=12)
+        ax.set_title(f"{region_name} | {dx}_{combined_cases_str}\n{years_str}", fontsize=11)
+        ax.legend(loc='upper left', fontsize=8)
+
+        plt.tight_layout()
+
+        out_filename = f"{dir_fig_save}/TS_{region_name}_{dx}_{combined_cases_str}_{years_str}.png"
+        plt.savefig(out_filename, bbox_inches='tight', dpi=400)
+
+        # Explicit figure flushing to avoid cross-process leaks
+        fig.clear()
+        plt.close(fig)
+        print(f"--> [{dx}_{combined_cases_str}] Saved TS image to: {out_filename}")
+
+
+# =========================================================================
+# 2. Main Execution Orchestrator
+# =========================================================================
+if __name__ == "__main__":
+
+    # -----------------------------------------------------------------
+    # SPECIFY CONFIGURATIONS (From plot_spatial_stats.py)
+    # -----------------------------------------------------------------
+    RUN_TYPE = 'Spin6'
+    TARGET_YEARS = ['0002']  # e.g., ['0002', '0003', '0004']
+    regions_to_plot = ["FRIS", "RonneDcavity", "FilchnerDcavity", "RonneDshelf", "FilchnerDshelf", "BerknerBank", "BerknerSouth"]  # Keys matching gmask_reg.py
+
+    if RUN_TYPE == 'Spin1':
+        simulations = [
+            ('8', [('Spin1', 'p1')]),
+            ('4', [('Spin1', 'p1')]),
+            ('2', [('Spin1', 'p1'), ('Spin1', 'p2')]),
+            ('1', [('Spin1', 'p1'), ('Spin1', 'p2'), ('Spin1', 'p3')])
+        ]
+    elif RUN_TYPE == 'Spin6':
+        simulations = [
+            ('8', [('Spin6', 'p1')]),
+            ('8', [('Spin6', 'GMF1')]),
+            ('4', [('Spin6', 'p1')]),
+            ('2', [('Spin6', 'p1')]),
+            ('1', [('Spin6', 'p1')])
+        ]
+
+    dir_fig_save = '/pscratch/sd/v/vankova/fris_analysis/fris_plots/TS_diagrams'
+    os.makedirs(dir_fig_save, exist_ok=True)
+
+    # -----------------------------------------------------------------
+    # PRE-COMPUTE SHARED BACKGROUND BACKGROUND DENSITY MATRIX VARIABLES
+    # -----------------------------------------------------------------
     y_lim = np.array([-2.7, 2.2])
     x_lim = np.array([33.5, 34.9])
-    nsize = 0.2
-    nsize_sis = 0.2
+    PTbins = np.linspace(-2.8, 4, num=200)
+    PSbins = np.linspace(32.0, 35.5, num=200)
+    SAbins = gsw.SA_from_SP(PSbins, p=0., lon=0., lat=-75.)
+    CTbins = gsw.pt_from_CT(SAbins, PTbins)
+    CTgrid, SAgrid = np.meshgrid(CTbins, SAbins)
+    PSgrid = gsw.SP_from_SA(SAgrid, p=0., lon=0., lat=-75.)
+    PTgrid = gsw.pt_from_CT(SAgrid, CTgrid)
+    neutralDensity = gsw.sigma0(SAgrid, CTgrid)
+    rhoInterval = 0.2
+    contours = np.arange(23., 29. + rhoInterval, rhoInterval)
+    CTFreezing = gsw.CT_freezing(SAbins, 0, 1)
+    PTFreezing = gsw.t_from_CT(SAbins, CTFreezing, p=0.)
 
+    TS_bg_config = {
+        'y_lim': y_lim, 'x_lim': x_lim, 'PSbins': PSbins,
+        'PSgrid': PSgrid, 'PTgrid': PTgrid, 'neutralDensity': neutralDensity,
+        'contours': contours, 'PTFreezing': PTFreezing
+    }
 
-iam, areaCell, isz = gmask_is.get_mask(iceshelves)
+    # -----------------------------------------------------------------
+    # GENERATE PARALLEL TASKS BUNDLES
+    # -----------------------------------------------------------------
+    tasks = []
+    for Fnum, cases in simulations:
+        tasks.append(
+            (Fnum, cases, RUN_TYPE, TARGET_YEARS, regions_to_plot, dir_fig_save, TS_bg_config)
+        )
 
-print(iam.shape)
-print(isz.shape)
+    # Allocate process thread pool based on work list volume (Up to 16 combinations)
+    num_processes = min(len(tasks), 16)
 
-print(sum(np.sum(iam, axis=0)))
-print(sum(np.sum(isz, axis=0)))
+    print(f"Spawning an isolated execution pool of {num_processes} parallel processes to generate TS diagrams...")
 
-# MPAS pcean mesh
-file_mesh = f'/Users/irenavankova/Work/data_sim/E3SM_files/E3SM_initial_condition/SOwISC12to60E2r4/ocean.SOwISC12to60E2r4.230220.nc'
-dsMesh = xarray.open_dataset(file_mesh)
-dsMesh = dsMesh[['nVertLevels','areaCell','maxLevelCell']]
-dsMesh.load()
-areaCell = np.squeeze(dsMesh.areaCell.data)
-nVertLevels = np.squeeze(dsMesh.nVertLevels.data)
+    with Pool(processes=num_processes) as pool:
+        pool.map(process_single_ts_task, tasks)
 
-# Plot info
-
-fHeight = 5
-fWidth = fHeight
-plt.figure(figsize=(fWidth, fHeight))
-
-# TS PLOT prep
-PTbins = np.linspace(-2.8, 4, num=200)
-PSbins = np.linspace(32.0, 35.5, num=200)
-SAbins = gsw.SA_from_SP(PSbins, p=0., lon=0., lat=-75.)
-CTbins = gsw.pt_from_CT(SAbins, PTbins)
-CTgrid, SAgrid = numpy.meshgrid(CTbins, SAbins)
-PSgrid = gsw.SP_from_SA(SAgrid, p=0., lon=0., lat=-75.)
-PTgrid = gsw.pt_from_CT(SAgrid, CTgrid)
-neutralDensity = gsw.sigma0(SAgrid, CTgrid)
-rhoInterval = 0.2
-contours = numpy.arange(23., 29.+rhoInterval, rhoInterval)
-CTFreezing = gsw.CT_freezing(SAbins, 0, 1)
-PTFreezing = gsw.t_from_CT(SAbins,CTFreezing, p=0.)
-
-CS = plt.contour(PSgrid, PTgrid, neutralDensity, contours, linestyles=':', linewidths=0.5, colors='k', zorder=2)
-plt.clabel(CS, fontsize=8, inline=1, fmt='%4.2f')
-
-#clr = 'rybm'
-#clr = ["lightskyblue", "royalblue", "moccasin", "darkorange", "yellowgreen","darkolivegreen","plum", "purple", "lightcoral", "maroon"]
-clr = ["lightcoral", "brown", "moccasin", "darkorange", "lightskyblue", "dodgerblue", "plum", "indigo"]
-
-ctr = 0
-PTcm = np.zeros(len(sims)*len(iceshelves))
-PScm = np.zeros(len(sims)*len(iceshelves))
-PTcmn = np.zeros(len(sims))
-PScmn = np.zeros(len(sims))
-PTcms = np.zeros(len(sims))
-PScms = np.zeros(len(sims))
-# Load and plot TS variables for control simulation(s)
-for s in range(len(sims)):
-    file_ts = f'/Users/irenavankova/Work/data_sim/E3SM_outputs/FISMF/ncfiles/{sims[s]}/{tsegment[s]}/TS.nc'
-    dsOutc = xarray.open_dataset(file_ts)
-    dsOutc = dsOutc[['timeMonthly_avg_activeTracers_temperature','timeMonthly_avg_activeTracers_salinity','timeMonthly_avg_layerThickness']]
-    dsOutc.load()
-    PTsim = np.squeeze(dsOutc.timeMonthly_avg_activeTracers_temperature.data)
-    PSsim = np.squeeze(dsOutc.timeMonthly_avg_activeTracers_salinity.data)
-    Volume = np.squeeze(dsOutc.timeMonthly_avg_layerThickness.data)
-    Volume = Volume * np.transpose(np.array([areaCell,]*len(nVertLevels)))
-
-    for n in range(len(iceshelves)):
-        iis = iam[n,:]
-        PTc = PTsim[iis]
-        PSc = PSsim[iis]
-        Volc = Volume[iis]
-        PTc = PTc.reshape((len(nVertLevels)*len(PTc),))
-        PSc = PSc.reshape((len(nVertLevels)*len(PSc),))
-        Volc = Volc.reshape((len(nVertLevels) * len(Volc),))
-        PTc = PTc[~np.isnan(PTc)]
-        PSc = PSc[~np.isnan(PSc)]
-        Volc = Volc[~np.isnan(Volc)]
-        PTcm[ctr] = np.dot(PTc, Volc) / np.sum(Volc)
-        PScm[ctr] = np.dot(PSc, Volc) / np.sum(Volc)
-        if n == nshelf:
-            nsz = nsize
-            PTcmn[s] = PTcm[ctr]
-            PScmn[s] = PScm[ctr]
-        else:
-            nsz = nsize_sis
-            PTcms[s] = PTcm[ctr]
-            PScms[s] = PScm[ctr]
-        plt.plot(PSc, PTc, clr[ctr], linestyle='None', marker='.', markersize=nsz)
-        #plt.plot(PScm, PTcm, clr[ctr], linestyle='None', marker='s', markersize=8, mfc=clr[ctr], mec='k')
-        '''
-        # Create the 2D histogram
-        hist, xedges, yedges = np.histogram2d(PSc, PTc, bins=100)
-        # Create the contour plot
-        X, Y = np.meshgrid(xedges[:-1], yedges[:-1])
-        # Plotting the contour lines
-        plt.contour(X, Y, hist.T, levels=10, colors=clr[ctr])
-        '''
-        ctr = ctr + 1
-
-ctr = 0
-#plt.plot(PScms, PTcms, 'k')
-#plt.plot(PScmn, PTcmn, 'k')
-for s in range(len(sims)):
-    for n in range(len(iceshelves)):
-        if n == nshelf:
-            mrk = 's'
-        else:
-            mrk = 'o'
-        plt.plot(PScm[ctr], PTcm[ctr], clr[ctr], linestyle='None', marker=mrk, markersize=5, mfc=clr[ctr], mec='k')
-        ctr = ctr + 1
-#Plot subshelf CTDs
-if 'PTsis' in globals():
-    plt.plot(PSsis, PTsis, color='black', linestyle='None', marker='.', markersize=0.5)
-
-plt.plot(PSbins, PTFreezing, linestyle='--', linewidth=1., color='g')
-plt.ylim(y_lim)
-plt.xlim(x_lim)
-
-fsize = 10
-plt.xlabel('Salinity (PSU)', fontsize=fsize+4)
-plt.ylabel('Potential temperature ($^\circ$C)', fontsize=fsize+4)
-plt.title(ttl, fontsize=fsize+4)
-plt.tight_layout()
-
-dir_fig_save = '/Users/irenavankova/Work/data_sim/FISMF/TS_sim'
-if opt_save == 1:
-    plt.savefig(f'{dir_fig_save}/{region_name}{appe}.png', bbox_inches='tight', dpi=600)
-else:
-    plt.show()
-
+    print("All parallel simulations and regional TS diagrams completed successfully.")
