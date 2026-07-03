@@ -224,9 +224,9 @@ if __name__ == "__main__":
     # SPECIFY CONFIGURATIONS (From plot_spatial_stats.py)
     # -----------------------------------------------------------------
     RUN_TYPE = 'Spin6'
-    TARGET_YEARS = ['0002']  # e.g., ['0002', '0003', '0004']
+    TARGET_YEARS = ['0002', '0003', '0004']  # e.g., ['0002', '0003', '0004']
     regions_to_plot = ["FRIS", "RonneDcavity", "FilchnerDcavity", "RonneDshelf", "FilchnerDshelf", "BerknerBank",
-                       "BerknerSouth"]  # Keys matching gmask_reg.py
+                       "BerknerSouth", "FRISshelf"]  # Keys matching gmask_reg.py
 
     # Define the requested seasonal intervals.
     # Use lists of month integers. Set value to None to process all 12 months as Annual.
@@ -261,8 +261,8 @@ if __name__ == "__main__":
     # PRE-COMPUTE SHARED BACKGROUND BACKGROUND DENSITY MATRIX VARIABLES
     # -----------------------------------------------------------------
     y_lim = np.array([-3.0, 1.0])
-    x_lim = np.array([34.0, 34.9])
-    PTbins = np.linspace(-3.0, 4, num=200)
+    x_lim = np.array([34.0, 35.2])
+    PTbins = np.linspace(-3.5, 4, num=200)
     PSbins = np.linspace(32.0, 35.5, num=200)
     SAbins = gsw.SA_from_SP(PSbins, p=0., lon=0., lat=-75.)
     CTbins = gsw.pt_from_CT(SAbins, PTbins)
