@@ -17,8 +17,8 @@ import gmask_reg
 # 1. Parallel Worker Function for a Single Simulation Configuration
 # =========================================================================
 def process_single_ts_task(args):
-    """Processes TS diagrams for all specified regions for a single simulation resolution."""
-    Fnum, cases, RUN_TYPE, TARGET_YEARS, regions_to_plot, dir_fig_save, TS_bg_config = args
+    """Processes TS diagrams for all specified regions and seasons for a single simulation resolution."""
+    Fnum, cases, RUN_TYPE, TARGET_YEARS, regions_to_plot, dir_fig_save, TS_bg_config, seasonal_windows = args
     dx = f'F{Fnum}'
 
     # Resolve case string identifiers for filenames (Matches plot_spatial_stats.py logic)
@@ -87,20 +87,7 @@ def process_single_ts_task(args):
         print(f"--> Warning: No monthly files found matching target years {TARGET_YEARS} for {dx}. Skipping.")
         return
 
-    # Load data arrays across months (Shape of each element is [nCells, nVertLevels])
-    temp_list, salt_list, thick_list = [], [], []
-    for file_path in year_file_list:
-        with xr.open_dataset(file_path) as ds:
-            temp_list.append(ds['timeMonthly_avg_activeTracers_temperature'].isel(Time=0).values)
-            salt_list.append(ds['timeMonthly_avg_activeTracers_salinity'].isel(Time=0).values)
-            thick_list.append(ds['timeMonthly_avg_layerThickness'].isel(Time=0).values)
-
-    # Calculate temporal mean over the selected months
-    PT_mean = np.mean(np.array(temp_list), axis=0)  # Shape: (nCells, nVertLevels)
-    PS_mean = np.mean(np.array(salt_list), axis=0)  # Shape: (nCells, nVertLevels)
-    H_mean = np.mean(np.array(thick_list), axis=0)  # Shape: (nCells, nVertLevels)
-
-    # Load cell grid geometry parameters
+    # Load cell grid geometry parameters once per resolution
     with xr.open_dataset(mesh_file) as dsM:
         areaCell = dsM['areaCell'].values  # Shape: (nCells,)
         maxLevelCell = dsM['maxLevelCell'].values - 1  # Shape: (nCells,)
@@ -117,81 +104,115 @@ def process_single_ts_task(args):
 
     years_str = f"Years_{TARGET_YEARS[0]}-{TARGET_YEARS[-1]}" if len(TARGET_YEARS) > 1 else f"Year_{TARGET_YEARS[0]}"
 
-    # Process and generate a plot for each region sequentially inside this worker thread
-    for r_idx, region_name in enumerate(regions_to_plot):
-        region_mask = iam[r_idx, :]  # Shape: (nCells,)
+    # =========================================================================
+    # Loop over the requested temporal windows (Annual + Seasonal subsets)
+    # =========================================================================
+    for label, allowed_months in seasonal_windows.items():
 
-        if not np.any(region_mask):
+        # Filter files belonging to targeted months
+        filtered_file_list = []
+        for file_path in year_file_list:
+            date_part = os.path.basename(file_path).split('.')[-2]  # e.g., '0002-03-01_00000'
+            try:
+                month_val = int(date_part.split('-')[1])  # extracts standard MM index
+                if allowed_months is None or month_val in allowed_months:
+                    filtered_file_list.append(file_path)
+            except (IndexError, ValueError):
+                continue
+
+        if not filtered_file_list:
+            print(f"--> Warning: No matching season files for [{label}] under resolution {dx}. Skipping window.")
             continue
 
-        # Extract only horizontal columns belonging to the current region mask
-        PT_reg = PT_mean[region_mask, :]  # Shape: (nCells_in_reg, nVertLevels)
-        PS_reg = PS_mean[region_mask, :]  # Shape: (nCells_in_reg, nVertLevels)
-        H_reg = H_mean[region_mask, :]  # Shape: (nCells_in_reg, nVertLevels)
-        areaCell_reg = areaCell[region_mask]  # Shape: (nCells_in_reg,)
-        maxLevel_reg = maxLevelCell[region_mask]  # Shape: (nCells_in_reg,)
+        # Load and temporally average 3D properties across selected subset of months
+        temp_list, salt_list, thick_list = [], [], []
+        for file_path in filtered_file_list:
+            with xr.open_dataset(file_path) as ds:
+                temp_list.append(ds['timeMonthly_avg_activeTracers_temperature'].isel(Time=0).values)
+                salt_list.append(ds['timeMonthly_avg_activeTracers_salinity'].isel(Time=0).values)
+                thick_list.append(ds['timeMonthly_avg_layerThickness'].isel(Time=0).values)
 
-        # Calculate exact 3D grid volumes using broadcasting
-        volume_reg = H_reg * areaCell_reg[:, np.newaxis]
+        PT_mean = np.mean(np.array(temp_list), axis=0)  # Shape: (nCells, nVertLevels)
+        PS_mean = np.mean(np.array(salt_list), axis=0)  # Shape: (nCells, nVertLevels)
+        H_mean = np.mean(np.array(thick_list), axis=0)  # Shape: (nCells, nVertLevels)
 
-        # Construct custom 2D vertical mask bounded by maxLevelCell per region column
-        num_cells_reg, num_levels = PT_reg.shape
-        level_indices = np.arange(num_levels)[np.newaxis, :]  # Shape: (1, nVertLevels)
-        valid_vertical_mask = level_indices <= maxLevel_reg[:, np.newaxis]  # Shape: (nCells_in_reg, nVertLevels)
+        # Process and generate a plot for each region sequentially inside this window
+        for r_idx, region_name in enumerate(regions_to_plot):
+            region_mask = iam[r_idx, :]  # Shape: (nCells,)
 
-        # Flatten arrays safely using the 2D vertical indices mask
-        PT_flat = PT_reg[valid_vertical_mask]
-        PS_flat = PS_reg[valid_vertical_mask]
-        Vol_flat = volume_reg[valid_vertical_mask]
+            if not np.any(region_mask):
+                continue
 
-        # Clean NaN data values
-        nan_mask = np.isnan(PT_flat) | np.isnan(PS_flat) | np.isnan(Vol_flat)
-        PT_flat = PT_flat[~nan_mask]
-        PS_flat = PS_flat[~nan_mask]
-        Vol_flat = Vol_flat[~nan_mask]
+            # Extract only horizontal columns belonging to the current region mask
+            PT_reg = PT_mean[region_mask, :]  # Shape: (nCells_in_reg, nVertLevels)
+            PS_reg = PS_mean[region_mask, :]  # Shape: (nCells_in_reg, nVertLevels)
+            H_reg = H_mean[region_mask, :]  # Shape: (nCells_in_reg, nVertLevels)
+            areaCell_reg = areaCell[region_mask]  # Shape: (nCells_in_reg,)
+            maxLevel_reg = maxLevelCell[region_mask]  # Shape: (nCells_in_reg,)
 
-        if len(PT_flat) == 0:
-            continue
+            # Calculate exact 3D grid volumes using broadcasting
+            volume_reg = H_reg * areaCell_reg[:, np.newaxis]
 
-        # Volume-weighted core spatial mean calculation
-        PT_core_avg = np.dot(PT_flat, Vol_flat) / np.sum(Vol_flat)
-        PS_core_avg = np.dot(PS_flat, Vol_flat) / np.sum(Vol_flat)
+            # Construct custom 2D vertical mask bounded by maxLevelCell per region column
+            num_cells_reg, num_levels = PT_reg.shape
+            level_indices = np.arange(num_levels)[np.newaxis, :]  # Shape: (1, nVertLevels)
+            valid_vertical_mask = level_indices <= maxLevel_reg[:, np.newaxis]  # Shape: (nCells_in_reg, nVertLevels)
 
-        # -----------------------------------------------------------------
-        # Render Figure (Explicit figure flushing to avoid memory leaks)
-        # -----------------------------------------------------------------
-        fig, ax = plt.subplots(figsize=(5, 5))
+            # Flatten arrays safely using the 2D vertical indices mask
+            PT_flat = PT_reg[valid_vertical_mask]
+            PS_flat = PS_reg[valid_vertical_mask]
+            Vol_flat = volume_reg[valid_vertical_mask]
 
-        # Plot background potential density contours
-        CS = ax.contour(PSgrid, PTgrid, neutralDensity, contours, linestyles=':', linewidths=0.5, colors='k', zorder=2)
-        ax.clabel(CS, fontsize=8, inline=1, fmt='%4.2f')
+            # Clean NaN data values
+            nan_mask = np.isnan(PT_flat) | np.isnan(PS_flat) | np.isnan(Vol_flat)
+            PT_flat = PT_flat[~nan_mask]
+            PS_flat = PS_flat[~nan_mask]
+            Vol_flat = Vol_flat[~nan_mask]
 
-        # Surface Freezing line
-        ax.plot(PSbins, PTFreezing, linestyle='--', linewidth=1., color='g', label='Freezing Line')
+            if len(PT_flat) == 0:
+                continue
 
-        # Scatter active regional property markers
-        ax.plot(PS_flat, PT_flat, color='royalblue', linestyle='None', marker='.', markersize=0.2, alpha=0.6)
+            # Volume-weighted core spatial mean calculation
+            PT_core_avg = np.dot(PT_flat, Vol_flat) / np.sum(Vol_flat)
+            PS_core_avg = np.dot(PS_flat, Vol_flat) / np.sum(Vol_flat)
 
-        # Core volume integrated centroid marker
-        ax.plot(PS_core_avg, PT_core_avg, color='maroon', linestyle='None', marker='s', markersize=6, mec='k',
-                label='Vol-Weighted Mean')
+            # -----------------------------------------------------------------
+            # Render Figure (Explicit figure flushing to avoid memory leaks)
+            # -----------------------------------------------------------------
+            fig, ax = plt.subplots(figsize=(5, 5))
 
-        ax.set_ylim(y_lim)
-        ax.set_xlim(x_lim)
-        ax.set_xlabel('Salinity (PSU)', fontsize=12)
-        ax.set_ylabel('Potential Temperature ($^\circ$C)', fontsize=12)
-        ax.set_title(f"{region_name} | {dx}_{combined_cases_str}\n{years_str}", fontsize=11)
-        ax.legend(loc='upper left', fontsize=8)
+            # Plot background potential density contours
+            CS = ax.contour(PSgrid, PTgrid, neutralDensity, contours, linestyles=':', linewidths=0.5, colors='k',
+                            zorder=2)
+            ax.clabel(CS, fontsize=8, inline=1, fmt='%4.2f')
 
-        plt.tight_layout()
+            # Surface Freezing line
+            ax.plot(PSbins, PTFreezing, linestyle='--', linewidth=1., color='g', label='Freezing Line')
 
-        out_filename = f"{dir_fig_save}/TS_{region_name}_{dx}_{combined_cases_str}_{years_str}.png"
-        plt.savefig(out_filename, bbox_inches='tight', dpi=400)
+            # Scatter active regional property markers
+            ax.plot(PS_flat, PT_flat, color='royalblue', linestyle='None', marker='.', markersize=0.2, alpha=0.6)
 
-        # Explicit figure flushing to avoid cross-process leaks
-        fig.clear()
-        plt.close(fig)
-        print(f"--> [{dx}_{combined_cases_str}] Saved TS image to: {out_filename}")
+            # Core volume integrated centroid marker
+            ax.plot(PS_core_avg, PT_core_avg, color='maroon', linestyle='None', marker='s', markersize=6, mec='k',
+                    label='Vol-Weighted Mean')
+
+            ax.set_ylim(y_lim)
+            ax.set_xlim(x_lim)
+            ax.set_xlabel('Salinity (PSU)', fontsize=12)
+            ax.set_ylabel('Potential Temperature ($^\circ$C)', fontsize=12)
+            ax.set_title(f"{region_name} | {dx}_{combined_cases_str}\n{years_str} ({label})", fontsize=11)
+            ax.legend(loc='upper left', fontsize=8)
+
+            plt.tight_layout()
+
+            # Output filenames dynamically tracking the active averaging scheme
+            out_filename = f"{dir_fig_save}/TS_{region_name}_{dx}_{combined_cases_str}_{years_str}_{label}.png"
+            plt.savefig(out_filename, bbox_inches='tight', dpi=400)
+
+            # Explicit figure flushing to avoid cross-process leaks
+            fig.clear()
+            plt.close(fig)
+            print(f"--> [{dx}_{combined_cases_str}][{label}] Saved TS image to: {out_filename}")
 
 
 # =========================================================================
@@ -204,7 +225,18 @@ if __name__ == "__main__":
     # -----------------------------------------------------------------
     RUN_TYPE = 'Spin6'
     TARGET_YEARS = ['0002']  # e.g., ['0002', '0003', '0004']
-    regions_to_plot = ["FRIS", "RonneDcavity", "FilchnerDcavity", "RonneDshelf", "FilchnerDshelf", "BerknerBank", "BerknerSouth"]  # Keys matching gmask_reg.py
+    regions_to_plot = ["FRIS", "RonneDcavity", "FilchnerDcavity", "RonneDshelf", "FilchnerDshelf", "BerknerBank",
+                       "BerknerSouth"]  # Keys matching gmask_reg.py
+
+    # Define the requested seasonal intervals.
+    # Use lists of month integers. Set value to None to process all 12 months as Annual.
+    seasonal_windows = {
+        "Annual": None,
+        "JFM": [1, 2, 3],
+        "AMJ": [4, 5, 6],
+        "JAS": [7, 8, 9],
+        "OND": [11, 10, 12]
+    }
 
     if RUN_TYPE == 'Spin1':
         simulations = [
@@ -228,9 +260,9 @@ if __name__ == "__main__":
     # -----------------------------------------------------------------
     # PRE-COMPUTE SHARED BACKGROUND BACKGROUND DENSITY MATRIX VARIABLES
     # -----------------------------------------------------------------
-    y_lim = np.array([-2.7, 2.2])
-    x_lim = np.array([33.5, 34.9])
-    PTbins = np.linspace(-2.8, 4, num=200)
+    y_lim = np.array([-3.0, 1.0])
+    x_lim = np.array([34.0, 34.9])
+    PTbins = np.linspace(-3.0, 4, num=200)
     PSbins = np.linspace(32.0, 35.5, num=200)
     SAbins = gsw.SA_from_SP(PSbins, p=0., lon=0., lat=-75.)
     CTbins = gsw.pt_from_CT(SAbins, PTbins)
@@ -255,7 +287,7 @@ if __name__ == "__main__":
     tasks = []
     for Fnum, cases in simulations:
         tasks.append(
-            (Fnum, cases, RUN_TYPE, TARGET_YEARS, regions_to_plot, dir_fig_save, TS_bg_config)
+            (Fnum, cases, RUN_TYPE, TARGET_YEARS, regions_to_plot, dir_fig_save, TS_bg_config, seasonal_windows)
         )
 
     # Allocate process thread pool based on work list volume (Up to 16 combinations)
@@ -266,4 +298,4 @@ if __name__ == "__main__":
     with Pool(processes=num_processes) as pool:
         pool.map(process_single_ts_task, tasks)
 
-    print("All parallel simulations and regional TS diagrams completed successfully.")
+    print("All parallel simulations and regional seasonal TS diagrams completed successfully.")
