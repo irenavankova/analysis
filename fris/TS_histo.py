@@ -175,8 +175,12 @@ def process_single_ts_task(args):
                 continue
 
             # Volume-weighted core spatial mean calculation
-            PT_core_avg = np.dot(PT_flat, Vol_flat) / np.sum(Vol_flat)
-            PS_core_avg = np.dot(PS_flat, Vol_flat) / np.sum(Vol_flat)
+            total_region_volume = np.sum(Vol_flat)
+            PT_core_avg = np.dot(PT_flat, Vol_flat) / total_region_volume
+            PS_core_avg = np.dot(PS_flat, Vol_flat) / total_region_volume
+
+            # --- ADDED: Normalize volume weights by total region volume ---
+            Vol_norm = Vol_flat / total_region_volume
 
             # -----------------------------------------------------------------
             # Render Figure (Explicit figure flushing to avoid memory leaks)
@@ -191,13 +195,12 @@ def process_single_ts_task(args):
             # Surface Freezing line
             ax.plot(PSbins, PTFreezing, linestyle='--', linewidth=1., color='g', label='Freezing Line', zorder=4)
 
-            # --- CHANGED: Replace Scatter Plot with a Volume-Weighted 2D Histogram ---
-            # 150x150 bins provides an optimal trade-off between grid density and visual resolution
+            # --- CHANGED: Use normalized volume weights ---
             counts, xedges, yedges, im = ax.hist2d(
                 PS_flat, PT_flat,
                 bins=[150, 150],
                 range=[x_lim, y_lim],
-                weights=Vol_flat,
+                weights=Vol_norm,
                 cmap='cmo.deep',
                 norm=LogNorm(),
                 cmin=1e-10,  # Do not draw bins containing zero volume
@@ -207,7 +210,8 @@ def process_single_ts_task(args):
 
             # Append a colorbar tracking total cell volumes per TS bin
             cbar = fig.colorbar(im, ax=ax, orientation='vertical', pad=0.04)
-            cbar.set_label('Grid Cell Volume ($m^3$)', fontsize=11)
+            # --- CHANGED: Update label to reflect normalized fractions ---
+            cbar.set_label('Normalized Cell Volume Fraction (0 to 1)', fontsize=11)
             # -------------------------------------------------------------------------
 
             # Core volume integrated centroid marker
@@ -277,7 +281,8 @@ if __name__ == "__main__":
             "JFM": [1, 2, 3]
         }
         simulations = [
-            ('8', [('Spin6', 'p1')])
+            ('8', [('Spin6', 'p1')]),
+            ('2', [('Spin6', 'p1')])
         ]
 
     dir_fig_save = '/pscratch/sd/v/vankova/fris_analysis/fris_plots/TS_diagrams_histo'
