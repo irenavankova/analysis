@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 import os
 import glob
+import traceback
 import numpy as np
 import xarray as xr
 from multiprocessing import Pool
 
 import matplotlib
-
 matplotlib.use('Agg')  # Force non-interactive backend for cluster environments
-import matplotlib.pyplot as plt
+from matplotlib.figure import Figure
 from matplotlib.colors import LogNorm  # Added for logarithmic histogram scaling
 import gsw
 import gmask_reg
@@ -20,221 +20,223 @@ import cmocean
 # =========================================================================
 def process_single_ts_task(args):
     """Processes TS diagrams for all specified regions and seasons for a single simulation resolution."""
-    Fnum, cases, RUN_TYPE, TARGET_YEARS, regions_to_plot, dir_fig_save, TS_bg_config, seasonal_windows = args
-    dx = f'F{Fnum}'
+    try:
+        Fnum, cases, RUN_TYPE, TARGET_YEARS, regions_to_plot, dir_fig_save, TS_bg_config, seasonal_windows = args
+        dx = f'F{Fnum}'
 
-    # Resolve case string identifiers for filenames (Matches plot_spatial_stats.py logic)
-    cases_processed = []
-    for sec, subsec in cases:
-        subsec_str = subsec if (sec == 'Spin1' or subsec != 'p1') else ''
-        cases_processed.append(f"{sec}{subsec_str}")
-    combined_cases_str = "_".join(cases_processed)
+        # Resolve case string identifiers for filenames (Matches plot_spatial_stats.py logic)
+        cases_processed = []
+        for sec, subsec in cases:
+            subsec_str = subsec if (sec == 'Spin1' or subsec != 'p1') else ''
+            cases_processed.append(f"{sec}{subsec_str}")
+        combined_cases_str = "_".join(cases_processed)
 
-    print(f"=========================================================================\n"
-          f" Starting Execution: {dx}_{combined_cases_str} | Regions: {regions_to_plot}\n"
-          f"=========================================================================")
+        print(f"=========================================================================\n"
+              f" Starting Execution: {dx}_{combined_cases_str} | Regions: {regions_to_plot}\n"
+              f"=========================================================================")
 
-    # Path construction following plot_spatial_stats.py
-    run_name_mask = f"20240227.GMPAS-JRA1p5-DIB-PISMF.TL319_FRISwISC0{Fnum}to60E3r1.spinY6_scr5.chicoma-cpu"
-    fpath_mask = f'/pscratch/sd/v/vankova/lanl/FRIS_Irena/FRIS_spinY6/{run_name_mask}/run'
-    mesh_file = f'{fpath_mask}/{run_name_mask}.mpaso.rst.0002-01-01_00000.nc'
+        # Path construction following plot_spatial_stats.py
+        run_name_mask = f"20240227.GMPAS-JRA1p5-DIB-PISMF.TL319_FRISwISC0{Fnum}to60E3r1.spinY6_scr5.chicoma-cpu"
+        fpath_mask = f'/pscratch/sd/v/vankova/lanl/FRIS_Irena/FRIS_spinY6/{run_name_mask}/run'
+        mesh_file = f'{fpath_mask}/{run_name_mask}.mpaso.rst.0002-01-01_00000.nc'
 
-    if not os.path.exists(mesh_file):
-        print(f"--> Warning: Mesh file missing for {dx}: {mesh_file}. Skipping task.")
-        return
+        if not os.path.exists(mesh_file):
+            print(f"CRITICAL CRASH --> Mesh file completely missing for {dx}: {mesh_file} !!")
+            return
 
-    # Retrieve Region Masks from gmask_reg.py for this specific mesh
-    iam = gmask_reg.get_mask(regions_to_plot, mesh_file, opt_noGL=0, opt_wct=1)
+        # Retrieve Region Masks from gmask_reg.py for this specific mesh
+        iam = gmask_reg.get_mask(regions_to_plot, mesh_file, opt_noGL=0, opt_wct=1)
 
-    # Reconstruct base directories to gather monthly netCDF outputs (From plot_spatial_stats.py)
-    unique_months_dict = {}
-    for sec, subsec in cases:
-        if sec == 'Spin6':
-            if Fnum == '8' and subsec == 'GMF1':
-                run_name = "20240503.GMPAS-JRA1p5-DIB-PISMF-DGMHT.TL319_FRISwISC08to60E3r1.spinY6_GMF1.chicoma-cpu"
-                fpath = f'/pscratch/sd/v/vankova/lanl/FRIS_Irena/FRIS_spinY6/{run_name}/run'
-            else:
-                run_name = f"20240227.GMPAS-JRA1p5-DIB-PISMF.TL319_FRISwISC0{Fnum}to60E3r1.spinY6_scr5.chicoma-cpu"
-                fpath = f'/pscratch/sd/v/vankova/lanl/FRIS_Irena/FRIS_spinY6/{run_name}/run'
-        elif sec == 'Spin1':
-            if Fnum == '8':
-                run_name = "20231114.GMPAS-JRA1p5-DIB-PISMF-TMIX.TL319_FRISwISC08to60E3r1.spinup.chicoma-cpu"
-            elif Fnum == '4':
-                run_name = "20231108.GMPAS-JRA1p5-DIB-PISMF-TMIX.TL319_FRISwISC04to60E3r1.spinup.chicoma-cpu"
-            elif Fnum == '2':
-                run_name = "20231118.GMPAS-JRA1p5-DIB-PISMF-TMIX.TL319_FRISwISC02to60E3r1.spinup.chicoma-cpu" if subsec == 'p1' else "20231208.GMPAS-JRA1p5-DIB-PISMF-TMIX.TL319_FRISwISC02to60E3r1.spinup.anvil"
-            elif Fnum == '1':
-                if subsec == 'p1':
-                    run_name = "20231118.GMPAS-JRA1p5-DIB-PISMF-TMIX.TL319_FRISwISC01to60E3r1.spinup.chicoma-cpu"
-                elif subsec == 'p2':
-                    run_name = "20231209.GMPAS-JRA1p5-DIB-PISMF-TMIX.TL319_FRISwISC01to60E3r1.spinup.anvil"
+        # Reconstruct base directories to gather monthly netCDF outputs (From plot_spatial_stats.py)
+        unique_months_dict = {}
+        for sec, subsec in cases:
+            if sec == 'Spin6':
+                if Fnum == '8' and subsec == 'GMF1':
+                    run_name = "20240503.GMPAS-JRA1p5-DIB-PISMF-DGMHT.TL319_FRISwISC08to60E3r1.spinY6_GMF1.chicoma-cpu"
+                    fpath = f'/pscratch/sd/v/vankova/lanl/FRIS_Irena/FRIS_spinY6/{run_name}/run'
                 else:
-                    run_name = "20240201.GMPAS-JRA1p5-DIB-PISMF-TMIX.TL319_FRISwISC01to60E3r1.spinupY5.chicoma-cpu"
-            fpath = f'/pscratch/sd/v/vankova/lanl/FRIS_Irena/FRIS_spinY1/{run_name}/run'
+                    run_name = f"20240227.GMPAS-JRA1p5-DIB-PISMF.TL319_FRISwISC0{Fnum}to60E3r1.spinY6_scr5.chicoma-cpu"
+                    fpath = f'/pscratch/sd/v/vankova/lanl/FRIS_Irena/FRIS_spinY6/{run_name}/run'
+            elif sec == 'Spin1':
+                if Fnum == '8':
+                    run_name = "20231114.GMPAS-JRA1p5-DIB-PISMF-TMIX.TL319_FRISwISC08to60E3r1.spinup.chicoma-cpu"
+                elif Fnum == '4':
+                    run_name = "20231108.GMPAS-JRA1p5-DIB-PISMF-TMIX.TL319_FRISwISC04to60E3r1.spinup.chicoma-cpu"
+                elif Fnum == '2':
+                    run_name = "20231118.GMPAS-JRA1p5-DIB-PISMF-TMIX.TL319_FRISwISC02to60E3r1.spinup.chicoma-cpu" if subsec == 'p1' else "20231208.GMPAS-JRA1p5-DIB-PISMF-TMIX.TL319_FRISwISC02to60E3r1.spinup.anvil"
+                elif Fnum == '1':
+                    if subsec == 'p1':
+                        run_name = "20231118.GMPAS-JRA1p5-DIB-PISMF-TMIX.TL319_FRISwISC01to60E3r1.spinup.chicoma-cpu"
+                    elif subsec == 'p2':
+                        run_name = "20231209.GMPAS-JRA1p5-DIB-PISMF-TMIX.TL319_FRISwISC01to60E3r1.spinup.anvil"
+                    else:
+                        run_name = "20240201.GMPAS-JRA1p5-DIB-PISMF-TMIX.TL319_FRISwISC01to60E3r1.spinupY5.chicoma-cpu"
+                fpath = f'/pscratch/sd/v/vankova/lanl/FRIS_Irena/FRIS_spinY1/{run_name}/run'
 
-        for yr_str in TARGET_YEARS:
-            try:
-                yr_int = int(yr_str)
-                file_pattern = f"{fpath}/{run_name}.mpaso.hist.am.timeSeriesStatsMonthly.{yr_int:04d}-*-*.nc"
-                found_files = sorted(glob.glob(file_pattern))
-                for file_path in found_files:
-                    date_part = os.path.basename(file_path).split('.')[-2]
-                    unique_months_dict[date_part] = file_path
-            except (IndexError, ValueError):
+            for yr_str in TARGET_YEARS:
+                try:
+                    yr_int = int(yr_str)
+                    file_pattern = f"{fpath}/{run_name}.mpaso.hist.am.timeSeriesStatsMonthly.{yr_int:04d}-*-*.nc"
+                    found_files = sorted(glob.glob(file_pattern))
+                    for file_path in found_files:
+                        date_part = os.path.basename(file_path).split('.')[-2]
+                        unique_months_dict[date_part] = file_path
+                except (IndexError, ValueError):
+                    continue
+
+        year_file_list = [unique_months_dict[k] for k in sorted(unique_months_dict.keys())]
+
+        if not year_file_list:
+            print(f"CRITICAL CRASH --> No monthly history files found matching years {TARGET_YEARS} at {fpath} !!")
+            return
+
+        # Load cell grid geometry parameters once per resolution
+        with xr.open_dataset(mesh_file) as dsM:
+            areaCell = dsM['areaCell'].values  # Shape: (nCells,)
+            maxLevelCell = dsM['maxLevelCell'].values - 1  # Shape: (nCells,)
+
+        # Unpack TS background parameters for mapping
+        y_lim = TS_bg_config['y_lim']
+        x_lim = TS_bg_config['x_lim']
+        PSbins = TS_bg_config['PSbins']
+        PSgrid = TS_bg_config['PSgrid']
+        PTgrid = TS_bg_config['PTgrid']
+        neutralDensity = TS_bg_config['neutralDensity']
+        contours = TS_bg_config['contours']
+        PTFreezing = TS_bg_config['PTFreezing']
+
+        years_str = f"Years_{TARGET_YEARS[0]}-{TARGET_YEARS[-1]}" if len(TARGET_YEARS) > 1 else f"Year_{TARGET_YEARS[0]}"
+
+        # =========================================================================
+        # Loop over the requested temporal windows (Annual + Seasonal subsets)
+        # =========================================================================
+        for label, allowed_months in seasonal_windows.items():
+
+            # Filter files belonging to targeted months
+            filtered_file_list = []
+            for file_path in year_file_list:
+                date_part = os.path.basename(file_path).split('.')[-2]  # e.g., '0002-03-01_00000'
+                try:
+                    month_val = int(date_part.split('-')[1])  # extracts standard MM index
+                    if allowed_months is None or month_val in allowed_months:
+                        filtered_file_list.append(file_path)
+                except (IndexError, ValueError):
+                    continue
+
+            if not filtered_file_list:
+                print(f"--> Warning: No matching season files for [{label}] under resolution {dx}. Skipping window.")
                 continue
 
-    year_file_list = [unique_months_dict[k] for k in sorted(unique_months_dict.keys())]
+            # Load and temporally average 3D properties across selected subset of months
+            temp_list, salt_list, thick_list = [], [], []
+            for file_path in filtered_file_list:
+                with xr.open_dataset(file_path) as ds:
+                    temp_list.append(ds['timeMonthly_avg_activeTracers_temperature'].isel(Time=0).values)
+                    salt_list.append(ds['timeMonthly_avg_activeTracers_salinity'].isel(Time=0).values)
+                    thick_list.append(ds['timeMonthly_avg_layerThickness'].isel(Time=0).values)
 
-    if not year_file_list:
-        print(f"--> Warning: No monthly files found matching target years {TARGET_YEARS} for {dx}. Skipping.")
-        return
+            PT_mean = np.mean(np.array(temp_list), axis=0)  # Shape: (nCells, nVertLevels)
+            PS_mean = np.mean(np.array(salt_list), axis=0)  # Shape: (nCells, nVertLevels)
+            H_mean = np.mean(np.array(thick_list), axis=0)  # Shape: (nCells, nVertLevels)
 
-    # Load cell grid geometry parameters once per resolution
-    with xr.open_dataset(mesh_file) as dsM:
-        areaCell = dsM['areaCell'].values  # Shape: (nCells,)
-        maxLevelCell = dsM['maxLevelCell'].values - 1  # Shape: (nCells,)
+            # Process and generate a plot for each region sequentially inside this window
+            for r_idx, region_name in enumerate(regions_to_plot):
+                region_mask = iam[r_idx, :]  # Shape: (nCells,)
 
-    # Unpack TS background parameters for mapping
-    y_lim = TS_bg_config['y_lim']
-    x_lim = TS_bg_config['x_lim']
-    PSbins = TS_bg_config['PSbins']
-    PSgrid = TS_bg_config['PSgrid']
-    PTgrid = TS_bg_config['PTgrid']
-    neutralDensity = TS_bg_config['neutralDensity']
-    contours = TS_bg_config['contours']
-    PTFreezing = TS_bg_config['PTFreezing']
+                if not np.any(region_mask):
+                    continue
 
-    years_str = f"Years_{TARGET_YEARS[0]}-{TARGET_YEARS[-1]}" if len(TARGET_YEARS) > 1 else f"Year_{TARGET_YEARS[0]}"
+                # Extract only horizontal columns belonging to the current region mask
+                PT_reg = PT_mean[region_mask, :]  # Shape: (nCells_in_reg, nVertLevels)
+                PS_reg = PS_mean[region_mask, :]  # Shape: (nCells_in_reg, nVertLevels)
+                H_reg = H_mean[region_mask, :]  # Shape: (nCells_in_reg, nVertLevels)
+                areaCell_reg = areaCell[region_mask]  # Shape: (nCells_in_reg,)
+                maxLevel_reg = maxLevelCell[region_mask]  # Shape: (nCells_in_reg,)
 
-    # =========================================================================
-    # Loop over the requested temporal windows (Annual + Seasonal subsets)
-    # =========================================================================
-    for label, allowed_months in seasonal_windows.items():
+                # Calculate exact 3D grid volumes using broadcasting
+                volume_reg = H_reg * areaCell_reg[:, np.newaxis]
 
-        # Filter files belonging to targeted months
-        filtered_file_list = []
-        for file_path in year_file_list:
-            date_part = os.path.basename(file_path).split('.')[-2]  # e.g., '0002-03-01_00000'
-            try:
-                month_val = int(date_part.split('-')[1])  # extracts standard MM index
-                if allowed_months is None or month_val in allowed_months:
-                    filtered_file_list.append(file_path)
-            except (IndexError, ValueError):
-                continue
+                # Construct custom 2D vertical mask bounded by maxLevelCell per region column
+                num_cells_reg, num_levels = PT_reg.shape
+                level_indices = np.arange(num_levels)[np.newaxis, :]  # Shape: (1, nVertLevels)
+                valid_vertical_mask = level_indices <= maxLevel_reg[:, np.newaxis]  # Shape: (nCells_in_reg, nVertLevels)
 
-        if not filtered_file_list:
-            print(f"--> Warning: No matching season files for [{label}] under resolution {dx}. Skipping window.")
-            continue
+                # Flatten arrays safely using the 2D vertical indices mask
+                PT_flat = PT_reg[valid_vertical_mask]
+                PS_flat = PS_reg[valid_vertical_mask]
+                Vol_flat = volume_reg[valid_vertical_mask]
 
-        # Load and temporally average 3D properties across selected subset of months
-        temp_list, salt_list, thick_list = [], [], []
-        for file_path in filtered_file_list:
-            with xr.open_dataset(file_path) as ds:
-                temp_list.append(ds['timeMonthly_avg_activeTracers_temperature'].isel(Time=0).values)
-                salt_list.append(ds['timeMonthly_avg_activeTracers_salinity'].isel(Time=0).values)
-                thick_list.append(ds['timeMonthly_avg_layerThickness'].isel(Time=0).values)
+                # Clean NaN data values
+                nan_mask = np.isnan(PT_flat) | np.isnan(PS_flat) | np.isnan(Vol_flat)
+                PT_flat = PT_flat[~nan_mask]
+                PS_flat = PS_flat[~nan_mask]
+                Vol_flat = Vol_flat[~nan_mask]
 
-        PT_mean = np.mean(np.array(temp_list), axis=0)  # Shape: (nCells, nVertLevels)
-        PS_mean = np.mean(np.array(salt_list), axis=0)  # Shape: (nCells, nVertLevels)
-        H_mean = np.mean(np.array(thick_list), axis=0)  # Shape: (nCells, nVertLevels)
+                if len(PT_flat) == 0:
+                    continue
 
-        # Process and generate a plot for each region sequentially inside this window
-        for r_idx, region_name in enumerate(regions_to_plot):
-            region_mask = iam[r_idx, :]  # Shape: (nCells,)
+                # Volume-weighted core spatial mean calculation
+                total_region_volume = np.sum(Vol_flat)
+                PT_core_avg = np.dot(PT_flat, Vol_flat) / total_region_volume
+                PS_core_avg = np.dot(PS_flat, Vol_flat) / total_region_volume
 
-            if not np.any(region_mask):
-                continue
+                # Normalize volume weights by total region volume
+                Vol_norm = Vol_flat / total_region_volume
 
-            # Extract only horizontal columns belonging to the current region mask
-            PT_reg = PT_mean[region_mask, :]  # Shape: (nCells_in_reg, nVertLevels)
-            PS_reg = PS_mean[region_mask, :]  # Shape: (nCells_in_reg, nVertLevels)
-            H_reg = H_mean[region_mask, :]  # Shape: (nCells_in_reg, nVertLevels)
-            areaCell_reg = areaCell[region_mask]  # Shape: (nCells_in_reg,)
-            maxLevel_reg = maxLevelCell[region_mask]  # Shape: (nCells_in_reg,)
+                # -----------------------------------------------------------------
+                # Render Figure (Object-Oriented syntax to completely isolate workers)
+                # -----------------------------------------------------------------
+                fig = Figure(figsize=(6, 5))
+                ax = fig.add_subplot(111)
 
-            # Calculate exact 3D grid volumes using broadcasting
-            volume_reg = H_reg * areaCell_reg[:, np.newaxis]
+                # Plot background potential density contours
+                CS = ax.contour(PSgrid, PTgrid, neutralDensity, contours, linestyles=':', linewidths=0.5, colors='k',
+                                zorder=2)
+                ax.clabel(CS, fontsize=8, inline=1, fmt='%4.2f')
 
-            # Construct custom 2D vertical mask bounded by maxLevelCell per region column
-            num_cells_reg, num_levels = PT_reg.shape
-            level_indices = np.arange(num_levels)[np.newaxis, :]  # Shape: (1, nVertLevels)
-            valid_vertical_mask = level_indices <= maxLevel_reg[:, np.newaxis]  # Shape: (nCells_in_reg, nVertLevels)
+                # Surface Freezing line
+                ax.plot(PSbins, PTFreezing, linestyle='--', linewidth=1., color='g', label='Freezing Line', zorder=4)
 
-            # Flatten arrays safely using the 2D vertical indices mask
-            PT_flat = PT_reg[valid_vertical_mask]
-            PS_flat = PS_reg[valid_vertical_mask]
-            Vol_flat = volume_reg[valid_vertical_mask]
+                # Use normalized volume weights
+                counts, xedges, yedges, im = ax.hist2d(
+                    PS_flat, PT_flat,
+                    bins=[150, 150],
+                    range=[x_lim, y_lim],
+                    weights=Vol_norm,
+                    cmap='cmo.deep',
+                    norm=LogNorm(),
+                    cmin=1e-10,  # Do not draw bins containing zero volume
+                    zorder=1,
+                    rasterized=True
+                )
 
-            # Clean NaN data values
-            nan_mask = np.isnan(PT_flat) | np.isnan(PS_flat) | np.isnan(Vol_flat)
-            PT_flat = PT_flat[~nan_mask]
-            PS_flat = PS_flat[~nan_mask]
-            Vol_flat = Vol_flat[~nan_mask]
+                # Append a colorbar tracking total cell volumes per TS bin
+                cbar = fig.colorbar(im, ax=ax, orientation='vertical', pad=0.04)
+                cbar.set_label('Normalized Cell Volume Fraction (0 to 1)', fontsize=11)
 
-            if len(PT_flat) == 0:
-                continue
+                # Core volume integrated centroid marker
+                ax.plot(PS_core_avg, PT_core_avg, color='maroon', linestyle='None', marker='s', markersize=6, mec='k',
+                        label='Vol-Weighted Mean', zorder=5)
 
-            # Volume-weighted core spatial mean calculation
-            total_region_volume = np.sum(Vol_flat)
-            PT_core_avg = np.dot(PT_flat, Vol_flat) / total_region_volume
-            PS_core_avg = np.dot(PS_flat, Vol_flat) / total_region_volume
+                ax.set_ylim(y_lim)
+                ax.set_xlim(x_lim)
+                ax.set_xlabel('Salinity (PSU)', fontsize=12)
+                ax.set_ylabel('Potential Temperature ($^\circ$C)', fontsize=12)
+                ax.set_title(f"{region_name} | {dx}_{combined_cases_str}\n{years_str} ({label})", fontsize=11)
+                ax.legend(loc='upper left', fontsize=8)
 
-            # --- ADDED: Normalize volume weights by total region volume ---
-            Vol_norm = Vol_flat / total_region_volume
+                fig.tight_layout()
 
-            # -----------------------------------------------------------------
-            # Render Figure (Explicit figure flushing to avoid memory leaks)
-            # -----------------------------------------------------------------
-            fig, ax = plt.subplots(figsize=(6, 5))  # Slightly widened to comfortably fit the colorbar
+                # Output filenames dynamically tracking the active averaging scheme
+                out_filename = f"{dir_fig_save}/TS_{region_name}_{dx}_{combined_cases_str}_{years_str}_{label}.png"
+                fig.savefig(out_filename, bbox_inches='tight', dpi=400)
 
-            # Plot background potential density contours
-            CS = ax.contour(PSgrid, PTgrid, neutralDensity, contours, linestyles=':', linewidths=0.5, colors='k',
-                            zorder=2)
-            ax.clabel(CS, fontsize=8, inline=1, fmt='%4.2f')
+                print(f"--> [{dx}_{combined_cases_str}][{label}] Saved TS image to: {out_filename}")
 
-            # Surface Freezing line
-            ax.plot(PSbins, PTFreezing, linestyle='--', linewidth=1., color='g', label='Freezing Line', zorder=4)
-
-            # --- CHANGED: Use normalized volume weights ---
-            counts, xedges, yedges, im = ax.hist2d(
-                PS_flat, PT_flat,
-                bins=[150, 150],
-                range=[x_lim, y_lim],
-                weights=Vol_norm,
-                cmap='cmo.deep',
-                norm=LogNorm(),
-                cmin=1e-10,  # Do not draw bins containing zero volume
-                zorder=1,
-                rasterized=True
-            )
-
-            # Append a colorbar tracking total cell volumes per TS bin
-            cbar = fig.colorbar(im, ax=ax, orientation='vertical', pad=0.04)
-            # --- CHANGED: Update label to reflect normalized fractions ---
-            cbar.set_label('Normalized Cell Volume Fraction (0 to 1)', fontsize=11)
-            # -------------------------------------------------------------------------
-
-            # Core volume integrated centroid marker
-            ax.plot(PS_core_avg, PT_core_avg, color='maroon', linestyle='None', marker='s', markersize=6, mec='k',
-                    label='Vol-Weighted Mean', zorder=5)
-
-            ax.set_ylim(y_lim)
-            ax.set_xlim(x_lim)
-            ax.set_xlabel('Salinity (PSU)', fontsize=12)
-            ax.set_ylabel('Potential Temperature ($^\circ$C)', fontsize=12)
-            ax.set_title(f"{region_name} | {dx}_{combined_cases_str}\n{years_str} ({label})", fontsize=11)
-            ax.legend(loc='upper left', fontsize=8)
-
-            plt.tight_layout()
-
-            # Output filenames dynamically tracking the active averaging scheme
-            out_filename = f"{dir_fig_save}/TS_{region_name}_{dx}_{combined_cases_str}_{years_str}_{label}.png"
-            plt.savefig(out_filename, bbox_inches='tight', dpi=400)
-
-            # Explicit figure flushing to avoid cross-process leaks
-            fig.clear()
-            plt.close(fig)
-            print(f"--> [{dx}_{combined_cases_str}][{label}] Saved TS image to: {out_filename}")
+    except Exception as e:
+        print(f"\n!!! EXCEPTION DETECTED IN WORKER THREAD ({dx if 'dx' in locals() else 'Unknown'}):\n")
+        traceback.print_exc()
+        print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n")
 
 
 # =========================================================================
@@ -251,7 +253,6 @@ if __name__ == "__main__":
                        "BerknerSouth", "FRISshelf"]  # Keys matching gmask_reg.py
 
     # Define the requested seasonal intervals.
-    # Use lists of month integers. Set value to None to process all 12 months as Annual.
     seasonal_windows = {
         "Annual": None,
         "JFM": [1, 2, 3],
